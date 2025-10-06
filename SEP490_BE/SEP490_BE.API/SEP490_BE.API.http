@@ -1,0 +1,6 @@
+@SEP490_BE.API_HostAddress = http://localhost:5070
+
+GET {{SEP490_BE.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
