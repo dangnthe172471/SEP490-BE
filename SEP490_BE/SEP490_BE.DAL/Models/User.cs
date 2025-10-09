@@ -21,11 +21,15 @@ public partial class User
 
     public string? Gender { get; set; }
 
-    public string Role { get; set; } = null!;
+    public int RoleId { get; set; }
 
     public virtual ICollection<ChatLog> ChatLogs { get; set; } = new List<ChatLog>();
 
     public virtual Doctor? Doctor { get; set; }
 
     public virtual Patient? Patient { get; set; }
+
+    public virtual PharmacyProvider? PharmacyProvider { get; set; }
+
+    public virtual Role Role { get; set; } = null!;
 }

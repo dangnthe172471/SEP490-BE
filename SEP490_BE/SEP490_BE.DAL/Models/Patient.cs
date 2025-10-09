@@ -13,5 +13,7 @@ public partial class Patient
 
     public virtual ICollection<ChatLog> ChatLogs { get; set; } = new List<ChatLog>();
 
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
     public virtual User User { get; set; } = null!;
 }

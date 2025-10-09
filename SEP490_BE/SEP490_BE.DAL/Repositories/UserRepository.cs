@@ -15,7 +15,10 @@ namespace SEP490_BE.DAL.Repositories
 
 		public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
 		{
-			return await _dbContext.Users.AsNoTracking().ToListAsync(cancellationToken);
+			return await _dbContext.Users
+				.Include(u => u.Role)
+				.AsNoTracking()
+				.ToListAsync(cancellationToken);
 		}
 	}
 }

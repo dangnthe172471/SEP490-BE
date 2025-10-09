@@ -13,8 +13,6 @@ public partial class DoctorShift
 
     public string? Status { get; set; }
 
-    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
-
     public virtual Doctor Doctor { get; set; } = null!;
 
     public virtual Shift Shift { get; set; } = null!;

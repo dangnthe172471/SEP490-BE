@@ -13,6 +13,8 @@ public partial class Doctor
 
     public int ExperienceYears { get; set; }
 
+    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
     public virtual ICollection<DoctorShift> DoctorShifts { get; set; } = new List<DoctorShift>();
 
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();

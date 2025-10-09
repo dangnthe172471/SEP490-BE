@@ -9,19 +9,21 @@ public partial class Appointment
 
     public int PatientId { get; set; }
 
-    public int DoctorShiftId { get; set; }
+    public int DoctorId { get; set; }
 
     public DateTime AppointmentDate { get; set; }
+
+    public int? RoomId { get; set; }
 
     public string? Status { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
-    public virtual DoctorShift DoctorShift { get; set; } = null!;
+    public virtual Doctor Doctor { get; set; } = null!;
 
     public virtual ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();
 
     public virtual Patient Patient { get; set; } = null!;
 
-    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public virtual Room? Room { get; set; }
 }

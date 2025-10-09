@@ -17,5 +17,7 @@ public partial class MedicalRecord
 
     public virtual Appointment Appointment { get; set; } = null!;
 
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
 }

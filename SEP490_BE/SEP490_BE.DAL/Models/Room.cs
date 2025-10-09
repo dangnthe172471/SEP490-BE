@@ -9,5 +9,7 @@ public partial class Room
 
     public string RoomName { get; set; } = null!;
 
+    public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+
     public virtual ICollection<Shift> Shifts { get; set; } = new List<Shift>();
 }

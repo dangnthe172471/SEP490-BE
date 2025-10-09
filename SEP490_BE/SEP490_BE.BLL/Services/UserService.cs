@@ -23,7 +23,7 @@ namespace SEP490_BE.BLL.Services
 				FullName = u.FullName,
 				Email = u.Email,
 				Phone = u.Phone,
-				Role = u.Role,
+				Role = u.Role?.RoleName,
 				Gender = u.Gender,
 				Dob = u.Dob
 			});
