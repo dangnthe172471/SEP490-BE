@@ -176,19 +176,19 @@ GO
 INSERT INTO [User] (Username, PasswordHash, FullName, Email, Phone, DOB, Gender, RoleID)
 VALUES
 -- Doctor
-(N'nguyenvana', N'123456', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', N'0905123456', '1990-05-15', N'Nam', 4),
+(N'nguyenvana', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', N'0905123456', '1990-05-15', N'Nam', 4),
 -- Patient
-(N'lethib', N'123456', N'Lê Thị B', N'b.le@diamondhealth.vn', N'0906123456', '1995-03-22', N'Nữ', 2),
+(N'lethib', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', N'0906123456', '1995-03-22', N'Nữ', 2),
 -- Receptionist
-(N'phamminhc', N'123456', N'Phạm Minh C', N'c.pham@diamondhealth.vn', N'0907123456', '1992-07-10', N'Nam', 3),
+(N'phamminhc', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', N'0907123456', '1992-07-10', N'Nam', 3),
 -- Pharmacy Provider
-(N'votand', N'123456', N'Võ Tấn D', N'd.vo@diamondhealth.vn', N'0908123456', '1988-09-30', N'Nam', 6),
+(N'votand', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', N'0908123456', '1988-09-30', N'Nam', 6),
 -- Clinic Manager
-(N'huynhthie', N'123456', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', N'0909123456', '1985-12-05', N'Nữ', 7),
+(N'huynhthie', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', N'0909123456', '1985-12-05', N'Nữ', 7),
 -- Nurse
-(N'tranthif', N'123456', N'Trần Thị F', N'f.tran@diamondhealth.vn', N'0910123456', '1993-08-18', N'Nữ', 5),
+(N'tranthif', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', N'0910123456', '1993-08-18', N'Nữ', 5),
 -- Administrator
-(N'dangquocg', N'admin@123', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', N'0911123456', '1980-01-20', N'Nam', 8);
+(N'dangquocg', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', N'0911123456', '1980-01-20', N'Nam', 8);
 GO
 
 --1.Doctor (liên kết UserID 1)
