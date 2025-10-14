@@ -24,13 +24,13 @@ namespace SEP490_BE.API.Controllers
 		[HttpPost("login")]
     		public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
 		{
-			var user = await _userService.ValidateUserAsync(request.Username, request.Password, cancellationToken);
+            var user = await _userService.ValidateUserAsync(request.Phone, request.Password, cancellationToken);
 			if (user == null)
 			{
 				return Unauthorized();
 			}
 
-			var token = GenerateJwtToken(user.Username ?? string.Empty, user.Role ?? string.Empty);
+            var token = GenerateJwtToken(user.Phone ?? string.Empty, user.Role ?? string.Empty);
 			return Ok(new { token });
 		}
 
@@ -38,11 +38,10 @@ namespace SEP490_BE.API.Controllers
     		public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
 		{
 			var userId = await _userService.RegisterAsync(
-				request.Username,
+                request.Phone,
 				request.Password,
 				request.FullName,
 				request.Email,
-				request.Phone,
 				request.Dob,
 				request.Gender,
 				request.RoleId,
@@ -52,7 +51,7 @@ namespace SEP490_BE.API.Controllers
 			return Ok(new { userId });
 		}
 
-		private string GenerateJwtToken(string username, string role)
+        private string GenerateJwtToken(string subject, string role)
 		{
 			var jwtSection = _configuration.GetSection("Jwt");
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"] ?? string.Empty));
@@ -60,8 +59,8 @@ namespace SEP490_BE.API.Controllers
 
 			var claims = new List<Claim>
 			{
-				new Claim(JwtRegisteredClaimNames.Sub, username),
-				new Claim(ClaimTypes.Name, username),
+                new Claim(JwtRegisteredClaimNames.Sub, subject),
+                new Claim(ClaimTypes.Name, subject),
 				new Claim(ClaimTypes.Role, role)
 			};
 

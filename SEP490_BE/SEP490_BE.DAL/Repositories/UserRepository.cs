@@ -21,12 +21,12 @@ namespace SEP490_BE.DAL.Repositories
 				.ToListAsync(cancellationToken);
 		}
 
-		public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+        public async Task<User?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default)
 		{
 			return await _dbContext.Users
 				.Include(u => u.Role)
 				.AsNoTracking()
-				.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+                .FirstOrDefaultAsync(u => u.Phone == phone, cancellationToken);
 		}
 
 		public async Task AddAsync(User user, CancellationToken cancellationToken = default)

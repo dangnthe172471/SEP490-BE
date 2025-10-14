@@ -17,5 +17,5 @@ public partial class ChatLog
 
     public virtual Patient Patient { get; set; } = null!;
 
-    public virtual User Receptionist { get; set; } = null!;
+    public virtual Receptionist Receptionist { get; set; } = null!;
 }

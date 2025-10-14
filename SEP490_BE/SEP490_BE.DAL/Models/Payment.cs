@@ -9,8 +9,6 @@ public partial class Payment
 
     public int RecordId { get; set; }
 
-    public int PatientId { get; set; }
-
     public decimal Amount { get; set; }
 
     public DateTime? PaymentDate { get; set; }
@@ -18,8 +16,6 @@ public partial class Payment
     public string? Method { get; set; }
 
     public string? Status { get; set; }
-
-    public virtual Patient Patient { get; set; } = null!;
 
     public virtual MedicalRecord Record { get; set; } = null!;
 }

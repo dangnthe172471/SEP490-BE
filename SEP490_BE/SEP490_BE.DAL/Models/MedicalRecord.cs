@@ -17,7 +17,15 @@ public partial class MedicalRecord
 
     public virtual Appointment Appointment { get; set; } = null!;
 
+    public virtual InternalMedRecord? InternalMedRecord { get; set; }
+
+    public virtual ObstetricRecord? ObstetricRecord { get; set; }
+
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
+    public virtual PediatricRecord? PediatricRecord { get; set; }
+
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();
+
+    public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
 }

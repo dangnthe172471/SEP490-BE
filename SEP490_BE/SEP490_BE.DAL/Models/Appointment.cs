@@ -13,7 +13,9 @@ public partial class Appointment
 
     public DateTime AppointmentDate { get; set; }
 
-    public int? RoomId { get; set; }
+    public int? ReceptionistId { get; set; }
+
+    public int? UpdatedBy { get; set; }
 
     public string? Status { get; set; }
 
@@ -25,5 +27,7 @@ public partial class Appointment
 
     public virtual Patient Patient { get; set; } = null!;
 
-    public virtual Room? Room { get; set; }
+    public virtual Receptionist? Receptionist { get; set; }
+
+    public virtual User? UpdatedByNavigation { get; set; }
 }

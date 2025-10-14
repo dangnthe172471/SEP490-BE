@@ -2,7 +2,6 @@ using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
-using BCrypt.Net;
 
 namespace SEP490_BE.BLL.Services
 {
@@ -21,19 +20,18 @@ namespace SEP490_BE.BLL.Services
 			return users.Select(u => new UserDto
 			{
 				UserId = u.UserId,
-				Username = u.Username,
+				Phone = u.Phone,
 				FullName = u.FullName,
 				Email = u.Email,
-				Phone = u.Phone,
 				Role = u.Role?.RoleName,
 				Gender = u.Gender,
 				Dob = u.Dob
 			});
 		}
 
-		public async Task<UserDto?> ValidateUserAsync(string username, string password, CancellationToken cancellationToken = default)
+        public async Task<UserDto?> ValidateUserAsync(string phone, string password, CancellationToken cancellationToken = default)
 		{
-			var user = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+            var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
 			if (user == null)
 			{
 				return null;
@@ -48,28 +46,26 @@ namespace SEP490_BE.BLL.Services
 			return new UserDto
 			{
 				UserId = user.UserId,
-				Username = user.Username,
+				Phone = user.Phone,
 				FullName = user.FullName,
 				Email = user.Email,
-				Phone = user.Phone,
 				Role = user.Role?.RoleName,
 				Gender = user.Gender,
 				Dob = user.Dob
 			};
 		}
 
-		public async Task<int> RegisterAsync(string username, string password, string fullName, string? email, string? phone, DateOnly? dob, string? gender, int roleId, CancellationToken cancellationToken = default)
+        public async Task<int> RegisterAsync(string phone, string password, string fullName, string? email, DateOnly? dob, string? gender, int roleId, CancellationToken cancellationToken = default)
 		{
-			var existing = await _userRepository.GetByUsernameAsync(username, cancellationToken);
+            var existing = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
 			if (existing != null)
 			{
-				throw new InvalidOperationException("Username already exists.");
+                throw new InvalidOperationException("Phone already exists.");
 			}
 
 			var hashed = BCrypt.Net.BCrypt.HashPassword(password);
 			var user = new User
 			{
-				Username = username,
 				PasswordHash = hashed,
 				FullName = fullName,
 				Email = email,

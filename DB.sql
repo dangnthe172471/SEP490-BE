@@ -13,11 +13,10 @@ CREATE TABLE [Role] (
 -- 2. User (All actors)
 CREATE TABLE [User] (
     UserID INT PRIMARY KEY IDENTITY,
-    Username NVARCHAR(50) UNIQUE NOT NULL,
+    Phone NVARCHAR(20) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
     FullName NVARCHAR(100) NOT NULL,
     Email NVARCHAR(100),
-    Phone NVARCHAR(20),
     DOB DATE,
     Gender NVARCHAR(10),
     RoleID INT NOT NULL,
@@ -30,6 +29,7 @@ CREATE TABLE Doctor (
     UserID INT UNIQUE NOT NULL,
     Specialty NVARCHAR(100) NOT NULL,
     ExperienceYears INT NOT NULL,
+    RoomID INT NOT NULL,
     FOREIGN KEY (UserID) REFERENCES [User](UserID)
 );
 
@@ -37,10 +37,18 @@ CREATE TABLE Doctor (
 CREATE TABLE Patient (
     PatientID INT PRIMARY KEY,
     UserID INT UNIQUE NOT NULL,
+    ChronicDiseases NVARCHAR(255) NULL,
     FOREIGN KEY (UserID) REFERENCES [User](UserID)
 );
 
--- 5. PharmacyProvider (extends User)
+-- 5. Receptionist (extends User)
+CREATE TABLE Receptionist (
+    ReceptionistID INT PRIMARY KEY,
+    UserID INT UNIQUE NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES [User](UserID)
+);
+
+-- 6. PharmacyProvider (extends User)
 CREATE TABLE PharmacyProvider (
     ProviderID INT PRIMARY KEY,
     UserID INT UNIQUE NOT NULL,
@@ -48,23 +56,25 @@ CREATE TABLE PharmacyProvider (
     FOREIGN KEY (UserID) REFERENCES [User](UserID)
 );
 
--- 6. Room
+-- 7. Room
 CREATE TABLE Room (
     RoomID INT PRIMARY KEY IDENTITY,
     RoomName NVARCHAR(50) NOT NULL
 );
 
--- 7. Shift
+-- Add FK from Doctor to Room after Room is created
+ALTER TABLE Doctor
+ADD CONSTRAINT FK_Doctor_Room FOREIGN KEY (RoomID) REFERENCES Room(RoomID);
+
+-- 8. Shift
 CREATE TABLE Shift (
     ShiftID INT PRIMARY KEY IDENTITY,
-    RoomID INT NOT NULL,
     ShiftType NVARCHAR(20) NOT NULL, -- Morning, Afternoon, Evening
     StartTime TIME NOT NULL,
-    EndTime TIME NOT NULL,
-    FOREIGN KEY (RoomID) REFERENCES Room(RoomID)
+    EndTime TIME NOT NULL
 );
 
--- 8. DoctorShift (Doctor register into Shift)
+-- 9. DoctorShift (Doctor register into Shift)
 CREATE TABLE DoctorShift (
     DoctorShiftID INT PRIMARY KEY IDENTITY,
     DoctorID INT NOT NULL,
@@ -74,21 +84,23 @@ CREATE TABLE DoctorShift (
     FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
 );
 
--- 9. Appointment (booking by Patient with Doctor)
+-- 10. Appointment (booking by Patient with Doctor)
 CREATE TABLE Appointment (
     AppointmentID INT PRIMARY KEY IDENTITY,
     PatientID INT NOT NULL,
     DoctorID INT NOT NULL,
     AppointmentDate DATETIME NOT NULL,
-    RoomID INT NULL,
+    ReceptionistID INT NULL,
+    UpdatedBy INT NULL,
     Status NVARCHAR(20) DEFAULT 'Pending', -- Pending, Confirmed, Cancelled, Completed
     CreatedAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (PatientID) REFERENCES Patient(PatientID),
     FOREIGN KEY (DoctorID) REFERENCES Doctor(DoctorID),
-    FOREIGN KEY (RoomID) REFERENCES Room(RoomID)
+    FOREIGN KEY (ReceptionistID) REFERENCES Receptionist(ReceptionistID),
+    FOREIGN KEY (UpdatedBy) REFERENCES [User](UserID)
 );
 
--- 10. MedicalRecord
+-- 11. MedicalRecord
 CREATE TABLE MedicalRecord (
     RecordID INT PRIMARY KEY IDENTITY,
     AppointmentID INT NOT NULL,
@@ -98,7 +110,60 @@ CREATE TABLE MedicalRecord (
     FOREIGN KEY (AppointmentID) REFERENCES Appointment(AppointmentID)
 );
 
--- 11. Medicine
+-- 12 ObstetricRecord (sản phụ)
+CREATE TABLE ObstetricRecord (
+    RecordID INT PRIMARY KEY,
+    Gravida INT NULL,
+    Para INT NULL,
+    LMPDate DATE NULL,
+    GestationalAgeWeeks INT NULL,
+    FetalHeartRateBPM INT NULL,
+    ExpectedDueDate DATE NULL,
+    ComplicationsNotes NVARCHAR(255) NULL,
+    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID)
+);
+
+-- 13 PediatricRecord (nhi khoa)
+CREATE TABLE PediatricRecord (
+    RecordID INT PRIMARY KEY,
+    WeightKg DECIMAL(5,2) NULL,
+    HeightCm DECIMAL(5,2) NULL,
+    HeartRate INT NULL,
+    TemperatureC DECIMAL(4,1) NULL,
+    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID)
+);
+
+-- 14 InternalMedRecord (nội khoa)
+CREATE TABLE InternalMedRecord (
+    RecordID INT PRIMARY KEY,
+    BloodPressure INT NULL,
+    HeartRate INT NULL,
+    BloodSugar DECIMAL(6,2) NULL,
+    Notes NVARCHAR(255) NULL,
+    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID)
+);
+
+-- 15 TestType (catalog of lab tests)
+CREATE TABLE TestType (
+    TestTypeID INT PRIMARY KEY IDENTITY,
+    TestName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(255) NULL
+);
+
+-- 16 TestResult (results linked to MedicalRecord and TestType)
+CREATE TABLE TestResult (
+    TestResultID INT PRIMARY KEY IDENTITY,
+    RecordID INT NOT NULL,
+    TestTypeID INT NOT NULL,
+    ResultValue NVARCHAR(100) NOT NULL,
+    Unit NVARCHAR(50) NULL,
+    Notes NVARCHAR(255) NULL,
+    ResultDate DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID),
+    FOREIGN KEY (TestTypeID) REFERENCES TestType(TestTypeID)
+);
+
+-- 17. Medicine
 CREATE TABLE Medicine (
     MedicineID INT PRIMARY KEY IDENTITY,
     ProviderID INT NOT NULL,
@@ -108,7 +173,7 @@ CREATE TABLE Medicine (
     FOREIGN KEY (ProviderID) REFERENCES PharmacyProvider(ProviderID)
 );
 
--- 12. Prescription
+-- 18. Prescription
 CREATE TABLE Prescription (
     PrescriptionID INT PRIMARY KEY IDENTITY,
     RecordID INT NOT NULL,
@@ -118,32 +183,29 @@ CREATE TABLE Prescription (
     FOREIGN KEY (DoctorID) REFERENCES Doctor(DoctorID)
 );
 
--- 13. PrescriptionDetail
+-- 19. PrescriptionDetail
 CREATE TABLE PrescriptionDetail (
     PrescriptionDetailID INT PRIMARY KEY IDENTITY,
     PrescriptionID INT NOT NULL,
     MedicineID INT NOT NULL,
-    Dosage NVARCHAR(50) NOT NULL,
-    Frequency NVARCHAR(50) NOT NULL,
+    Dosage NVARCHAR(100) NOT NULL,
     Duration NVARCHAR(50) NOT NULL,
     FOREIGN KEY (PrescriptionID) REFERENCES Prescription(PrescriptionID),
     FOREIGN KEY (MedicineID) REFERENCES Medicine(MedicineID)
 );
 
--- 14. Payment (for MedicalRecord, paid by Patient)
+-- 20. Payment (for MedicalRecord)
 CREATE TABLE Payment (
     PaymentID INT PRIMARY KEY IDENTITY,
     RecordID INT NOT NULL,
-    PatientID INT NOT NULL,
     Amount DECIMAL(10,2) NOT NULL,
     PaymentDate DATETIME DEFAULT GETDATE(),
     Method NVARCHAR(50), -- Cash, Card, Online
     Status NVARCHAR(20) DEFAULT 'Pending',
-    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID),
-    FOREIGN KEY (PatientID) REFERENCES Patient(PatientID)
+    FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID)
 );
 
--- 15. ChatLog (Patient <-> Receptionist)
+-- 21. ChatLog (Patient <-> Receptionist)
 CREATE TABLE ChatLog (
     ChatID INT PRIMARY KEY IDENTITY,
     PatientID INT NOT NULL,
@@ -151,7 +213,7 @@ CREATE TABLE ChatLog (
     RoomChat NVARCHAR(MAX) NOT NULL,
     CreatedAt DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (PatientID) REFERENCES Patient(PatientID),
-    FOREIGN KEY (ReceptionistID) REFERENCES [User](UserID)
+    FOREIGN KEY (ReceptionistID) REFERENCES Receptionist(ReceptionistID)
 );
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
@@ -173,100 +235,126 @@ GO
 -- Role thứ tự:
 -- 1 Guest | 2 Patient | 3 Receptionist | 4 Doctor | 5 Nurse | 6 Pharmacy Provider | 7 Clinic Manager | 8 Administrator
 
-INSERT INTO [User] (Username, PasswordHash, FullName, Email, Phone, DOB, Gender, RoleID)
+INSERT INTO [User] (Phone, PasswordHash, FullName, Email, DOB, Gender, RoleID)
 VALUES
 -- Doctor
-(N'nguyenvana', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', N'0905123456', '1990-05-15', N'Nam', 4),
+(N'0905123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', '1990-05-15', N'Nam', 4),
 -- Patient
-(N'lethib', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', N'0906123456', '1995-03-22', N'Nữ', 2),
+(N'0906123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', '1995-03-22', N'Nữ', 2),
 -- Receptionist
-(N'phamminhc', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', N'0907123456', '1992-07-10', N'Nam', 3),
+(N'0907123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', '1992-07-10', N'Nam', 3),
 -- Pharmacy Provider
-(N'votand', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', N'0908123456', '1988-09-30', N'Nam', 6),
+(N'0908123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', '1988-09-30', N'Nam', 6),
 -- Clinic Manager
-(N'huynhthie', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', N'0909123456', '1985-12-05', N'Nữ', 7),
+(N'0909123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', '1985-12-05', N'Nữ', 7),
 -- Nurse
-(N'tranthif', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', N'0910123456', '1993-08-18', N'Nữ', 5),
+(N'0910123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', '1993-08-18', N'Nữ', 5),
 -- Administrator
-(N'dangquocg', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', N'0911123456', '1980-01-20', N'Nam', 8);
+(N'0911123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', '1980-01-20', N'Nam', 8);
 GO
 
---1.Doctor (liên kết UserID 1)
-INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears)
-VALUES 
-(1, 1, N'Tim mạch', 10);
-GO
-
---2.Patient (UserID 2)
-INSERT INTO Patient (PatientID, UserID)
+--Receptionist (UserID 3)
+INSERT INTO Receptionist (ReceptionistID, UserID)
 VALUES
-(1, 2);
+(1, 3);
 GO
 
---3.Pharmacy Provider (UserID 4)
-INSERT INTO PharmacyProvider (ProviderID, UserID, Contact)
-VALUES
-(1, 4, N'Nhà thuốc Minh Châu - 25 Lý Thường Kiệt, Hà Nội');
-GO
-
---4.Room
+--Room (moved earlier to satisfy Doctor.RoomID FK)
 INSERT INTO Room (RoomName)
 VALUES
 (N'Phòng khám tổng quát 101'),
 (N'Phòng tim mạch 202');
 GO
 
-
---5.Shift
-INSERT INTO Shift (RoomID, ShiftType, StartTime, EndTime)
-VALUES
-(2, N'Sáng', '08:00', '12:00'),
-(2, N'Chiều', '13:30', '17:30');
+--Doctor (liên kết UserID 1)
+INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears, RoomID)
+VALUES 
+(1, 1, N'Tim mạch', 10, 2);
 GO
 
---6.DoctorShift
+--Patient (UserID 2)
+INSERT INTO Patient (PatientID, UserID)
+VALUES
+(1, 2);
+GO
+
+--Pharmacy Provider (UserID 4)
+INSERT INTO PharmacyProvider (ProviderID, UserID, Contact)
+VALUES
+(1, 4, N'Nhà thuốc Minh Châu - 25 Lý Thường Kiệt, Hà Nội');
+GO
+
+--Shift
+INSERT INTO Shift (ShiftType, StartTime, EndTime)
+VALUES
+(N'Sáng', '08:00', '12:00'),
+(N'Chiều', '13:30', '17:30');
+GO
+
+--DoctorShift
 INSERT INTO DoctorShift (DoctorID, ShiftID, Status)
 VALUES
 (1, 1, N'Confirmed'),
 (1, 2, N'Confirmed');
 GO
 
---7.Appointment
-INSERT INTO Appointment (PatientID, DoctorID, AppointmentDate, RoomID, Status)
+--Appointment
+INSERT INTO Appointment (PatientID, DoctorID, AppointmentDate, ReceptionistID, UpdatedBy, Status)
 VALUES
-(1, 1, '2025-10-10 09:00', 2, N'Confirmed');
+(1, 1, '2025-10-10 09:00', 1, 3, N'Confirmed');
 GO
 
---8.MedicalRecord
+--MedicalRecord
 INSERT INTO MedicalRecord (AppointmentID, DoctorNotes, Diagnosis)
 VALUES
 (1, N'Bệnh nhân có triệu chứng đau ngực nhẹ, huyết áp hơi cao.', N'Tăng huyết áp độ 1');
 GO
 
---9.Medicine
+--Specialty extensions sample
+-- Link RecordID=1 as internal medicine example
+INSERT INTO InternalMedRecord (RecordID, BloodPressure, HeartRate, BloodSugar, Notes)
+VALUES (1, 135, 78, NULL, N'Khám tổng quát - theo dõi huyết áp');
+GO
+
+--Medicine
 INSERT INTO Medicine (ProviderID, MedicineName, SideEffects, Status)
 VALUES
 (1, N'Paracetamol 500mg', N'Buồn ngủ, mệt nhẹ', N'Available'),
 (1, N'Amlodipine 5mg', N'Phù chân, nhức đầu', N'Available');
 GO
 
---10.Prescription
+--Prescription
 INSERT INTO Prescription (RecordID, DoctorID)
 VALUES
 (1, 1);
 GO
 
---11.PrescriptionDetail
-INSERT INTO PrescriptionDetail (PrescriptionID, MedicineID, Dosage, Frequency, Duration)
+--PrescriptionDetail
+INSERT INTO PrescriptionDetail (PrescriptionID, MedicineID, Dosage, Duration)
 VALUES
-(1, 1, N'1 viên', N'3 lần/ngày', N'5 ngày'),
-(1, 2, N'1 viên', N'1 lần/ngày', N'7 ngày');
+(1, 1, N'1 viên - 3 lần/ngày', N'5 ngày'),
+(1, 2, N'1 viên - 1 lần/ngày', N'7 ngày');
 GO
 
---12.Payment
-INSERT INTO Payment (RecordID, PatientID, Amount, Method, Status)
+--TestResult
+-- Seed TestType
+INSERT INTO TestType (TestName, Description)
 VALUES
-(1, 1, 350000.00, N'Tiền mặt', N'Paid');
+(N'Huyết áp tâm thu', N'Huyết áp tâm thu tiêu chuẩn'),
+(N'Huyết áp tâm trương', N'Huyết áp tâm trương tiêu chuẩn');
+GO
+
+-- Seed TestResult
+INSERT INTO TestResult (RecordID, TestTypeID, ResultValue, Notes)
+VALUES
+(1, 1, N'135', N'Nhẹ cao'),
+(1, 2, N'88', N'Cao nhẹ');
+GO
+
+--Payment
+INSERT INTO Payment (RecordID, Amount, Method, Status)
+VALUES
+(1, 350000.00, N'Tiền mặt', N'Paid');
 GO
 
 

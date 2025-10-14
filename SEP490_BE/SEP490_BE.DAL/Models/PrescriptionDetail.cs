@@ -13,8 +13,6 @@ public partial class PrescriptionDetail
 
     public string Dosage { get; set; } = null!;
 
-    public string Frequency { get; set; } = null!;
-
     public string Duration { get; set; } = null!;
 
     public virtual Medicine Medicine { get; set; } = null!;

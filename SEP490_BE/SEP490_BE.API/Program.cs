@@ -1,13 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.OpenApi.Models;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.IRepositories;
-using SEP490_BE.DAL.Repositories;
 using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.Repositories;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
