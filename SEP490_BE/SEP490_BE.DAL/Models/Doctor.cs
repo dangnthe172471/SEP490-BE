@@ -17,6 +17,10 @@ public partial class Doctor
 
     public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
+    public virtual ICollection<DoctorShiftExchange> DoctorShiftExchangeDoctor1s { get; set; } = new List<DoctorShiftExchange>();
+
+    public virtual ICollection<DoctorShiftExchange> DoctorShiftExchangeDoctor2s { get; set; } = new List<DoctorShiftExchange>();
+
     public virtual ICollection<DoctorShift> DoctorShifts { get; set; } = new List<DoctorShift>();
 
     public virtual ICollection<Prescription> Prescriptions { get; set; } = new List<Prescription>();

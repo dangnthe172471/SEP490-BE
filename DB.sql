@@ -74,14 +74,30 @@ CREATE TABLE Shift (
     EndTime TIME NOT NULL
 );
 
--- 9. DoctorShift (Doctor register into Shift)
+-- 9. DoctorShift (Lịch làm việc cố định của bác sĩ)
 CREATE TABLE DoctorShift (
     DoctorShiftID INT PRIMARY KEY IDENTITY,
     DoctorID INT NOT NULL,
     ShiftID INT NOT NULL,
-    Status NVARCHAR(20) DEFAULT 'Confirmed', -- Pending, Confirmed
+    EffectiveFrom DATE NOT NULL,    -- Ngày bắt đầu có hiệu lực
+    EffectiveTo DATE NULL,          -- Ngày kết thúc (NULL = vĩnh viễn)
+    Status NVARCHAR(255) NULL,       -- Ghi chú
     FOREIGN KEY (DoctorID) REFERENCES Doctor(DoctorID),
     FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
+);
+
+CREATE TABLE DoctorShiftExchange (
+    ExchangeID INT PRIMARY KEY IDENTITY,
+    Doctor1ID INT NOT NULL,                   -- Bác sĩ 1
+    Doctor1ShiftRefID INT NOT NULL,           -- Tham chiếu bản ghi DoctorShift của bác sĩ 1
+    Doctor2ID INT NULL,                       -- Bác sĩ 2 (NULL = nghỉ phép)
+    Doctor2ShiftRefID INT NULL,               -- Tham chiếu bản ghi DoctorShift của bác sĩ 2 (NULL = nghỉ phép)
+    ExchangeDate DATE NOT NULL,               -- Ngày đổi ca/nghỉ
+    Status NVARCHAR(20) DEFAULT 'Approved',   -- Pending, Approved, Rejected
+    FOREIGN KEY (Doctor1ID) REFERENCES Doctor(DoctorID),
+    FOREIGN KEY (Doctor1ShiftRefID) REFERENCES DoctorShift(DoctorShiftID),
+    FOREIGN KEY (Doctor2ID) REFERENCES Doctor(DoctorID),
+    FOREIGN KEY (Doctor2ShiftRefID) REFERENCES DoctorShift(DoctorShiftID)
 );
 
 -- 10. Appointment (booking by Patient with Doctor)
@@ -288,14 +304,59 @@ GO
 INSERT INTO Shift (ShiftType, StartTime, EndTime)
 VALUES
 (N'Sáng', '08:00', '12:00'),
-(N'Chiều', '13:30', '17:30');
+(N'Chiều', '13:30', '17:30'),
+(N'Tối', '18:00', '22:00');
 GO
 
---DoctorShift
-INSERT INTO DoctorShift (DoctorID, ShiftID, Status)
+-- Thêm thêm bác sĩ để demo
+INSERT INTO [User] (Phone, PasswordHash, FullName, Email, DOB, Gender, RoleID)
 VALUES
-(1, 1, N'Confirmed'),
-(1, 2, N'Confirmed');
+(N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị H', N'h.nguyen@diamondhealth.vn', '1988-08-20', N'Nữ', 4),
+(N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn I', N'i.tran@diamondhealth.vn', '1992-03-15', N'Nam', 4),
+(N'0905123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị J', N'j.le@diamondhealth.vn', '1985-11-10', N'Nữ', 4);
+GO
+
+INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears, RoomID)
+VALUES 
+(2, 8, N'Nội khoa', 8, 1),
+(3, 9, N'Nhi khoa', 6, 1),
+(4, 10, N'Sản phụ khoa', 12, 2);
+GO
+
+-- Thêm phòng khám
+INSERT INTO Room (RoomName)
+VALUES
+(N'Phòng khám tổng quát 102'),
+(N'Phòng tim mạch 203');
+GO
+
+--DoctorShift - Lịch làm việc cố định (đơn giản)
+INSERT INTO DoctorShift (DoctorID, ShiftID, EffectiveFrom, EffectiveTo)
+VALUES
+-- Bác sĩ 1: Ca sáng, ca chiều
+(1, 1, '2025-01-01', NULL), -- Ca sáng vĩnh viễn
+(1, 2, '2025-01-01', NULL), -- Ca chiều vĩnh viễn
+
+-- Bác sĩ 2: Ca sáng, ca tối
+(2, 1, '2025-01-01', NULL), -- Ca sáng vĩnh viễn
+(2, 3, '2025-01-01', NULL), -- Ca tối vĩnh viễn
+
+-- Bác sĩ 3: Ca chiều, ca tối
+(3, 2, '2025-01-01', NULL), -- Ca chiều vĩnh viễn
+(3, 3, '2025-01-01', NULL), -- Ca tối vĩnh viễn
+
+-- Bác sĩ 4: Làm tạm thời từ 1/1 đến 31/3/2025
+(4, 1, '2025-01-01', '2025-03-31'); -- Ca sáng tạm thời
+GO
+
+INSERT INTO DoctorShiftExchange (Doctor1ID, Doctor1ShiftRefID, Doctor2ID, Doctor2ShiftRefID, ExchangeDate)
+VALUES
+(1, 1, NULL, NULL, '2025-01-15'); -- DoctorShiftID=1: Bác sĩ 1, ca sáng
+GO
+
+INSERT INTO DoctorShiftExchange (Doctor1ID, Doctor1ShiftRefID, Doctor2ID, Doctor2ShiftRefID, ExchangeDate)
+VALUES
+(1, 1, 3, 5, '2025-01-20'); -- DoctorShiftID=1 (BS1-ca sáng) đổi với DoctorShiftID=5 (BS3-ca chiều)
 GO
 
 --Appointment
@@ -356,5 +417,3 @@ INSERT INTO Payment (RecordID, Amount, Method, Status)
 VALUES
 (1, 350000.00, N'Tiền mặt', N'Paid');
 GO
-
-
