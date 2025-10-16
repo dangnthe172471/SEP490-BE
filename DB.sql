@@ -173,8 +173,9 @@ CREATE TABLE TestResult (
     TestTypeID INT NOT NULL,
     ResultValue NVARCHAR(100) NOT NULL,
     Unit NVARCHAR(50) NULL,
-    Notes NVARCHAR(255) NULL,
+    Attachment NVARCHAR(255) NULL,
     ResultDate DATETIME DEFAULT GETDATE(),
+    Notes NVARCHAR(255) NULL,
     FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID),
     FOREIGN KEY (TestTypeID) REFERENCES TestType(TestTypeID)
 );

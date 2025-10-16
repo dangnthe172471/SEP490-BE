@@ -15,9 +15,11 @@ public partial class TestResult
 
     public string? Unit { get; set; }
 
-    public string? Notes { get; set; }
+    public string? Attachment { get; set; }
 
     public DateTime? ResultDate { get; set; }
+
+    public string? Notes { get; set; }
 
     public virtual MedicalRecord Record { get; set; } = null!;
 
