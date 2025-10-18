@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SEP490_BE.BLL.IServices;
@@ -27,11 +28,22 @@ namespace SEP490_BE.API.Controllers
             var user = await _userService.ValidateUserAsync(request.Phone, request.Password, cancellationToken);
 			if (user == null)
 			{
-				return Unauthorized();
+				return Unauthorized(new { message = "Số điện thoại hoặc mật khẩu không đúng" });
 			}
 
-            var token = GenerateJwtToken(user.Phone ?? string.Empty, user.Role ?? string.Empty);
-			return Ok(new { token });
+            var token = GenerateJwtToken(user.UserId, user.Phone ?? string.Empty, user.Role ?? string.Empty);
+			return Ok(new { 
+				token,
+				user = new {
+					userId = user.UserId,
+					phone = user.Phone,
+					fullName = user.FullName,
+					email = user.Email,
+					role = user.Role,
+					gender = user.Gender,
+					dob = user.Dob
+				}
+			});
 		}
 
 		[HttpPost("register")]
@@ -51,7 +63,34 @@ namespace SEP490_BE.API.Controllers
 			return Ok(new { userId });
 		}
 
-        private string GenerateJwtToken(string subject, string role)
+		[HttpGet("profile")]
+		[Authorize]
+		public async Task<IActionResult> GetProfile(CancellationToken cancellationToken)
+		{
+			var phone = User.FindFirst(ClaimTypes.Name)?.Value;
+			if (string.IsNullOrEmpty(phone))
+			{
+				return Unauthorized();
+			}
+
+			var user = await _userService.GetUserByPhoneAsync(phone, cancellationToken);
+			if (user == null)
+			{
+				return NotFound();
+			}
+
+			return Ok(new {
+				userId = user.UserId,
+				phone = user.Phone,
+				fullName = user.FullName,
+				email = user.Email,
+				role = user.Role,
+				gender = user.Gender,
+				dob = user.Dob
+			});
+		}
+
+        private string GenerateJwtToken(int userId, string subject, string role)
 		{
 			var jwtSection = _configuration.GetSection("Jwt");
 			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"] ?? string.Empty));
@@ -61,6 +100,7 @@ namespace SEP490_BE.API.Controllers
 			{
                 new Claim(JwtRegisteredClaimNames.Sub, subject),
                 new Claim(ClaimTypes.Name, subject),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
 				new Claim(ClaimTypes.Role, role)
 			};
 

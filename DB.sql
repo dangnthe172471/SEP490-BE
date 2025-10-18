@@ -37,7 +37,8 @@ CREATE TABLE Doctor (
 CREATE TABLE Patient (
     PatientID INT PRIMARY KEY,
     UserID INT UNIQUE NOT NULL,
-    ChronicDiseases NVARCHAR(255) NULL,
+    Allergies NVARCHAR(500) NULL,
+    MedicalHistory NVARCHAR(500) NULL,
     FOREIGN KEY (UserID) REFERENCES [User](UserID)
 );
 
@@ -290,9 +291,9 @@ VALUES
 GO
 
 --Patient (UserID 2)
-INSERT INTO Patient (PatientID, UserID)
+INSERT INTO Patient (PatientID, UserID, Allergies, MedicalHistory)
 VALUES
-(1, 2);
+(1, 2, N'Dị ứng với penicillin', N'Tiền sử tăng huyết áp nhẹ');
 GO
 
 --Pharmacy Provider (UserID 4)
@@ -315,6 +316,12 @@ VALUES
 (N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị H', N'h.nguyen@diamondhealth.vn', '1988-08-20', N'Nữ', 4),
 (N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn I', N'i.tran@diamondhealth.vn', '1992-03-15', N'Nam', 4),
 (N'0905123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị J', N'j.le@diamondhealth.vn', '1985-11-10', N'Nữ', 4);
+
+-- Thêm thêm bệnh nhân để demo
+INSERT INTO [User] (Phone, PasswordHash, FullName, Email, DOB, Gender, RoleID)
+VALUES
+(N'0906123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn K', N'k.pham@email.com', '1990-06-15', N'Nam', 2),
+(N'0906123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Hoàng Thị L', N'l.hoang@email.com', '1987-12-03', N'Nữ', 2);
 GO
 
 INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears, RoomID)
@@ -322,6 +329,12 @@ VALUES
 (2, 8, N'Nội khoa', 8, 1),
 (3, 9, N'Nhi khoa', 6, 1),
 (4, 10, N'Sản phụ khoa', 12, 2);
+
+-- Thêm data cho các bệnh nhân mới
+INSERT INTO Patient (PatientID, UserID, Allergies, MedicalHistory)
+VALUES
+(2, 11, N'Không có', N'Không có bệnh lý nền'),
+(3, 12, N'Dị ứng với hải sản', N'Tiền sử đau dạ dày');
 GO
 
 -- Thêm phòng khám
