@@ -55,7 +55,7 @@ namespace SEP490_BE.DAL.Repositories
 		{
 			_dbContext.Users.Update(user);
 			
-			// If user has a new Patient record, add it to the context
+			// If user has a Patient record, handle it properly
 			if (user.Patient != null)
 			{
 				// Check if this is a new Patient record (not tracked by EF)
@@ -64,7 +64,13 @@ namespace SEP490_BE.DAL.Repositories
 				
 				if (existingPatient == null)
 				{
+					// New Patient record
 					_dbContext.Patients.Add(user.Patient);
+				}
+				else
+				{
+					// Update existing Patient record
+					_dbContext.Patients.Update(user.Patient);
 				}
 			}
 			

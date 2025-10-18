@@ -86,7 +86,9 @@ namespace SEP490_BE.API.Controllers
 				email = user.Email,
 				role = user.Role,
 				gender = user.Gender,
-				dob = user.Dob
+				dob = user.Dob,
+				allergies = user.Allergies,
+				medicalHistory = user.MedicalHistory
 			});
 		}
 
