@@ -8,56 +8,56 @@ namespace SEP490_BE.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TestTypesController : ControllerBase
+    public class RoomsController : ControllerBase
     {
-        private readonly ITestTypeService _testTypeService;
+        private readonly IRoomService _roomService;
 
-        public TestTypesController(ITestTypeService testTypeService)
+        public RoomsController(IRoomService roomService)
         {
-            _testTypeService = testTypeService;
+            _roomService = roomService;
         }
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<TestTypeDto>>> GetAll(CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll(CancellationToken cancellationToken)
         {
-            var testTypes = await _testTypeService.GetAllAsync(cancellationToken);
-            return Ok(testTypes);
+            var rooms = await _roomService.GetAllAsync(cancellationToken);
+            return Ok(rooms);
         }
 
         [HttpGet("paged")]
         [AllowAnonymous]
-        public async Task<ActionResult<PagedResponse<TestTypeDto>>> GetPaged(
+        public async Task<ActionResult<PagedResponse<RoomDto>>> GetPaged(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
             CancellationToken cancellationToken = default)
         {
-            var result = await _testTypeService.GetPagedAsync(pageNumber, pageSize, searchTerm, cancellationToken);
+            var result = await _roomService.GetPagedAsync(pageNumber, pageSize, searchTerm, cancellationToken);
             return Ok(result);
         }
 
         [HttpGet("{id}")]
         [AllowAnonymous]
-        public async Task<ActionResult<TestTypeDto>> GetById(int id, CancellationToken cancellationToken)
+        public async Task<ActionResult<RoomDto>> GetById(int id, CancellationToken cancellationToken)
         {
-            var testType = await _testTypeService.GetByIdAsync(id, cancellationToken);
-            if (testType == null)
+            var room = await _roomService.GetByIdAsync(id, cancellationToken);
+            if (room == null)
             {
                 return NotFound();
             }
 
-            return Ok(testType);
+            return Ok(room);
         }
 
         [HttpPost]
         public async Task<ActionResult<int>> Create(
-            [FromBody] CreateTestTypeRequest request,
+            [FromBody] CreateRoomRequest request,
             CancellationToken cancellationToken)
         {
             try
             {
-                var id = await _testTypeService.CreateAsync(request, cancellationToken);
+                var id = await _roomService.CreateAsync(request, cancellationToken);
                 return CreatedAtAction(nameof(GetById), new { id }, id);
             }
             catch (ArgumentException ex)
@@ -67,14 +67,14 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<TestTypeDto>> Update(
+        public async Task<ActionResult<RoomDto>> Update(
             int id,
-            [FromBody] UpdateTestTypeRequest request,
+            [FromBody] UpdateRoomRequest request,
             CancellationToken cancellationToken)
         {
             try
             {
-                var result = await _testTypeService.UpdateAsync(id, request, cancellationToken);
+                var result = await _roomService.UpdateAsync(id, request, cancellationToken);
                 if (result == null)
                 {
                     return NotFound();
@@ -89,9 +89,10 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        //[Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var success = await _testTypeService.DeleteAsync(id, cancellationToken);
+            var success = await _roomService.DeleteAsync(id, cancellationToken);
             if (!success)
             {
                 return NotFound();
