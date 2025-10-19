@@ -63,6 +63,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
 builder.Services.AddScoped<ITestTypeService, TestTypeService>();
 
+builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
+builder.Services.AddScoped<IMedicineService, MedicineService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
