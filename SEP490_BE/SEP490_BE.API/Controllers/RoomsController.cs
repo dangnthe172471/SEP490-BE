@@ -18,15 +18,16 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll(CancellationToken cancellationToken)
         {
             var rooms = await _roomService.GetAllAsync(cancellationToken);
             return Ok(rooms);
         }
 
+        
         [HttpGet("paged")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<PagedResponse<RoomDto>>> GetPaged(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
@@ -37,8 +38,9 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
+        
         [HttpGet("{id}")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<RoomDto>> GetById(int id, CancellationToken cancellationToken)
         {
             var room = await _roomService.GetByIdAsync(id, cancellationToken);
@@ -50,7 +52,9 @@ namespace SEP490_BE.API.Controllers
             return Ok(room);
         }
 
+        
         [HttpPost]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<int>> Create(
             [FromBody] CreateRoomRequest request,
             CancellationToken cancellationToken)
@@ -66,7 +70,9 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+      
         [HttpPut("{id}")]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<RoomDto>> Update(
             int id,
             [FromBody] UpdateRoomRequest request,
@@ -88,8 +94,9 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+        
         [HttpDelete("{id}")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             var success = await _roomService.DeleteAsync(id, cancellationToken);

@@ -17,16 +17,18 @@ namespace SEP490_BE.API.Controllers
             _testTypeService = testTypeService;
         }
 
+
         [HttpGet]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<IEnumerable<TestTypeDto>>> GetAll(CancellationToken cancellationToken)
         {
             var testTypes = await _testTypeService.GetAllAsync(cancellationToken);
             return Ok(testTypes);
         }
 
+
         [HttpGet("paged")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<PagedResponse<TestTypeDto>>> GetPaged(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
@@ -37,8 +39,9 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
+
         [HttpGet("{id}")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<TestTypeDto>> GetById(int id, CancellationToken cancellationToken)
         {
             var testType = await _testTypeService.GetByIdAsync(id, cancellationToken);
@@ -50,7 +53,9 @@ namespace SEP490_BE.API.Controllers
             return Ok(testType);
         }
 
+
         [HttpPost]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<int>> Create(
             [FromBody] CreateTestTypeRequest request,
             CancellationToken cancellationToken)
@@ -66,7 +71,9 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+
         [HttpPut("{id}")]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<TestTypeDto>> Update(
             int id,
             [FromBody] UpdateTestTypeRequest request,
@@ -88,7 +95,9 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Clinic Manager")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             var success = await _testTypeService.DeleteAsync(id, cancellationToken);
