@@ -19,6 +19,15 @@ namespace SEP490_BE.API.Controllers
             var data = await _service.GetAllShiftsAsync();
             return Ok(data);
         }
+        // Tìm bác sĩ theo tên
+        [HttpGet("doctors")]
+        public async Task<IActionResult> GetAllDoctors([FromQuery] string? keyword)
+        {
+          
+                var allDoctors = await _service.GetAllDoctorsAsync();
+                return Ok(allDoctors);
+          
+        }
 
         // Tìm bác sĩ theo tên
         [HttpGet("doctors/search")]
