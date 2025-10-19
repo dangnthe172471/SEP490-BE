@@ -67,6 +67,8 @@ builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IDoctorShiftRepository, DoctorShiftRepository>();
 
+builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
+builder.Services.AddScoped<ITestTypeService, TestTypeService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
