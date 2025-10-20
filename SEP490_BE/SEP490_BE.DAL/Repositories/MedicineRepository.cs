@@ -143,7 +143,5 @@ namespace SEP490_BE.DAL.Repositories
 
             return (items, totalCount);
         }
-
-
     }
 }
