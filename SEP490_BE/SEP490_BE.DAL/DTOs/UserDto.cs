@@ -9,6 +9,7 @@ namespace SEP490_BE.DAL.DTOs
 		public string? Role { get; set; }
 		public string? Gender { get; set; }
 		public DateOnly? Dob { get; set; }
+		public bool IsActive { get; set; } = true;
 		
 		// Patient specific fields
 		public string? Allergies { get; set; }

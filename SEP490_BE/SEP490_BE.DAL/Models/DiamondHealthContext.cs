@@ -59,6 +59,8 @@ public partial class DiamondHealthContext : DbContext
 
     public virtual DbSet<User> Users { get; set; }
 
+    public virtual DbSet<OtpVerification> OtpVerifications { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
 
@@ -524,6 +526,19 @@ public partial class DiamondHealthContext : DbContext
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__User__RoleID__3B75D760");
+        });
+
+        modelBuilder.Entity<OtpVerification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.ToTable("OtpVerification");
+
+            entity.Property(e => e.Phone).HasMaxLength(20);
+            entity.Property(e => e.OtpCode).HasMaxLength(6);
+            entity.Property(e => e.Purpose).HasMaxLength(50);
+            entity.Property(e => e.ExpiresAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -14,11 +14,13 @@ namespace SEP490_BE.API.Controllers
 	public class AuthController : ControllerBase
 	{
 		private readonly IUserService _userService;
+		private readonly IOtpService _otpService;
 		private readonly IConfiguration _configuration;
 
-		public AuthController(IUserService userService, IConfiguration configuration)
+		public AuthController(IUserService userService, IOtpService otpService, IConfiguration configuration)
 		{
 			_userService = userService;
+			_otpService = otpService;
 			_configuration = configuration;
 		}
 
@@ -92,6 +94,86 @@ namespace SEP490_BE.API.Controllers
 			});
 		}
 
+		[HttpPost("forgot-password")]
+		public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+		{
+			try
+			{
+				// Check if user exists
+				var user = await _userService.GetUserByPhoneAsync(request.Phone, cancellationToken);
+				if (user == null)
+				{
+					return BadRequest(new { message = "Số điện thoại không tồn tại trong hệ thống" });
+				}
+
+				// Generate and send OTP
+				await _otpService.GenerateOtpAsync(request.Phone, "forgot_password", cancellationToken);
+
+				return Ok(new { message = "Mã OTP đã được gửi đến số điện thoại của bạn" });
+			}
+			catch (Exception)
+			{
+				return StatusCode(500, new { message = "Có lỗi xảy ra khi gửi mã OTP" });
+			}
+		}
+
+		[HttpPost("verify-otp")]
+		public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
+		{
+			try
+			{
+				var isValid = await _otpService.VerifyOtpAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
+				
+				if (!isValid)
+				{
+					return BadRequest(new { message = "Mã OTP không đúng hoặc đã hết hạn" });
+				}
+
+				return Ok(new { message = "Mã OTP hợp lệ" });
+			}
+			catch (Exception)
+			{
+				return StatusCode(500, new { message = "Có lỗi xảy ra khi xác thực mã OTP" });
+			}
+		}
+
+		[HttpPost("reset-password")]
+		public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+		{
+			try
+			{
+				// Verify OTP first
+				var isOtpValid = await _otpService.IsOtpValidAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
+				if (!isOtpValid)
+				{
+					return BadRequest(new { message = "Mã OTP không đúng hoặc đã hết hạn" });
+				}
+
+				// Get user
+				var user = await _userService.GetUserByPhoneAsync(request.Phone, cancellationToken);
+				if (user == null)
+				{
+					return BadRequest(new { message = "Số điện thoại không tồn tại trong hệ thống" });
+				}
+
+				// Update password
+				var success = await _userService.UpdatePasswordAsync(user.UserId, request.NewPassword, cancellationToken);
+				if (!success)
+				{
+					return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật mật khẩu" });
+				}
+
+				// Mark OTP as used
+				await _otpService.VerifyOtpAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
+
+				return Ok(new { message = "Mật khẩu đã được cập nhật thành công" });
+			}
+			catch (Exception)
+			{
+				return StatusCode(500, new { message = "Có lỗi xảy ra khi đặt lại mật khẩu" });
+			}
+		}
+
         private string GenerateJwtToken(int userId, string subject, string role)
 		{
 			var jwtSection = _configuration.GetSection("Jwt");
@@ -103,9 +185,8 @@ namespace SEP490_BE.API.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, subject),
                 new Claim(ClaimTypes.Name, subject),
                 new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-				new Claim(ClaimTypes.Role, role),
-                new Claim("user_id", userId.ToString())
-            };
+				new Claim(ClaimTypes.Role, role)
+			};
 
 			var token = new JwtSecurityToken(
 				issuer: jwtSection["Issuer"],
@@ -119,5 +200,3 @@ namespace SEP490_BE.API.Controllers
 		}
 	}
 }
-
-

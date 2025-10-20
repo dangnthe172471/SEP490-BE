@@ -21,6 +21,8 @@ public partial class User
 
     public int RoleId { get; set; }
 
+    public bool IsActive { get; set; } = true;
+
     public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
     public virtual Doctor? Doctor { get; set; }
