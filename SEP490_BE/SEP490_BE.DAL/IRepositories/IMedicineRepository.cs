@@ -13,5 +13,8 @@ namespace SEP490_BE.DAL.IRepositories
 
         Task<PharmacyProvider?> GetByUserIdAsync(int userId, CancellationToken ct = default);
         Task<int?> GetProviderIdByUserIdAsync(int userId, CancellationToken ct = default);
+
+        Task<(List<Medicine> Items, int TotalCount)> GetByProviderIdPagedAsync(
+        int providerId, int pageNumber, int pageSize, CancellationToken ct = default);
     }
 }

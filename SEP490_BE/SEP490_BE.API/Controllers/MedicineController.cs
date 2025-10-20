@@ -130,9 +130,32 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+        //[Authorize(Roles = "Pharmacy Provider")]
+        //[HttpGet("mine")]
+        //public async Task<IActionResult> GetMine(CancellationToken ct)
+        //{
+        //    var userId = ResolveUserIdFromClaims(User.Claims);
+        //    if (userId is null)
+        //        return Unauthorized("Không thể xác định UserId từ token (thiếu/không hợp lệ claim nameidentifier).");
+
+        //    try
+        //    {
+        //        var meds = await _medicineService.GetMineAsync(userId.Value, ct);
+        //        return Ok(meds);
+        //    }
+        //    catch (InvalidOperationException ex)
+        //    {
+        //        // Trường hợp user không có bản ghi PharmacyProvider
+        //        return Conflict(new { message = ex.Message });
+        //    }
+        //}
+
         [Authorize(Roles = "Pharmacy Provider")]
         [HttpGet("mine")]
-        public async Task<IActionResult> GetMine(CancellationToken ct)
+        public async Task<IActionResult> GetMine(
+                [FromQuery] int pageNumber = 1,
+                [FromQuery] int pageSize = 10,
+                CancellationToken ct = default)
         {
             var userId = ResolveUserIdFromClaims(User.Claims);
             if (userId is null)
@@ -140,15 +163,13 @@ namespace SEP490_BE.API.Controllers
 
             try
             {
-                var meds = await _medicineService.GetMineAsync(userId.Value, ct);
-                return Ok(meds);
+                var result = await _medicineService.GetMinePagedAsync(userId.Value, pageNumber, pageSize, ct);
+                return Ok(result);
             }
             catch (InvalidOperationException ex)
             {
-                // Trường hợp user không có bản ghi PharmacyProvider
                 return Conflict(new { message = ex.Message });
             }
         }
-
     }
 }

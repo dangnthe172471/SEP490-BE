@@ -120,5 +120,38 @@ namespace SEP490_BE.BLL.Services
             }).ToList();
         }
 
+        public async Task<PagedResult<ReadMedicineDto>> GetMinePagedAsync(
+            int userId, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            // lấy providerId theo user
+            var providerId = await _medicineRepository.GetProviderIdByUserIdAsync(userId, ct);
+            if (!providerId.HasValue)
+                throw new InvalidOperationException("Người dùng hiện tại không phải là nhà cung cấp.");
+
+            // chặn pageSize quá lớn để bảo vệ hệ thống
+            if (pageSize > 100) pageSize = 100;
+            if (pageNumber < 1) pageNumber = 1;
+
+            var (items, totalCount) = await _medicineRepository
+                .GetByProviderIdPagedAsync(providerId.Value, pageNumber, pageSize, ct);
+
+            var mapped = items.Select(m => new ReadMedicineDto
+            {
+                MedicineId = m.MedicineId,
+                MedicineName = m.MedicineName,
+                SideEffects = m.SideEffects,
+                Status = m.Status,
+                ProviderId = m.ProviderId,
+                ProviderName = m.Provider?.User.FullName
+            }).ToList();
+
+            return new PagedResult<ReadMedicineDto>
+            {
+                Items = mapped,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
     }
 }

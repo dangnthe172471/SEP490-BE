@@ -14,5 +14,7 @@ namespace SEP490_BE.BLL.IServices
         Task<int?> GetProviderIdByUserIdAsync(int userId, CancellationToken ct = default);
 
         Task<List<ReadMedicineDto>> GetMineAsync(int userId, CancellationToken ct = default);
+        Task<PagedResult<ReadMedicineDto>> GetMinePagedAsync(
+        int userId, int pageNumber, int pageSize, CancellationToken ct = default);
     }
 }

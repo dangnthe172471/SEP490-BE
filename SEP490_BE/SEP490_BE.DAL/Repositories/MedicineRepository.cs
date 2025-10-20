@@ -101,5 +101,29 @@ namespace SEP490_BE.DAL.Repositories
                 .Select(p => (int?)p.ProviderId)
                 .FirstOrDefaultAsync(ct);
         }
+
+        public async Task<(List<Medicine> Items, int TotalCount)> GetByProviderIdPagedAsync(
+            int providerId, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+
+            var baseQuery = _dbContext.Medicines
+                .Where(m => m.ProviderId == providerId)
+                .Include(m => m.Provider)
+                    .ThenInclude(p => p.User)
+                .AsNoTracking();
+
+            var totalCount = await baseQuery.CountAsync(ct);
+
+            var items = await baseQuery
+                .OrderByDescending(m => m.MedicineId)          // sắp xếp mặc định (có thể đổi theo nhu cầu)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return (items, totalCount);
+        }
+
     }
 }
