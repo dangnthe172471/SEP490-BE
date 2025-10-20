@@ -13,6 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+    });
+
 
 // Add CORS
 builder.Services.AddCors();
@@ -60,11 +66,18 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+
+builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+builder.Services.AddScoped<IManagerService, ManagerService>();
+builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IDoctorShiftRepository, DoctorShiftRepository>();
+
 builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
 builder.Services.AddScoped<ITestTypeService, TestTypeService>();
 
-builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
-builder.Services.AddScoped<IMedicineService, MedicineService>();
+builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+builder.Services.AddScoped<IRoomService, RoomService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
