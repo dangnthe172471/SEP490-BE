@@ -83,9 +83,10 @@ namespace SEP490_BE.DAL.Repositories
             if (medicine == null)
                 throw new KeyNotFoundException($"Medicine with ID {medicineId} not found.");
 
-            medicine.Status = "Inactive";
+            medicine.Status = "Stopped";
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
+
 
         public async Task<PharmacyProvider?> GetByUserIdAsync(int userId, CancellationToken ct = default)
         {
@@ -103,7 +104,7 @@ namespace SEP490_BE.DAL.Repositories
         }
 
         public async Task<(List<Medicine> Items, int TotalCount)> GetByProviderIdPagedAsync(
-            int providerId, int pageNumber, int pageSize, CancellationToken ct = default)
+            int providerId, int pageNumber, int pageSize, string? status = null, string? sort = null, CancellationToken ct = default)
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 10;
@@ -114,16 +115,35 @@ namespace SEP490_BE.DAL.Repositories
                     .ThenInclude(p => p.User)
                 .AsNoTracking();
 
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                baseQuery = baseQuery.Where(m => m.Status != null && m.Status == status);
+            }
+
+            IOrderedQueryable<Medicine> ordered;
+            if (string.Equals(sort, "az", StringComparison.OrdinalIgnoreCase))
+            {
+                ordered = baseQuery.OrderBy(m => m.MedicineName);
+            }
+            else if (string.Equals(sort, "za", StringComparison.OrdinalIgnoreCase))
+            {
+                ordered = baseQuery.OrderByDescending(m => m.MedicineName);
+            }
+            else
+            {
+                ordered = baseQuery.OrderByDescending(m => m.MedicineId);
+            }
+
             var totalCount = await baseQuery.CountAsync(ct);
 
-            var items = await baseQuery
-                .OrderByDescending(m => m.MedicineId)          // sắp xếp mặc định (có thể đổi theo nhu cầu)
+            var items = await ordered
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(ct);
 
             return (items, totalCount);
         }
+
 
     }
 }

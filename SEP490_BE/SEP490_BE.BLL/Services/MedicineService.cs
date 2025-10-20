@@ -121,19 +121,28 @@ namespace SEP490_BE.BLL.Services
         }
 
         public async Task<PagedResult<ReadMedicineDto>> GetMinePagedAsync(
-            int userId, int pageNumber, int pageSize, CancellationToken ct = default)
+            int userId, int pageNumber, int pageSize, string? status = null, string? sort = null, CancellationToken ct = default)
         {
-            // lấy providerId theo user
             var providerId = await _medicineRepository.GetProviderIdByUserIdAsync(userId, ct);
             if (!providerId.HasValue)
                 throw new InvalidOperationException("Người dùng hiện tại không phải là nhà cung cấp.");
 
-            // chặn pageSize quá lớn để bảo vệ hệ thống
             if (pageSize > 100) pageSize = 100;
             if (pageNumber < 1) pageNumber = 1;
 
+            string? normStatus = status?.Trim();
+            if (!string.IsNullOrEmpty(normStatus))
+            {
+                normStatus = normStatus.Equals("providing", StringComparison.OrdinalIgnoreCase) ? "Providing"
+                           : normStatus.Equals("stopped", StringComparison.OrdinalIgnoreCase) ? "Stopped"
+                           : null;
+            }
+
+            string? normSort = sort?.Trim().ToLowerInvariant();
+            if (normSort != "az" && normSort != "za") normSort = null;
+
             var (items, totalCount) = await _medicineRepository
-                .GetByProviderIdPagedAsync(providerId.Value, pageNumber, pageSize, ct);
+                .GetByProviderIdPagedAsync(providerId.Value, pageNumber, pageSize, normStatus, normSort, ct);
 
             var mapped = items.Select(m => new ReadMedicineDto
             {
@@ -153,5 +162,6 @@ namespace SEP490_BE.BLL.Services
                 TotalCount = totalCount
             };
         }
+
     }
 }
