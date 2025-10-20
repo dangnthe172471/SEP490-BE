@@ -1,20 +1,29 @@
 using Microsoft.EntityFrameworkCore;
+using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
-using SEP490_BE.DAL.DTOs;
+using System;
 
 namespace SEP490_BE.DAL.Repositories
 {
 	public class UserRepository : IUserRepository
 	{
-		private readonly DiamondHealthContext _dbContext;
+        private readonly DiamondHealthContext _dbContext;
 
 		public UserRepository(DiamondHealthContext dbContext)
 		{
 			_dbContext = dbContext;
 		}
 
-		public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
+ 
+
+        public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
+        {
+            return await _dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+        }
+        public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default)
 		{
 			return await _dbContext.Users
 				.Include(u => u.Role)

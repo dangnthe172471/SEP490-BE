@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -66,7 +66,17 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+// ...
 
+// THÊM DÒNG NÀY để đăng ký IResetTokenService với lớp triển khai ResetTokenService
+builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
+
+
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
+builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
 builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddScoped<IShiftRepository, ShiftRepository>();

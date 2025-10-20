@@ -13,5 +13,7 @@ namespace SEP490_BE.DAL.IRepositories
         Task DeleteAsync(int userId, CancellationToken cancellationToken = default);
         Task<int> GetMaxPatientIdAsync(CancellationToken cancellationToken = default);
         Task<(List<User> Users, int TotalCount)> SearchUsersAsync(SearchUserRequest request, CancellationToken cancellationToken = default);
-	}
+
+        Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken);
+    }
 }

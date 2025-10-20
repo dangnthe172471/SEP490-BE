@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -14,15 +17,19 @@ namespace SEP490_BE.API.Controllers
 	public class AuthController : ControllerBase
 	{
 		private readonly IUserService _userService;
-		private readonly IOtpService _otpService;
 		private readonly IConfiguration _configuration;
+        private readonly IUserRepository _userRepository;
+        private readonly IResetTokenService _resetTokenService;
+        private readonly IEmailService _emailService;
 
-		public AuthController(IUserService userService, IOtpService otpService, IConfiguration configuration)
+        public AuthController(IUserService userService, IConfiguration configuration, IUserRepository userRepository, IResetTokenService resetTokenService, IEmailService emailService)
 		{
 			_userService = userService;
-			_otpService = otpService;
 			_configuration = configuration;
-		}
+            _userRepository = userRepository;
+            _resetTokenService = resetTokenService;
+            _emailService = emailService;
+        }
 
 		[HttpPost("login")]
     		public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
@@ -95,84 +102,44 @@ namespace SEP490_BE.API.Controllers
 		}
 
 		[HttpPost("forgot-password")]
-		public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
-		{
-			try
-			{
-				// Check if user exists
-				var user = await _userService.GetUserByPhoneAsync(request.Phone, cancellationToken);
-				if (user == null)
-				{
-					return BadRequest(new { message = "Số điện thoại không tồn tại trong hệ thống" });
-				}
+        public async Task<IActionResult> ForgotPasswordByEmail([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+                return BadRequest(new { message = "Vui lòng nhập email." });
 
-				// Generate and send OTP
-				await _otpService.GenerateOtpAsync(request.Phone, "forgot_password", cancellationToken);
+            var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+            if (user == null)
+                return Ok(new { message = "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi." });
 
-				return Ok(new { message = "Mã OTP đã được gửi đến số điện thoại của bạn" });
-			}
-			catch (Exception)
-			{
-				return StatusCode(500, new { message = "Có lỗi xảy ra khi gửi mã OTP" });
-			}
-		}
+            // Sinh mã OTP
+            var otpCode = new Random().Next(100000, 999999).ToString();
 
-		[HttpPost("verify-otp")]
-		public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
-		{
-			try
-			{
-				var isValid = await _otpService.VerifyOtpAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
-				
-				if (!isValid)
-				{
-					return BadRequest(new { message = "Mã OTP không đúng hoặc đã hết hạn" });
-				}
+            // Lưu mã OTP tạm (hoặc dùng Redis/Database)
+            await _resetTokenService.StoreOtpAsync(request.Email, otpCode, TimeSpan.FromMinutes(5));
 
-				return Ok(new { message = "Mã OTP hợp lệ" });
-			}
-			catch (Exception)
-			{
-				return StatusCode(500, new { message = "Có lỗi xảy ra khi xác thực mã OTP" });
-			}
-		}
+            // Gửi email
+            string subject = "Xác thực đặt lại mật khẩu";
+            string body = $@"
+        <h3>Xin chào {user.FullName},</h3>
+        <p>Mã OTP để đặt lại mật khẩu của bạn là:</p>
+        <h2 style='color:#007bff'>{otpCode}</h2>
+        <p>Mã này sẽ hết hạn sau 5 phút.</p>";
 
-		[HttpPost("reset-password")]
-		public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
-		{
-			try
-			{
-				// Verify OTP first
-				var isOtpValid = await _otpService.IsOtpValidAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
-				if (!isOtpValid)
-				{
-					return BadRequest(new { message = "Mã OTP không đúng hoặc đã hết hạn" });
-				}
+            await _emailService.SendEmailAsync(request.Email, subject, body, cancellationToken);
 
-				// Get user
-				var user = await _userService.GetUserByPhoneAsync(request.Phone, cancellationToken);
-				if (user == null)
-				{
-					return BadRequest(new { message = "Số điện thoại không tồn tại trong hệ thống" });
-				}
+            return Ok(new { message = "OTP đã được gửi qua email." });
+        }
 
-				// Update password
-				var success = await _userService.UpdatePasswordAsync(user.UserId, request.NewPassword, cancellationToken);
-				if (!success)
-				{
-					return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật mật khẩu" });
-				}
+        [HttpPost("verify-email-otp")]
+        public async Task<IActionResult> VerifyEmailOtp([FromBody] VerifyOtpRequest request)
+        {
+            var isValid = await _resetTokenService.ValidateOtpAsync(request.Email, request.OtpCode);
+            if (!isValid)
+                return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn." });
 
-				// Mark OTP as used
-				await _otpService.VerifyOtpAsync(request.Phone, request.OtpCode, "forgot_password", cancellationToken);
-
-				return Ok(new { message = "Mật khẩu đã được cập nhật thành công" });
-			}
-			catch (Exception)
-			{
-				return StatusCode(500, new { message = "Có lỗi xảy ra khi đặt lại mật khẩu" });
-			}
-		}
+            var resetToken = await _resetTokenService.GenerateAndStoreTokenAsync(request.Email);
+            return Ok(new { message = "Xác thực thành công.", resetToken });
+        }
 
         private string GenerateJwtToken(int userId, string subject, string role)
 		{
@@ -198,5 +165,20 @@ namespace SEP490_BE.API.Controllers
 
 			return new JwtSecurityTokenHandler().WriteToken(token);
 		}
-	}
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
+        {
+            bool isValid = await _resetTokenService.ValidateTokenAsync(request.Email, request.Token);
+            if (!isValid)
+                return BadRequest(new { message = "Token không hợp lệ hoặc đã hết hạn." });
+
+            bool success = await _userService.ResetPasswordAsync(request.Email, request.NewPassword, cancellationToken);
+            if (!success)
+                return BadRequest(new { message = "Không tìm thấy người dùng hoặc cập nhật thất bại." });
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công." });
+        }
+
+    }
 }

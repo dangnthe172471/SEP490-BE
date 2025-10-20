@@ -17,5 +17,11 @@ namespace SEP490_BE.BLL.IServices
         Task<bool> ToggleUserStatusAsync(int userId, CancellationToken cancellationToken = default);
         Task<bool> UpdatePasswordAsync(int userId, string newPassword, CancellationToken cancellationToken = default);
         Task<SearchUserResponse> SearchUsersAsync(SearchUserRequest request, CancellationToken cancellationToken = default);
-	}
+
+        Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default);
+        Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default);
+
+        Task<bool> ResetPasswordAsync(string email, string newPassword, CancellationToken cancellationToken = default);
+
+    }
 }

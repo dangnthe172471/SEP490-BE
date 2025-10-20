@@ -443,5 +443,43 @@ namespace SEP490_BE.BLL.Services
                 PageSize = request.PageSize
             };
         }
-	}
+        private static readonly Dictionary<string, (string Token, DateTime Expiry)> _resetTokens = new();
+        public async Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
+            if (user == null) return null;
+
+            var token = Guid.NewGuid().ToString("N");
+            _resetTokens[email] = (token, DateTime.UtcNow.AddMinutes(10));
+            return token;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default)
+        {
+            if (!_resetTokens.ContainsKey(email)) return false;
+
+            var (storedToken, expiry) = _resetTokens[email];
+            if (storedToken != token || DateTime.UtcNow > expiry)
+                return false;
+
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
+            if (user == null) return false;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _userRepository.UpdateAsync(user, cancellationToken);
+
+            _resetTokens.Remove(email);
+            return true;
+        }
+        public async Task<bool> ResetPasswordAsync(string email, string newPassword, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
+            if (user == null) return false;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _userRepository.UpdateAsync(user, cancellationToken);
+
+            return true;
+        }
+    }
 }
