@@ -20,6 +20,7 @@ CREATE TABLE [User] (
     DOB DATE,
     Gender NVARCHAR(10),
     RoleID INT NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
     FOREIGN KEY (RoleID) REFERENCES [Role](RoleID)
 );
 
