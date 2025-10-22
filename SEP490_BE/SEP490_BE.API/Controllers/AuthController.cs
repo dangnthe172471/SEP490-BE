@@ -149,11 +149,11 @@ namespace SEP490_BE.API.Controllers
 
 			var claims = new List<Claim>
 			{
-                new Claim(JwtRegisteredClaimNames.Sub, subject),
-                new Claim(ClaimTypes.Name, subject),
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-				new Claim(ClaimTypes.Role, role)
-			};
+                new Claim(JwtRegisteredClaimNames.Sub, subject ?? string.Empty), 
+				new Claim(ClaimTypes.Name,             subject ?? string.Empty),
+				new Claim(ClaimTypes.NameIdentifier,   userId.ToString()),
+				new Claim(ClaimTypes.Role,             role ?? string.Empty)
+            };
 
 			var token = new JwtSecurityToken(
 				issuer: jwtSection["Issuer"],
