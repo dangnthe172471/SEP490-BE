@@ -94,6 +94,33 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
             throw new UnauthorizedAccessException(errorMessage);
         }
 
+        /// <summary>
+        /// Lấy ReceptionistId từ JWT token (dành riêng cho Receptionist)
+        /// </summary>
+        private async Task<int> GetReceptionistIdFromTokenAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                int userId = GetUserIdFromToken();
+                Console.WriteLine($"[DEBUG] Getting ReceptionistId for UserId: {userId}");
+
+                // Tìm receptionist theo userId
+                var receptionist = await _appointmentService.GetReceptionistByUserIdAsync(userId, cancellationToken);
+                if (receptionist == null)
+                {
+                    throw new UnauthorizedAccessException($"Receptionist not found for UserId: {userId}");
+                }
+
+                Console.WriteLine($"[DEBUG] ✅ Found ReceptionistId: {receptionist.ReceptionistId} for UserId: {userId}");
+                return receptionist.ReceptionistId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to get ReceptionistId: {ex.Message}");
+                throw new UnauthorizedAccessException($"Cannot get ReceptionistId: {ex.Message}");
+            }
+        }
+
         #endregion
 
         #region Debug Endpoints
@@ -138,6 +165,56 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
                     userId = userId,
                     user = new { user.UserId, user.Phone, user.FullName, user.Email },
                     patient = new { patient.PatientId, patient.UserId },
+                    claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message, stackTrace = ex.StackTrace });
+            }
+        }
+
+        // GET: api/appointments/debug/receptionist-info
+        [HttpGet("debug/receptionist-info")]
+        [Authorize(Roles = "Receptionist")]
+        public async Task<ActionResult> DebugReceptionistInfo(CancellationToken cancellationToken)
+        {
+            try
+            {
+                int userId = GetUserIdFromToken();
+                Console.WriteLine($"[DEBUG] Getting receptionist info for UserId: {userId}");
+
+                // Debug: Kiểm tra User trong database
+                var user = await _appointmentRepository.GetUserByIdAsync(userId);
+                if (user == null)
+                {
+                    return Ok(new
+                    {
+                        message = "User not found",
+                        userId = userId,
+                        claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+                    });
+                }
+
+                // Debug: Kiểm tra Receptionist
+                var receptionist = await _appointmentService.GetReceptionistByUserIdAsync(userId, cancellationToken);
+                if (receptionist == null)
+                {
+                    return Ok(new
+                    {
+                        message = "Receptionist not found for User",
+                        userId = userId,
+                        user = new { user.UserId, user.Phone, user.FullName, user.Email },
+                        claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
+                    });
+                }
+
+                return Ok(new
+                {
+                    message = "Success",
+                    userId = userId,
+                    user = new { user.UserId, user.Phone, user.FullName, user.Email },
+                    receptionist = new { receptionist.ReceptionistId, receptionist.UserId },
                     claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList()
                 });
             }
@@ -206,13 +283,32 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
         {
             try
             {
-                int receptionistId = GetUserIdFromToken();
+                Console.WriteLine($"[DEBUG] === Creating Appointment by Receptionist ===");
+                Console.WriteLine($"[DEBUG] Request data: PatientId={request.PatientId}, DoctorId={request.DoctorId}, AppointmentDate={request.AppointmentDate}, ReasonForVisit={request.ReasonForVisit}");
+
+                // Sử dụng method mới để lấy ReceptionistId
+                int receptionistId = await GetReceptionistIdFromTokenAsync(cancellationToken);
+                Console.WriteLine($"[DEBUG] Using ReceptionistId: {receptionistId}");
+
                 var id = await _appointmentService.CreateAppointmentByReceptionistAsync(request, receptionistId, cancellationToken);
+                Console.WriteLine($"[DEBUG] ✅ Created appointment with ID: {id}");
+
                 return CreatedAtAction(nameof(GetById), new { id }, new { appointmentId = id });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.WriteLine($"[ERROR] Unauthorized: {ex.Message}");
+                return Unauthorized(new { message = ex.Message });
             }
             catch (ArgumentException ex)
             {
+                Console.WriteLine($"[ERROR] Argument error: {ex.Message}");
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Unexpected error: {ex.Message}");
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
             }
         }
 
@@ -363,7 +459,7 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
                 }
 
                 // Find receptionist by userId
-                var receptionist = await _appointmentService.GetReceptionistByIdAsync(userId, cancellationToken);
+                var receptionist = await _appointmentService.GetReceptionistByUserIdAsync(userId, cancellationToken);
                 if (receptionist == null)
                 {
                     return NotFound(new { message = "Receptionist not found." });
@@ -445,6 +541,20 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
             if (patient == null)
             {
                 return NotFound(new { message = "Patient not found." });
+            }
+
+            return Ok(patient);
+        }
+
+        // GET: api/appointments/patients/user/{userId}
+        [HttpGet("patients/user/{userId}")]
+        [Authorize(Roles = "Doctor,Receptionist,Clinic Manager")]
+        public async Task<ActionResult<PatientInfoDto>> GetPatientByUserId(int userId, CancellationToken cancellationToken)
+        {
+            var patient = await _appointmentService.GetPatientInfoByUserIdAsync(userId, cancellationToken);
+            if (patient == null)
+            {
+                return NotFound(new { message = "Patient not found for this user." });
             }
 
             return Ok(patient);

@@ -463,6 +463,12 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             return receptionist != null ? MapToReceptionistDto(receptionist) : null;
         }
 
+        public async Task<ReceptionistInfoDto?> GetReceptionistByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            var receptionist = await _appointmentRepository.GetReceptionistByUserIdAsync(userId, cancellationToken);
+            return receptionist != null ? MapToReceptionistDto(receptionist) : null;
+        }
+
         #endregion
 
         #region Debug Methods

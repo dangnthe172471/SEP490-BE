@@ -36,6 +36,7 @@ namespace SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment
 
         #region Receptionist Methods
         Task<ReceptionistInfoDto?> GetReceptionistByIdAsync(int receptionistId, CancellationToken cancellationToken = default);
+        Task<ReceptionistInfoDto?> GetReceptionistByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         #endregion
 
         #region Debug Methods
