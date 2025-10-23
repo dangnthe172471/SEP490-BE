@@ -30,6 +30,14 @@ namespace SEP490_BE.DAL.Repositories
 				.AsNoTracking()
 				.ToListAsync(cancellationToken);
 		}
+        public async Task<List<User>> GetAllPatientsAsync(CancellationToken cancellationToken = default)
+		{
+			return await _dbContext.Users
+                .Where(u => u.Role.RoleName == "Patient") // chỉ lấy bệnh nhân
+                .Include(u => u.Role)
+				.AsNoTracking()
+				.ToListAsync(cancellationToken);
+		}
 
         public async Task<User?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default)
 		{
