@@ -12,53 +12,55 @@ namespace SEP490_BE.API.Controllers
     public class MedicineController : ControllerBase
     {
         private readonly IMedicineService _medicineService;
+        private const string ProviderRole = "Pharmacy Provider";
 
         public MedicineController(IMedicineService medicineService)
         {
             _medicineService = medicineService;
         }
 
+        private static int RequireUserId(ClaimsPrincipal user)
+        {
+            var raw = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(raw, out var id)) return id;
+            throw new UnauthorizedAccessException("Không xác định được UserId từ token.");
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-        {
-            var medicines = await _medicineService.GetAllAsync(cancellationToken);
-            return Ok(medicines);
-        }
+            => Ok(await _medicineService.GetAllAsync(cancellationToken));
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
         {
             var medicine = await _medicineService.GetByIdAsync(id, cancellationToken);
-            if (medicine == null)
-                return NotFound(new { message = $"Medicine with ID {id} not found." });
-
-            return Ok(medicine);
+            return medicine is null
+                ? NotFound(new { message = $"Medicine with ID {id} not found." })
+                : Ok(medicine);
         }
 
         [HttpGet("provider/{providerId:int}")]
         public async Task<IActionResult> GetByProviderId(int providerId, CancellationToken cancellationToken)
-        {
-            var medicines = await _medicineService.GetByProviderIdAsync(providerId, cancellationToken);
-            return Ok(medicines);
-        }
+            => Ok(await _medicineService.GetByProviderIdAsync(providerId, cancellationToken));
 
-        [Authorize(Roles = "Pharmacy Provider")]
+        [Authorize(Roles = ProviderRole)]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMedicineDto dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var userId = ResolveUserIdFromClaims(User.Claims);
-            if (userId is null)
-                return Unauthorized("Không thể xác định UserId từ token (thiếu/không hợp lệ claim nameidentifier).");
-
-            var providerId = await _medicineService.GetProviderIdByUserIdAsync(userId.Value, ct);
-            if (!providerId.HasValue)
-                return Conflict(new { message = $"Không tìm thấy PharmacyProvider cho UserID={userId.Value}. Hãy kiểm tra bảng PharmacyProvider và connection string." });
+            int userId;
+            try { userId = RequireUserId(User); }
+            catch (UnauthorizedAccessException) { return Unauthorized("Thiếu/không hợp lệ claim NameIdentifier."); }
 
             try
             {
+                var providerId = await _medicineService.GetProviderIdByUserIdAsync(userId, ct);
+                if (!providerId.HasValue) return Forbid();
+
+                if (string.IsNullOrWhiteSpace(dto.Status)) dto.Status = "Providing";
+                if (dto.Status.Equals("Available", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
+
                 await _medicineService.CreateAsync(dto, providerId.Value, ct);
                 return Ok(new { message = "Medicine added successfully." });
             }
@@ -68,39 +70,21 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
-        private static int? ResolveUserIdFromClaims(IEnumerable<Claim> claims)
-        {
-            var raw =
-                claims.FirstOrDefault(c => c.Type == "user_id")?.Value
-                ?? claims.FirstOrDefault(c => c.Type == "sub")?.Value
-                ?? claims.FirstOrDefault(c => c.Type == "sid")?.Value
-                ?? claims.FirstOrDefault(c => c.Type == "uid")?.Value
-                ?? claims.FirstOrDefault(c =>
-                       c.Type == ClaimTypes.NameIdentifier
-                    || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
-                   ?.Value;
-
-            return int.TryParse(raw, out var id) ? id : (int?)null;
-        }
-
-
-
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateMedicineDto dto, CancellationToken cancellationToken)
         {
             try
             {
+                if (!string.IsNullOrWhiteSpace(dto.Status))
+                {
+                    if (dto.Status.Equals("Available", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
+                }
+
                 await _medicineService.UpdateAsync(id, dto, cancellationToken);
                 return Ok(new { message = "Medicine updated successfully." });
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
         }
 
         [HttpDelete("{id:int}")]
@@ -111,36 +95,35 @@ namespace SEP490_BE.API.Controllers
                 await _medicineService.SoftDeleteAsync(id, cancellationToken);
                 return Ok(new { message = "Medicine changed status successfully." });
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         }
 
-        [Authorize(Roles = "Pharmacy Provider")]
+        [Authorize(Roles = ProviderRole)]
         [HttpGet("mine")]
         public async Task<IActionResult> GetMine(
-                [FromQuery] int pageNumber = 1,
-                [FromQuery] int pageSize = 10,
-                [FromQuery] string? status = null,
-                [FromQuery] string? sort = null,
-                CancellationToken ct = default)
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? status = null,
+            [FromQuery] string? sort = null,
+            CancellationToken ct = default)
         {
-            var userId = ResolveUserIdFromClaims(User.Claims);
-            if (userId is null)
-                return Unauthorized("Không thể xác định UserId từ token (thiếu/không hợp lệ claim nameidentifier).");
+            int userId;
+            try { userId = RequireUserId(User); }
+            catch (UnauthorizedAccessException) { return Unauthorized("Thiếu/không hợp lệ claim NameIdentifier."); }
 
             try
             {
-                var result = await _medicineService.GetMinePagedAsync(
-                    userId.Value, pageNumber, pageSize, status, sort, ct);
+                var result = await _medicineService.GetMinePagedAsync(userId, pageNumber, pageSize, status, sort, ct);
                 return Ok(result);
             }
-            catch (InvalidOperationException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Conflict(new { message = ex.Message });
+                return Forbid();
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("không phải là nhà cung cấp", StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
             }
         }
-
     }
 }
