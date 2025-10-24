@@ -24,4 +24,39 @@ public class DailyWorkScheduleDto
     public DateOnly Date { get; set; }
     public List<WorkScheduleDto> Shifts { get; set; } = new List<WorkScheduleDto>();
 }
+// Cập nhật lịch theo ngày
+public class UpdateWorkScheduleByDateRequest
+{
+    public DateOnly Date { get; set; }
+    public List<int> AddDoctorIds { get; set; } = new(); 
+    public List<int> RemoveDoctorIds { get; set; } = new(); 
+    public int ShiftId { get; set; } 
+}
+
+// Cập nhật lịch theo ID (DoctorShiftId)
+public class UpdateWorkScheduleByIdRequest
+{
+    public int DoctorShiftId { get; set; }
+    public int? NewDoctorId { get; set; }
+    public int? NewShiftId { get; set; }
+    public DateOnly? NewEffectiveFrom { get; set; }
+    public DateOnly? NewEffectiveTo { get; set; }
+    public string? Status { get; set; }
+}
+
+public class ShiftResponseDto
+{
+    public int ShiftID { get; set; }
+    public string ShiftType { get; set; } = string.Empty;
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public List<DoctorDTO> Doctors { get; set; } = new();
+}
+
+
+public class DailyWorkScheduleViewDto
+{
+    public DateOnly Date { get; set; }
+    public List<ShiftResponseDto> Shifts { get; set; } = new();
+}
 

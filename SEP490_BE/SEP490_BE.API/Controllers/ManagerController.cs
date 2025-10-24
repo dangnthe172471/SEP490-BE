@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.MedicineDTO;
 
 namespace SEP490_BE.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    //[Authorize(Roles = "Clinic Manager")]
     public class ManagerController : ControllerBase
     {
         private readonly IManagerService _service;
@@ -77,6 +80,59 @@ namespace SEP490_BE.API.Controllers
                 x.Status
             });
             return Ok(result);
+        }
+
+        [HttpGet("allSchedules")]
+        public async Task<ActionResult<PagedResult<WorkScheduleDto>>> GetAllSchedule(
+         [FromQuery] int pageNumber = 1,
+         [FromQuery] int pageSize = 10)
+        {
+            var result = await _service.GetAllSchedulesAsync(pageNumber, pageSize);
+            return Ok(result);
+        }
+
+        // xem lịch  theo range
+        [HttpGet("getScheduleByRange")]
+        public async Task<ActionResult<List<DailyWorkScheduleViewDto>>> GetByRange(
+     [FromQuery] DateOnly start,
+     [FromQuery] DateOnly end)
+        {
+            var result = await _service.GetWorkScheduleByDateRangeAsync(start, end);
+            return Ok(result);
+        }
+
+        // xem lịch  theo ngày
+        [HttpGet("getScheduleByDate")]
+        public async Task<ActionResult<PagedResult<DailyWorkScheduleDto>>> GetByDate(
+           [FromQuery] DateOnly? date,
+           [FromQuery] int pageNumber = 1,
+           [FromQuery] int pageSize = 10)
+        {
+            var result = await _service.GetWorkSchedulesByDateAsync(date, pageNumber, pageSize);
+            return Ok(result);
+        }
+
+        //  Thêm / xóa bác sĩ  của lịch theo ngày
+        [HttpPut("updateScheduleByDate")]
+        public async Task<IActionResult> UpdateByDate([FromBody] UpdateWorkScheduleByDateRequest request)
+        {
+            try
+            {
+                await _service.UpdateWorkScheduleByDateAsync(request);
+                return Ok(new { message = "Cập nhật lịch theo ngày thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // Cập nhật lịch theo ID lịch (DoctorShiftId)
+        [HttpPut("updateScheduleByScheduleId")]
+        public async Task<IActionResult> UpdateById([FromBody] UpdateWorkScheduleByIdRequest request)
+        {
+            await _service.UpdateWorkScheduleByIdAsync(request);
+            return Ok(new { message = "Cập nhật lịch thành công!" });
         }
     }
 }
