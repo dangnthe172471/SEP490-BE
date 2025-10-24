@@ -3,10 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.Repositories;
+using SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment;
 using System.Security.Claims;
 using System.Text;
 
@@ -75,7 +79,7 @@ builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 
 
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailServiceApp, EmailServiceApp>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
@@ -92,6 +96,15 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
+
+// Doctor Shift Exchange DI
+builder.Services.AddScoped<IDoctorShiftExchangeRepository, DoctorShiftExchangeRepository>();
+builder.Services.AddScoped<IDoctorShiftExchangeService, DoctorShiftExchangeService>();
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
+builder.Services.AddScoped<IAppointmentDoctorRepository, AppointmentDoctorRepository>();
+builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");

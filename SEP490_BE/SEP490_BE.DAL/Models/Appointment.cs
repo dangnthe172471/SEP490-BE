@@ -21,6 +21,8 @@ public partial class Appointment
 
     public DateTime? CreatedAt { get; set; }
 
+    public string? ReasonForVisit { get; set; }
+
     public virtual Doctor Doctor { get; set; } = null!;
 
     public virtual ICollection<MedicalRecord> MedicalRecords { get; set; } = new List<MedicalRecord>();

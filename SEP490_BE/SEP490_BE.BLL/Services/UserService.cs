@@ -6,35 +6,41 @@ using System.Linq;
 
 namespace SEP490_BE.BLL.Services
 {
-	public class UserService : IUserService
-	{
-		private readonly IUserRepository _userRepository;
+    public class UserService : IUserService
+    {
+        private readonly IUserRepository _userRepository;
 
-		public UserService(IUserRepository userRepository)
-		{
-			_userRepository = userRepository;
-		}
+        public UserService(IUserRepository userRepository)
+        {
+            _userRepository = userRepository;
+        }
 
-		public async Task<IEnumerable<UserDto>> GetAllAsync(CancellationToken cancellationToken = default)
-		{
-			var users = await _userRepository.GetAllAsync(cancellationToken);
-			return users.Select(u => new UserDto
-			{
-				UserId = u.UserId,
-				Phone = u.Phone,
-				FullName = u.FullName,
-				Email = u.Email,
-				Role = u.Role?.RoleName,
-				Gender = u.Gender,
-				Dob = u.Dob,
-				IsActive = u.IsActive
-			});
-		}
+        public async Task<IEnumerable<UserDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            var users = await _userRepository.GetAllAsync(cancellationToken);
+            return users.Select(u => new UserDto
+            {
+                UserId = u.UserId,
+                Phone = u.Phone,
+                FullName = u.FullName,
+                Email = u.Email,
+                Role = u.Role?.RoleName,
+                Gender = u.Gender,
+                Dob = u.Dob,
+                IsActive = u.IsActive
+            });
+        }
 
         public async Task<UserDto?> ValidateUserAsync(string phone, string password, CancellationToken cancellationToken = default)
-		{
+        {
             var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
 			if (user == null)
+			{
+				return null;
+			}
+
+			// Check if user is active
+			if (!user.IsActive)
 			{
 				return null;
 			}
@@ -53,72 +59,73 @@ namespace SEP490_BE.BLL.Services
 				Email = user.Email,
 				Role = user.Role?.RoleName,
 				Gender = user.Gender,
-				Dob = user.Dob
+				Dob = user.Dob,
+				IsActive = user.IsActive
 			};
 		}
 
         public async Task<int> RegisterAsync(string phone, string password, string fullName, string? email, DateOnly? dob, string? gender, int roleId, CancellationToken cancellationToken = default)
-		{
-            var existing = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
-			if (existing != null)
-			{
-                throw new InvalidOperationException("Phone already exists.");
-			}
-
-			var hashed = BCrypt.Net.BCrypt.HashPassword(password);
-			var user = new User
-			{
-				PasswordHash = hashed,
-				FullName = fullName,
-				Email = email,
-				Phone = phone,
-				Dob = dob,
-				Gender = gender,
-				RoleId = roleId
-			};
-
-			// Create Patient record if user is registering as a patient
-			if (roleId == 2) // Patient role
-			{
-				user.Patient = new SEP490_BE.DAL.Models.Patient
-				{
-					UserId = 0 // Will be set after user is saved
-				};
-			}
-
-			await _userRepository.AddAsync(user, cancellationToken);
-			return user.UserId;
-		}
-
-        public async Task<UserDto?> GetUserByPhoneAsync(string phone, CancellationToken cancellationToken = default)
-		{
-            var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
-			if (user == null)
-			{
-				return null;
-			}
-
-			var userDto = new UserDto
-			{
-				UserId = user.UserId,
-				Phone = user.Phone,
-				FullName = user.FullName,
-				Email = user.Email,
-				Role = user.Role?.RoleName,
-				Gender = user.Gender,
-				Dob = user.Dob
-			};
-
-        // If user is a patient, include patient-specific information
-        if (user.Role?.RoleName == "Patient" && user.Patient != null)
         {
-            var patient = user.Patient;
-            userDto.Allergies = patient.Allergies;
-            userDto.MedicalHistory = patient.MedicalHistory;
+            var existing = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
+            if (existing != null)
+            {
+                throw new InvalidOperationException("Phone already exists.");
+            }
+
+            var hashed = BCrypt.Net.BCrypt.HashPassword(password);
+            var user = new User
+            {
+                PasswordHash = hashed,
+                FullName = fullName,
+                Email = email,
+                Phone = phone,
+                Dob = dob,
+                Gender = gender,
+                RoleId = roleId
+            };
+
+            // Create Patient record if user is registering as a patient
+            if (roleId == 2) // Patient role
+            {
+                user.Patient = new SEP490_BE.DAL.Models.Patient
+                {
+                    UserId = 0 // Will be set after user is saved
+                };
+            }
+
+            await _userRepository.AddAsync(user, cancellationToken);
+            return user.UserId;
         }
 
-			return userDto;
-		}
+        public async Task<UserDto?> GetUserByPhoneAsync(string phone, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
+            if (user == null)
+            {
+                return null;
+            }
+
+            var userDto = new UserDto
+            {
+                UserId = user.UserId,
+                Phone = user.Phone,
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role?.RoleName,
+                Gender = user.Gender,
+                Dob = user.Dob
+            };
+
+            // If user is a patient, include patient-specific information
+            if (user.Role?.RoleName == "Patient" && user.Patient != null)
+            {
+                var patient = user.Patient;
+                userDto.Allergies = patient.Allergies;
+                userDto.MedicalHistory = patient.MedicalHistory;
+            }
+
+            return userDto;
+        }
 
         public async Task<UserDto?> UpdateBasicInfoAsync(int userId, UpdateBasicInfoRequest request, CancellationToken cancellationToken = default)
         {
@@ -420,7 +427,7 @@ namespace SEP490_BE.BLL.Services
         public async Task<SearchUserResponse> SearchUsersAsync(SearchUserRequest request, CancellationToken cancellationToken = default)
         {
             var (users, totalCount) = await _userRepository.SearchUsersAsync(request, cancellationToken);
-            
+
             var userDtos = users.Select(u => new UserDto
             {
                 UserId = u.UserId,
@@ -480,6 +487,24 @@ namespace SEP490_BE.BLL.Services
             await _userRepository.UpdateAsync(user, cancellationToken);
 
             return true;
+        }
+
+        public async Task<IEnumerable<UserDto>> GetAllPatientsAsync(CancellationToken cancellationToken = default)
+        {
+            var patients = await _userRepository.GetAllPatientsAsync(cancellationToken);
+            return patients.Select(u => new UserDto
+            {
+                UserId = u.UserId,
+                Phone = u.Phone,
+                FullName = u.FullName,
+                Email = u.Email,
+                Role = u.Role?.RoleName,
+                Gender = u.Gender,
+                Dob = u.Dob,
+                IsActive = u.IsActive,
+                Allergies = u.Patient?.Allergies,
+                MedicalHistory = u.Patient?.MedicalHistory
+            });
         }
     }
 }
