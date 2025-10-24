@@ -12,6 +12,12 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DTOs\ManageReceptionist\ManageAppointment\" />
+    <Folder Include="IRepositories\ManageReceptionist\ManageAppointment\" />
+    <Folder Include="Repositories\ManageReceptionist\ManageAppointment\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
