@@ -7,13 +7,8 @@ namespace SEP490_BE.DAL.IRepositories
     {
         Task<int?> GetDoctorIdByUserIdAsync(int userId, CancellationToken ct);
 
-        Task<PagedResult<Appointment>> GetByDoctorIdAsync(
+        Task<List<Appointment>> GetByDoctorIdAsync(
             int doctorId,
-            DateTime? from,
-            DateTime? to,
-            string? status,
-            int pageNumber,
-            int pageSize,
             CancellationToken ct);
 
         Task<Appointment?> GetDetailForDoctorAsync(

@@ -14,38 +14,28 @@ namespace SEP490_BE.BLL.Services
             _repo = repo;
         }
 
-        public async Task<PagedResult<AppointmentListItemDto>> GetDoctorAppointmentsAsync(
+        public async Task<List<AppointmentListItemDto>> GetDoctorAppointmentsAsync(
             int userIdFromToken,
-            DateTime? from,
-            DateTime? to,
-            string? status,
-            int pageNumber,
-            int pageSize,
             CancellationToken ct)
         {
             var doctorId = await _repo.GetDoctorIdByUserIdAsync(userIdFromToken, ct);
             if (doctorId is null)
                 throw new InvalidOperationException("User hiện tại không phải là bác sĩ.");
 
-            var paged = await _repo.GetByDoctorIdAsync(
-                doctorId.Value, from, to, status, pageNumber, pageSize, ct);
+            var list = await _repo.GetByDoctorIdAsync(doctorId.Value, ct);
 
-            return new PagedResult<AppointmentListItemDto>
+            return list.Select(a => new AppointmentListItemDto
             {
-                Items = paged.Items.Select(a => new AppointmentListItemDto
-                {
-                    AppointmentId = a.AppointmentId,
-                    AppointmentDate = DateOnly.FromDateTime(a.AppointmentDate).ToString("yyyy-MM-dd"),
-                    Status = a.Status,
-                    PatientId = a.PatientId,
-                    PatientName = a.Patient.User.FullName,
-                    PatientPhone = a.Patient.User.Phone
-                }).ToList(),
-                PageNumber = paged.PageNumber,
-                PageSize = paged.PageSize,
-                TotalCount = paged.TotalCount
-            };
+                AppointmentId = a.AppointmentId,
+                AppointmentDate = a.AppointmentDate.ToString("dd/MM/yyyy"),
+                AppointmentTime = a.AppointmentDate.ToString("HH:mm"),
+                Status = a.Status,
+                PatientId = a.PatientId,
+                PatientName = a.Patient.User.FullName,
+                PatientPhone = a.Patient.User.Phone
+            }).ToList();
         }
+
 
         public async Task<AppointmentDetailDto?> GetDoctorAppointmentDetailAsync(
             int userIdFromToken,
@@ -62,9 +52,10 @@ namespace SEP490_BE.BLL.Services
             return new AppointmentDetailDto
             {
                 AppointmentId = a.AppointmentId,
-                AppointmentDate = a.AppointmentDate,
+                AppointmentDate = a.AppointmentDate.ToString("dd/MM/yyyy"),
+                AppointmentTime = a.AppointmentDate.ToString("HH:mm"),
                 Status = a.Status,
-                CreatedAt = a.CreatedAt,
+                CreatedAt = a.CreatedAt?.ToString("dd/MM/yyyy HH:mm"),
                 DoctorId = a.DoctorId,
                 DoctorName = a.Doctor.User.FullName,
                 DoctorSpecialty = a.Doctor.Specialty,
@@ -73,5 +64,6 @@ namespace SEP490_BE.BLL.Services
                 PatientPhone = a.Patient.User.Phone
             };
         }
+
     }
 }

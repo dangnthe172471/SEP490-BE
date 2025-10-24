@@ -19,22 +19,14 @@ namespace SEP490_BE.API.Controllers
 
         [Authorize(Roles = "Doctor")]
         [HttpGet("appointments")]
-        public async Task<IActionResult> GetMyAppointments(
-            [FromQuery] DateTime? from,
-            [FromQuery] DateTime? to,
-            [FromQuery] string? status,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            CancellationToken ct = default)
+        public async Task<IActionResult> GetMyAppointments(CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                            ?? User.FindFirstValue("sub");
             if (!int.TryParse(userIdStr, out var userId))
                 return Unauthorized(new { message = "Token không hợp lệ (thiếu UserId)." });
 
-            var result = await _service.GetDoctorAppointmentsAsync(
-                userId, from, to, status, pageNumber, pageSize, ct);
-
+            var result = await _service.GetDoctorAppointmentsAsync(userId, ct);
             return Ok(result);
         }
 

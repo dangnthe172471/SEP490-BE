@@ -5,13 +5,8 @@ namespace SEP490_BE.BLL.IServices
 {
     public interface IAppointmentService
     {
-        Task<PagedResult<AppointmentListItemDto>> GetDoctorAppointmentsAsync(
+        Task<List<AppointmentListItemDto>> GetDoctorAppointmentsAsync(
             int userIdFromToken,
-            DateTime? from,
-            DateTime? to,
-            string? status,
-            int pageNumber,
-            int pageSize,
             CancellationToken ct);
 
         Task<AppointmentDetailDto?> GetDoctorAppointmentDetailAsync(

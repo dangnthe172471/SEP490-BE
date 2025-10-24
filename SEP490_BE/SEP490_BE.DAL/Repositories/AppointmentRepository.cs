@@ -23,43 +23,16 @@ namespace SEP490_BE.DAL.Repositories
                 .FirstOrDefaultAsync(ct);
         }
 
-        public async Task<PagedResult<Appointment>> GetByDoctorIdAsync(
+        public async Task<List<Appointment>> GetByDoctorIdAsync(
             int doctorId,
-            DateTime? from,
-            DateTime? to,
-            string? status,
-            int pageNumber,
-            int pageSize,
             CancellationToken ct)
         {
-            if (pageNumber <= 0) pageNumber = 1;
-            if (pageSize <= 0) pageSize = 20;
-
-            var q = _ctx.Appointments
+            return await _ctx.Appointments
                 .AsNoTracking()
                 .Include(a => a.Patient).ThenInclude(p => p.User)
-                .Where(a => a.DoctorId == doctorId);
-
-            if (from.HasValue) q = q.Where(a => a.AppointmentDate >= from.Value);
-            if (to.HasValue) q = q.Where(a => a.AppointmentDate <= to.Value);
-            if (!string.IsNullOrWhiteSpace(status)) q = q.Where(a => a.Status == status);
-
-            q = q.OrderByDescending(a => a.AppointmentDate);
-
-            var total = await q.CountAsync(ct);
-
-            var items = await q
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
+                .Where(a => a.DoctorId == doctorId)
+                .OrderByDescending(a => a.AppointmentDate)
                 .ToListAsync(ct);
-
-            return new PagedResult<Appointment>
-            {
-                Items = items,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalCount = total
-            };
         }
 
         public async Task<Appointment?> GetDetailForDoctorAsync(
