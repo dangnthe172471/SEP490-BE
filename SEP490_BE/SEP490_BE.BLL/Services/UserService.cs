@@ -39,6 +39,12 @@ namespace SEP490_BE.BLL.Services
 				return null;
 			}
 
+			// Check if user is active
+			if (!user.IsActive)
+			{
+				return null;
+			}
+
 			var isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
 			if (!isValid)
 			{
@@ -53,7 +59,8 @@ namespace SEP490_BE.BLL.Services
 				Email = user.Email,
 				Role = user.Role?.RoleName,
 				Gender = user.Gender,
-				Dob = user.Dob
+				Dob = user.Dob,
+				IsActive = user.IsActive
 			};
 		}
 

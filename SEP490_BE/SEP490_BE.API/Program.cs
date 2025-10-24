@@ -93,6 +93,10 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 
+// Doctor Shift Exchange DI
+builder.Services.AddScoped<IDoctorShiftExchangeRepository, DoctorShiftExchangeRepository>();
+builder.Services.AddScoped<IDoctorShiftExchangeService, DoctorShiftExchangeService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
