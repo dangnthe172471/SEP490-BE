@@ -34,28 +34,35 @@ namespace SEP490_BE.BLL.Services
         public async Task<UserDto?> ValidateUserAsync(string phone, string password, CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);
-            if (user == null)
-            {
-                return null;
-            }
+			if (user == null)
+			{
+				return null;
+			}
 
-            var isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-            if (!isValid)
-            {
-                return null;
-            }
+			// Check if user is active
+			if (!user.IsActive)
+			{
+				return null;
+			}
 
-            return new UserDto
-            {
-                UserId = user.UserId,
-                Phone = user.Phone,
-                FullName = user.FullName,
-                Email = user.Email,
-                Role = user.Role?.RoleName,
-                Gender = user.Gender,
-                Dob = user.Dob
-            };
-        }
+			var isValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
+			if (!isValid)
+			{
+				return null;
+			}
+
+			return new UserDto
+			{
+				UserId = user.UserId,
+				Phone = user.Phone,
+				FullName = user.FullName,
+				Email = user.Email,
+				Role = user.Role?.RoleName,
+				Gender = user.Gender,
+				Dob = user.Dob,
+				IsActive = user.IsActive
+			};
+		}
 
         public async Task<int> RegisterAsync(string phone, string password, string fullName, string? email, DateOnly? dob, string? gender, int roleId, CancellationToken cancellationToken = default)
         {

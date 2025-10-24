@@ -34,6 +34,19 @@ namespace SEP490_BE.API.Controllers
 		[HttpPost("login")]
     		public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
 		{
+            // First check if user exists and is active
+            var userFromDb = await _userRepository.GetByPhoneAsync(request.Phone, cancellationToken);
+            if (userFromDb == null)
+            {
+                return Unauthorized(new { message = "Số điện thoại hoặc mật khẩu không đúng" });
+            }
+
+            if (!userFromDb.IsActive)
+            {
+                return Unauthorized(new { message = "Tài khoản của bạn hiện đang tạm khóa. Vui lòng liên hệ bộ phận hỗ trợ để được hỗ trợ." });
+            }
+
+            // Then validate credentials
             var user = await _userService.ValidateUserAsync(request.Phone, request.Password, cancellationToken);
 			if (user == null)
 			{
@@ -50,7 +63,8 @@ namespace SEP490_BE.API.Controllers
 					email = user.Email,
 					role = user.Role,
 					gender = user.Gender,
-					dob = user.Dob
+					dob = user.Dob,
+					isActive = user.IsActive
 				}
 			});
 		}

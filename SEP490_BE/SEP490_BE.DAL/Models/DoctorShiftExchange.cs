@@ -19,6 +19,8 @@ public partial class DoctorShiftExchange
 
     public string? Status { get; set; }
 
+    public string? SwapType { get; set; }
+
     public virtual Doctor Doctor1 { get; set; } = null!;
 
     public virtual DoctorShift Doctor1ShiftRef { get; set; } = null!;
