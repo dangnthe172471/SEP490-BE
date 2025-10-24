@@ -3,7 +3,7 @@ using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.DAL.IRepositories
 {
-    public interface IAppointmentRepository
+    public interface IAppointmentDoctorRepository
     {
         Task<int?> GetDoctorIdByUserIdAsync(int userId, CancellationToken ct);
 

@@ -5,11 +5,11 @@ using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.DAL.Repositories
 {
-    public class AppointmentRepository : IAppointmentRepository
+    public class AppointmentDoctorRepository : IAppointmentDoctorRepository
     {
         private readonly DiamondHealthContext _ctx;
 
-        public AppointmentRepository(DiamondHealthContext ctx)
+        public AppointmentDoctorRepository(DiamondHealthContext ctx)
         {
             _ctx = ctx;
         }

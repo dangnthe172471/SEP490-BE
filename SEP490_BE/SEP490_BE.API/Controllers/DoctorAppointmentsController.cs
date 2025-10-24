@@ -10,9 +10,9 @@ namespace SEP490_BE.API.Controllers
     [ApiController]
     public class DoctorAppointmentsController : ControllerBase
     {
-        private readonly IAppointmentService _service;
+        private readonly IAppointmentDoctorService _service;
 
-        public DoctorAppointmentsController(IAppointmentService service)
+        public DoctorAppointmentsController(IAppointmentDoctorService service)
         {
             _service = service;
         }

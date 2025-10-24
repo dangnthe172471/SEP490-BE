@@ -3,7 +3,7 @@ using SEP490_BE.DAL.DTOs.Common;
 
 namespace SEP490_BE.BLL.IServices
 {
-    public interface IAppointmentService
+    public interface IAppointmentDoctorService
     {
         Task<List<AppointmentListItemDto>> GetDoctorAppointmentsAsync(
             int userIdFromToken,

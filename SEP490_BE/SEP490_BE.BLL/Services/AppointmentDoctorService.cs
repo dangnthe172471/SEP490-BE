@@ -5,11 +5,11 @@ using SEP490_BE.DAL.IRepositories;
 
 namespace SEP490_BE.BLL.Services
 {
-    public class AppointmentService : IAppointmentService
+    public class AppointmentDoctorService : IAppointmentDoctorService
     {
-        private readonly IAppointmentRepository _repo;
+        private readonly IAppointmentDoctorRepository _repo;
 
-        public AppointmentService(IAppointmentRepository repo)
+        public AppointmentDoctorService(IAppointmentDoctorRepository repo)
         {
             _repo = repo;
         }
