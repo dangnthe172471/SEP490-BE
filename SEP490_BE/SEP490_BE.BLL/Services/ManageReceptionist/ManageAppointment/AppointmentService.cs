@@ -331,6 +331,27 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 throw new ArgumentException($"Invalid status. Valid statuses are: {string.Join(", ", validStatuses)}");
             }
 
+            // ✅ Kiểm tra quy tắc hủy lịch: Phải hủy trước tối thiểu 4 giờ
+            if (request.Status == "Cancelled")
+            {
+                var currentTime = DateTime.Now;
+                var appointmentTime = appointment.AppointmentDate;
+                var timeDifference = appointmentTime - currentTime;
+
+                Console.WriteLine($"[DEBUG] Cancel Appointment Check:");
+                Console.WriteLine($"[DEBUG] Current Time: {currentTime:yyyy-MM-dd HH:mm:ss}");
+                Console.WriteLine($"[DEBUG] Appointment Time: {appointmentTime:yyyy-MM-dd HH:mm:ss}");
+                Console.WriteLine($"[DEBUG] Time Difference: {timeDifference.TotalHours:F2} hours");
+
+                // Kiểm tra nếu còn ít hơn 4 giờ
+                if (timeDifference.TotalHours < 4)
+                {
+                    throw new ArgumentException($"Không thể hủy lịch hẹn. Bạn chỉ có thể hủy trước tối thiểu 4 giờ so với giờ hẹn. Thời gian còn lại: {timeDifference.TotalHours:F1} giờ. Vui lòng liên hệ trực tiếp với phòng khám để được hỗ trợ.");
+                }
+
+                Console.WriteLine($"[DEBUG] Cancel allowed - Time difference: {timeDifference.TotalHours:F2} hours (>= 4 hours)");
+            }
+
             var oldStatus = appointment.Status;
             appointment.Status = request.Status;
             await _appointmentRepository.UpdateAsync(appointment, cancellationToken);
@@ -368,6 +389,39 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             }
 
             return true;
+        }
+
+        public async Task<bool> CanCancelAppointmentAsync(int appointmentId, CancellationToken cancellationToken = default)
+        {
+            var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
+            if (appointment == null)
+            {
+                return false;
+            }
+
+            // Kiểm tra status có thể hủy không
+            var cancellableStatuses = new[] { "Pending", "Confirmed" };
+            if (!cancellableStatuses.Contains(appointment.Status))
+            {
+                return false;
+            }
+
+            // Kiểm tra quy tắc 4 giờ
+            var currentTime = DateTime.Now;
+            var appointmentTime = appointment.AppointmentDate;
+            var timeDifference = appointmentTime - currentTime;
+
+            Console.WriteLine($"[DEBUG] CanCancelAppointment Check:");
+            Console.WriteLine($"[DEBUG] Appointment ID: {appointmentId}");
+            Console.WriteLine($"[DEBUG] Current Status: {appointment.Status}");
+            Console.WriteLine($"[DEBUG] Current Time: {currentTime:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine($"[DEBUG] Appointment Time: {appointmentTime:yyyy-MM-dd HH:mm:ss}");
+            Console.WriteLine($"[DEBUG] Time Difference: {timeDifference.TotalHours:F2} hours");
+
+            var canCancel = timeDifference.TotalHours >= 4;
+            Console.WriteLine($"[DEBUG] Can Cancel: {canCancel} (>= 4 hours: {timeDifference.TotalHours >= 4})");
+
+            return canCancel;
         }
 
         public async Task<AppointmentConfirmationDto?> GetAppointmentConfirmationAsync(int appointmentId, CancellationToken cancellationToken = default)
