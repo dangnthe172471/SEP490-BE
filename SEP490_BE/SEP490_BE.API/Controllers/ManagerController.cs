@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
-using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 
 namespace SEP490_BE.API.Controllers
@@ -112,6 +112,21 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
+        //Tông quan lịch theo tháng
+        [HttpGet("monthly-summary")]
+        public async Task<ActionResult<List<DailySummaryDto>>> GetMonthlyWorkSummary([FromQuery] int year, [FromQuery] int month)
+        {
+            try
+            {
+                var result = await _service.GetMonthlyWorkSummaryAsync(year, month);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         //  Thêm / xóa bác sĩ  của lịch theo ngày
         [HttpPut("updateScheduleByDate")]
         public async Task<IActionResult> UpdateByDate([FromBody] UpdateWorkScheduleByDateRequest request)
@@ -134,5 +149,16 @@ namespace SEP490_BE.API.Controllers
             await _service.UpdateWorkScheduleByIdAsync(request);
             return Ok(new { message = "Cập nhật lịch thành công!" });
         }
+
+        //   Danh sach lịch  groupby EffectiveFrom, EffectiveTo, Shift
+        [HttpGet("listGroupSchedule")]
+        public async Task<IActionResult> GetGroupedWorkScheduleList(
+      [FromQuery] int pageNumber = 1,
+      [FromQuery] int pageSize = 10)
+        {
+            var data = await _service.GetGroupedWorkScheduleListAsync(pageNumber, pageSize);
+            return Ok(data);
+        }
+
     }
 }

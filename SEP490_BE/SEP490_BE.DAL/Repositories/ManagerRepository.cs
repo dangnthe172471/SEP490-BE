@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.IRepositories;
@@ -22,7 +23,7 @@ namespace SEP490_BE.DAL.Repositories
             _context = context;
         }
 
-        public async Task<PagedResult<DailyWorkScheduleDto>> GetWorkSchedulesByDateAsync(DateOnly? date, int pageNumber, int pageSize)
+        public async Task<PaginationHelper.PagedResult<DailyWorkScheduleDto>> GetWorkSchedulesByDateAsync(DateOnly? date, int pageNumber, int pageSize)
         {
             var query = _context.DoctorShifts
                 .Include(ds => ds.Doctor)
@@ -51,7 +52,7 @@ namespace SEP490_BE.DAL.Repositories
             if (date.HasValue)
             {
                 query = query.Where(ds =>
-                    ds.EffectiveFrom <= date.Value &&
+                    ds.EffectiveFrom == date.Value &&
                     (ds.EffectiveTo == null || ds.EffectiveTo >= date.Value));
             }
 
@@ -68,6 +69,8 @@ namespace SEP490_BE.DAL.Repositories
             //  Phân trang
             return await groupedQuery.ToPagedResultAsync(pageNumber, pageSize);
         }
+
+        #region Lấy lịch theo range nếu effectTo = null là vĩnh viễn 
         //public async Task<List<DailyWorkScheduleViewDto>> GetWorkScheduleByDateRangeAsync(DateOnly startDate, DateOnly endDate)
         //{
         //    if (startDate == default || endDate == default)
@@ -128,9 +131,12 @@ namespace SEP490_BE.DAL.Repositories
 
         //    return dailySchedules;
         //}
+        #endregion
+
+        // Lấy lịch theo range nếu effectTo = null là 30 ngày kể từ effectiveFrom
         public async Task<List<DailyWorkScheduleViewDto>> GetWorkScheduleByDateRangeAsync(DateOnly startDate, DateOnly endDate)
         {
-      
+
             if (startDate == default || endDate == default)
             {
                 var today = DateOnly.FromDateTime(DateTime.Now);
@@ -140,7 +146,7 @@ namespace SEP490_BE.DAL.Repositories
 
             var dailySchedules = new List<DailyWorkScheduleViewDto>();
 
-            
+
             var shifts = await _context.Shifts.ToListAsync();
             var workSchedules = await _context.DoctorShifts
                 .Include(ds => ds.Doctor).ThenInclude(d => d.User)
@@ -151,12 +157,12 @@ namespace SEP490_BE.DAL.Repositories
                     (ds.EffectiveTo == null || ds.EffectiveTo >= startDate))
                 .ToListAsync();
 
-            
+
             foreach (var ws in workSchedules)
             {
                 if (ws.EffectiveTo == null)
                 {
-                    ws.EffectiveTo = ws.EffectiveFrom.AddDays(30);
+                    ws.EffectiveTo = ws.EffectiveFrom.AddMonths(1);
                 }
             }
 
@@ -164,7 +170,7 @@ namespace SEP490_BE.DAL.Repositories
 
             while (currentDate <= endDate)
             {
-               
+
 
                 var dayShifts = workSchedules
                     .Where(ds => ds.EffectiveFrom <= currentDate &&
@@ -207,9 +213,9 @@ namespace SEP490_BE.DAL.Repositories
         }
 
 
-        public async Task<PagedResult<WorkScheduleDto>> GetAllSchedulesAsync(int pageNumber, int pageSize)
+        public async Task<PaginationHelper.PagedResult<WorkScheduleDto>> GetAllSchedulesAsync(int pageNumber, int pageSize)
         {
-            var query =  _context.DoctorShifts
+            var query = _context.DoctorShifts
                 .Include(ds => ds.Doctor)
                     .ThenInclude(ds => ds.Room)
                 .Include(ds => ds.Doctor)
@@ -237,7 +243,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             try
             {
-                // B1. Lấy tất cả ca làm việc hiệu lực trong ngày được chọn (và còn Active)
+                // Lấy tất cả ca làm việc hiệu lực trong ngày được chọn (và còn Active)
                 var existingShifts = await _context.DoctorShifts
                     .Where(ds => ds.ShiftId == request.ShiftId &&
                                  ds.Status == "Active" &&
@@ -245,7 +251,7 @@ namespace SEP490_BE.DAL.Repositories
                                  (ds.EffectiveTo == null || ds.EffectiveTo >= request.Date))
                     .ToListAsync();
 
-                // B2. Cập nhật trạng thái Inactive cho các bác sĩ bị xóa khỏi ca
+                // Cập nhật trạng thái Inactive cho các bác sĩ bị xóa khỏi ca
                 foreach (var doctorId in request.RemoveDoctorIds)
                 {
                     var toUpdate = existingShifts.FirstOrDefault(s => s.DoctorId == doctorId);
@@ -331,7 +337,7 @@ namespace SEP490_BE.DAL.Repositories
 
                 await _context.SaveChangesAsync();
 
-                // B3. Thêm bác sĩ mới vào ca trong ngày được chọn
+                //  Thêm bác sĩ mới vào ca trong ngày được chọn
                 foreach (var doctorId in request.AddDoctorIds)
                 {
                     bool doctorExists = await _context.Doctors.AnyAsync(d => d.DoctorId == doctorId);
@@ -354,7 +360,7 @@ namespace SEP490_BE.DAL.Repositories
                             DoctorId = doctorId,
                             ShiftId = request.ShiftId,
                             EffectiveFrom = request.Date,
-                            EffectiveTo = request.Date, 
+                            EffectiveTo = request.Date,
                             Status = "Active"
                         };
 
@@ -376,7 +382,7 @@ namespace SEP490_BE.DAL.Repositories
 
 
 
-        //  Cập nhật lịch theo ID (DoctorShiftId)
+        // Cập nhật lịch theo ID (DoctorShiftId)
         public async Task UpdateWorkScheduleByIdAsync(UpdateWorkScheduleByIdRequest request)
         {
             try
@@ -429,6 +435,113 @@ namespace SEP490_BE.DAL.Repositories
 
                 throw new Exception($"Cập nhật lịch thất bại: {ex.Message}");
             }
+        }
+        #region Tổng lịch nếu effectTo = null là vĩnh viễn 
+
+        //public async Task<List<DailySummaryDto>> GetMonthlyWorkSummaryAsync(int year, int month)
+        //{
+        //    var startDate = new DateOnly(year, month, 1);
+        //    var endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+
+        //    var query = _context.DoctorShifts
+        //        .Include(ds => ds.Doctor)
+        //        .Where(ds => ds.EffectiveFrom <= endDate &&
+        //                     (ds.EffectiveTo == null || ds.EffectiveTo >= startDate));
+
+        //    var result = await query
+        //        .GroupBy(ds => ds.EffectiveFrom)
+        //        .Select(g => new DailySummaryDto
+        //        {
+        //            Date = g.Key,
+        //            ShiftCount = g.Select(x => x.ShiftId).Distinct().Count(),
+        //            DoctorCount = g.Select(x => x.DoctorId).Distinct().Count()
+        //        })
+        //        .OrderBy(x => x.Date)
+        //        .ToListAsync();
+
+        //    return result;
+        //}
+        #endregion
+        public async Task<List<DailySummaryDto>> GetMonthlyWorkSummaryAsync(int year, int month)
+        {
+            var startDate = new DateOnly(year, month, 1);
+            var endDate = new DateOnly(year, month, DateTime.DaysInMonth(year, month));
+
+            // Lấy toàn bộ Active
+            var shifts = await _context.DoctorShifts
+                .Include(ds => ds.Doctor)
+                .Where(ds => ds.Status == "Active")
+                .ToListAsync();
+
+            //Lọc
+            var filtered = shifts.Where(ds =>
+                ds.EffectiveFrom <= endDate &&
+                (
+                    (ds.EffectiveTo != null && ds.EffectiveTo >= startDate)
+                    || (ds.EffectiveTo == null && ds.EffectiveFrom.AddMonths(1) >= startDate)
+                )
+            ).ToList();
+
+            //Tạo danh sách lịch theo từng ngày trong tháng
+            var expanded = new List<(DateOnly Date, int ShiftId, int DoctorId)>();
+            foreach (var ds in filtered)
+            {
+                var from = ds.EffectiveFrom < startDate ? startDate : ds.EffectiveFrom;
+                var to = ds.EffectiveTo != null
+                    ? (ds.EffectiveTo > endDate ? endDate : ds.EffectiveTo.Value)
+                    : (ds.EffectiveFrom.AddMonths(1) > endDate ? endDate : ds.EffectiveFrom.AddMonths(1));
+
+                for (var d = from; d <= to; d = d.AddDays(1))
+                {
+                    expanded.Add((d, ds.ShiftId, ds.DoctorId));
+                }
+            }
+
+            //Gom nhóm theo ngày thực tế
+            var grouped = expanded
+                .GroupBy(x => x.Date)
+                .Select(g => new DailySummaryDto
+                {
+                    Date = g.Key,
+                    ShiftCount = g.Select(x => x.ShiftId).Distinct().Count(),
+                    DoctorCount = g.Select(x => x.DoctorId).Distinct().Count()
+                })
+                .ToList();
+
+            // Thêm ngày trống
+            var fullList = new List<DailySummaryDto>();
+            for (int day = 1; day <= endDate.Day; day++)
+            {
+                var date = new DateOnly(year, month, day);
+                var existing = grouped.FirstOrDefault(x => x.Date == date);
+                fullList.Add(existing ?? new DailySummaryDto { Date = date, ShiftCount = 0, DoctorCount = 0 });
+            }
+
+            return fullList.OrderBy(x => x.Date).ToList();
+        }
+
+        public async Task<List<WorkScheduleDto>> GetAllWorkSchedulesAsync(DateOnly? startDate, DateOnly? endDate)
+        {
+            var query = _context.DoctorShifts
+                .Include(ds => ds.Doctor)
+                    .ThenInclude(d => d.User)
+                .Include(ds => ds.Doctor)
+                    .ThenInclude(d => d.Room)
+                .Include(ds => ds.Shift)
+                .Select(ds => new WorkScheduleDto
+                {
+                    DoctorId = ds.DoctorId,
+                    DoctorName = ds.Doctor.User.FullName,
+                    Specialty = ds.Doctor.Specialty,
+                    ShiftId = ds.ShiftId,
+                    ShiftType = ds.Shift.ShiftType,
+                    StartTime = ds.Shift.StartTime,
+                    EndTime = ds.Shift.EndTime,
+                    EffectiveFrom = ds.EffectiveFrom,
+                    EffectiveTo = ds.EffectiveTo
+                });
+
+            return await query.ToListAsync();
         }
 
     }

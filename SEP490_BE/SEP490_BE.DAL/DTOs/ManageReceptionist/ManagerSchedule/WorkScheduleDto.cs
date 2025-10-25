@@ -1,6 +1,6 @@
 using System;
 
-namespace SEP490_BE.DAL.DTOs;
+namespace SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
 
 public class WorkScheduleDto
 {
@@ -60,3 +60,27 @@ public class DailyWorkScheduleViewDto
     public List<ShiftResponseDto> Shifts { get; set; } = new();
 }
 
+public class DailySummaryDto
+{
+    public DateOnly Date { get; set; }
+    public int ShiftCount { get; set; }
+    public int DoctorCount { get; set; }
+}
+
+// Lịch làm việc nhóm theo ca, nhóm theo khoảng ngày trong db
+//public class WorkScheduleGroupDto
+//{
+//    public DateOnly EffectiveFrom { get; set; }
+//    public DateOnly? EffectiveTo { get; set; }
+//    public int ShiftId { get; set; }
+//    public string ShiftType { get; set; } = string.Empty;
+//    public TimeOnly StartTime { get; set; }
+//    public TimeOnly EndTime { get; set; }
+//    public List<DoctorDTO> Doctors { get; set; } = new();
+//}
+public class WorkScheduleGroupDto
+{
+    public DateOnly EffectiveFrom { get; set; }
+    public DateOnly? EffectiveTo { get; set; }
+    public List<ShiftResponseDto> Shifts { get; set; } = new();
+}
