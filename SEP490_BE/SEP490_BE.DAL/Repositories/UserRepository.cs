@@ -3,19 +3,20 @@ using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
 using System;
+using System.Linq;
 
 namespace SEP490_BE.DAL.Repositories
 {
-	public class UserRepository : IUserRepository
-	{
+    public class UserRepository : IUserRepository
+    {
         private readonly DiamondHealthContext _dbContext;
 
-		public UserRepository(DiamondHealthContext dbContext)
-		{
-			_dbContext = dbContext;
-		}
+        public UserRepository(DiamondHealthContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
 
- 
+
 
         public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
         {
@@ -40,79 +41,79 @@ namespace SEP490_BE.DAL.Repositories
 		}
 
         public async Task<User?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default)
-		{
-			return await _dbContext.Users
-				.Include(u => u.Role)
-				.Include(u => u.Patient)
-				.AsNoTracking()
+        {
+            return await _dbContext.Users
+                .Include(u => u.Role)
+                .Include(u => u.Patient)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Phone == phone, cancellationToken);
-		}
+        }
 
         public async Task<User?> GetByIdAsync(int userId, CancellationToken cancellationToken = default)
-		{
-			return await _dbContext.Users
-				.Include(u => u.Role)
-				.Include(u => u.Patient)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Role)
+                .Include(u => u.Patient)
                 .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
-		}
+        }
 
-		public async Task AddAsync(User user, CancellationToken cancellationToken = default)
-		{
-			await _dbContext.Users.AddAsync(user, cancellationToken);
-			await _dbContext.SaveChangesAsync(cancellationToken);
-			
-			// Set UserId for Patient record if it exists
-			if (user.Patient != null)
-			{
-				user.Patient.UserId = user.UserId;
-				await _dbContext.SaveChangesAsync(cancellationToken);
-			}
-		}
+        public async Task AddAsync(User user, CancellationToken cancellationToken = default)
+        {
+            await _dbContext.Users.AddAsync(user, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            // Set UserId for Patient record if it exists
+            if (user.Patient != null)
+            {
+                user.Patient.UserId = user.UserId;
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
 
         public async Task UpdateAsync(User user, CancellationToken cancellationToken = default)
-		{
-			_dbContext.Users.Update(user);
-			
-			// If user has a Patient record, handle it properly
-			if (user.Patient != null)
-			{
-				// Check if this is a new Patient record (not tracked by EF)
-				var existingPatient = await _dbContext.Patients
-					.FirstOrDefaultAsync(p => p.PatientId == user.Patient.PatientId, cancellationToken);
-				
-				if (existingPatient == null)
-				{
-					// New Patient record
-					_dbContext.Patients.Add(user.Patient);
-				}
-				else
-				{
-					// Update existing Patient record
-					_dbContext.Patients.Update(user.Patient);
-				}
-			}
-			
-			await _dbContext.SaveChangesAsync(cancellationToken);
-		}
+        {
+            _dbContext.Users.Update(user);
+
+            // If user has a Patient record, handle it properly
+            if (user.Patient != null)
+            {
+                // Check if this is a new Patient record (not tracked by EF)
+                var existingPatient = await _dbContext.Patients
+                    .FirstOrDefaultAsync(p => p.PatientId == user.Patient.PatientId, cancellationToken);
+
+                if (existingPatient == null)
+                {
+                    // New Patient record
+                    _dbContext.Patients.Add(user.Patient);
+                }
+                else
+                {
+                    // Update existing Patient record
+                    _dbContext.Patients.Update(user.Patient);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
 
         public async Task<int> GetMaxPatientIdAsync(CancellationToken cancellationToken = default)
-		{
-			var maxId = await _dbContext.Patients
-				.MaxAsync(p => (int?)p.PatientId, cancellationToken);
-			return maxId ?? 0;
-		}
+        {
+            var maxId = await _dbContext.Patients
+                .MaxAsync(p => (int?)p.PatientId, cancellationToken);
+            return maxId ?? 0;
+        }
 
         public async Task DeleteAsync(int userId, CancellationToken cancellationToken = default)
-		{
-			var user = await _dbContext.Users
-				.Include(u => u.Patient)
-				.Include(u => u.Doctor)
-				.Include(u => u.Receptionist)
-				.Include(u => u.PharmacyProvider)
-				.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+        {
+            var user = await _dbContext.Users
+                .Include(u => u.Patient)
+                .Include(u => u.Doctor)
+                .Include(u => u.Receptionist)
+                .Include(u => u.PharmacyProvider)
+                .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
 
-			if (user != null)
-			{
+            if (user != null)
+            {
                 // Guard: prevent deletion when dependent records exist to avoid FK violations
                 // Patients: Appointments, ChatLogs
                 if (user.Patient != null)
@@ -172,29 +173,29 @@ namespace SEP490_BE.DAL.Repositories
                     }
                 }
 
-				// Remove related entities first
-				if (user.Patient != null)
-				{
-					_dbContext.Patients.Remove(user.Patient);
-				}
-				if (user.Doctor != null)
-				{
-					_dbContext.Doctors.Remove(user.Doctor);
-				}
-				if (user.Receptionist != null)
-				{
-					_dbContext.Receptionists.Remove(user.Receptionist);
-				}
-				if (user.PharmacyProvider != null)
-				{
-					_dbContext.PharmacyProviders.Remove(user.PharmacyProvider);
-				}
+                // Remove related entities first
+                if (user.Patient != null)
+                {
+                    _dbContext.Patients.Remove(user.Patient);
+                }
+                if (user.Doctor != null)
+                {
+                    _dbContext.Doctors.Remove(user.Doctor);
+                }
+                if (user.Receptionist != null)
+                {
+                    _dbContext.Receptionists.Remove(user.Receptionist);
+                }
+                if (user.PharmacyProvider != null)
+                {
+                    _dbContext.PharmacyProviders.Remove(user.PharmacyProvider);
+                }
 
-				// Remove the user
-				_dbContext.Users.Remove(user);
-				await _dbContext.SaveChangesAsync(cancellationToken);
-			}
-		}
+                // Remove the user
+                _dbContext.Users.Remove(user);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
 
         public async Task<(List<User> Users, int TotalCount)> SearchUsersAsync(SearchUserRequest request, CancellationToken cancellationToken = default)
         {
@@ -242,5 +243,16 @@ namespace SEP490_BE.DAL.Repositories
 
             return (users, totalCount);
         }
-	}
+
+        public async Task<List<User>> GetAllPatientsAsync(CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Role)
+                .Include(u => u.Patient)
+                .Where(u => u.Role != null && u.Role.RoleName == "Patient" && u.IsActive)
+                .OrderBy(u => u.FullName)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+    }
 }

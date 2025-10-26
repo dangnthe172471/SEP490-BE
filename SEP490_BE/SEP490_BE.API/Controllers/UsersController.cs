@@ -6,8 +6,8 @@ using System.Security.Claims;
 
 namespace SEP490_BE.API.Controllers
 {
-[ApiController]
-[Route("api/[controller]")]
+	[ApiController]
+	[Route("api/[controller]")]
 	public class UsersController : ControllerBase
 	{
 		private readonly IUserService _userService;
@@ -184,6 +184,21 @@ namespace SEP490_BE.API.Controllers
 			catch (Exception ex)
 			{
 				return StatusCode(500, new { message = "Đã xảy ra lỗi khi tìm kiếm người dùng.", error = ex.Message });
+			}
+		}
+
+		[HttpGet("patients")]
+		[Authorize(Roles = "Administrator,Doctor,Receptionist")]
+		public async Task<ActionResult<IEnumerable<UserDto>>> GetAllPatients(CancellationToken cancellationToken)
+		{
+			try
+			{
+				var patients = await _userService.GetAllPatientsAsync(cancellationToken);
+				return Ok(patients);
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy danh sách bệnh nhân.", error = ex.Message });
 			}
 		}
 	}

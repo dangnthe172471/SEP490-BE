@@ -37,6 +37,7 @@ namespace SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment
 
         #region Receptionist Methods
         Task<Receptionist?> GetReceptionistByIdAsync(int receptionistId, CancellationToken cancellationToken = default);
+        Task<Receptionist?> GetReceptionistByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         #endregion
     }
 }

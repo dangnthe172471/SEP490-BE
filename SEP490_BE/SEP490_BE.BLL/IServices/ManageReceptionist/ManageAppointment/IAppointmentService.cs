@@ -19,6 +19,7 @@ namespace SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment
         Task<int> CreateAppointmentByReceptionistAsync(CreateAppointmentByReceptionistRequest request, int receptionistId, CancellationToken cancellationToken = default);
         Task<bool> RescheduleAppointmentAsync(int appointmentId, int userId, RescheduleAppointmentRequest request, CancellationToken cancellationToken = default);
         Task<bool> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusRequest request, CancellationToken cancellationToken = default);
+        Task<bool> CanCancelAppointmentAsync(int appointmentId, CancellationToken cancellationToken = default);
         Task<AppointmentConfirmationDto?> GetAppointmentConfirmationAsync(int appointmentId, CancellationToken cancellationToken = default);
         Task<AppointmentStatisticsDto> GetAppointmentStatisticsAsync(CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(int appointmentId, CancellationToken cancellationToken = default);
@@ -36,6 +37,7 @@ namespace SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment
 
         #region Receptionist Methods
         Task<ReceptionistInfoDto?> GetReceptionistByIdAsync(int receptionistId, CancellationToken cancellationToken = default);
+        Task<ReceptionistInfoDto?> GetReceptionistByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         #endregion
 
         #region Debug Methods

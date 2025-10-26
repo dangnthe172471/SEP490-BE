@@ -97,8 +97,14 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 
+// Doctor Shift Exchange DI
+builder.Services.AddScoped<IDoctorShiftExchangeRepository, DoctorShiftExchangeRepository>();
+builder.Services.AddScoped<IDoctorShiftExchangeService, DoctorShiftExchangeService>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
+builder.Services.AddScoped<IAppointmentDoctorRepository, AppointmentDoctorRepository>();
+builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");

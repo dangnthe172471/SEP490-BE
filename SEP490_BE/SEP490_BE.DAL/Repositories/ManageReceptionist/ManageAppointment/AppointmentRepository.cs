@@ -200,6 +200,13 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
                 .FirstOrDefaultAsync(r => r.ReceptionistId == receptionistId, cancellationToken);
         }
 
+        public async Task<Receptionist?> GetReceptionistByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Receptionists
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.UserId == userId, cancellationToken);
+        }
+
         #endregion
     }
 }
