@@ -31,6 +31,22 @@ namespace SEP490_BE.BLL.Services
             });
         }
 
+        public async Task<IEnumerable<UserDto>> GetAllPatientsAsync(CancellationToken cancellationToken = default)
+        {
+            var users = await _userRepository.GetAllPatientsAsync(cancellationToken);
+            return users.Select(u => new UserDto
+            {
+                UserId = u.UserId,
+                Phone = u.Phone,
+                FullName = u.FullName,
+                Email = u.Email,
+                Role = u.Role?.RoleName,
+                Gender = u.Gender,
+                Dob = u.Dob,
+                IsActive = u.IsActive
+            });
+        }
+
         public async Task<UserDto?> ValidateUserAsync(string phone, string password, CancellationToken cancellationToken = default)
         {
             var user = await _userRepository.GetByPhoneAsync(phone, cancellationToken);

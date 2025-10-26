@@ -3,9 +3,12 @@ using SEP490_BE.DAL.DTOs;
 
 namespace SEP490_BE.DAL.IRepositories
 {
-    public interface IUserRepository
-    {
-        Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
+	public interface IUserRepository
+	{
+		Task<List<User>> GetAllAsync(CancellationToken cancellationToken = default);
+
+        Task<List<User>> GetAllPatientsAsync(CancellationToken cancellationToken = default);
+
         Task<User?> GetByPhoneAsync(string phone, CancellationToken cancellationToken = default);
         Task<User?> GetByIdAsync(int userId, CancellationToken cancellationToken = default);
         Task AddAsync(User user, CancellationToken cancellationToken = default);
