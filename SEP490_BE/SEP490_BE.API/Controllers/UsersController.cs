@@ -25,15 +25,7 @@ namespace SEP490_BE.API.Controllers
 			return Ok(users);
 		}
 
-        [HttpGet("patients")]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllPatients(CancellationToken cancellationToken)
-        {
-            var users = await _userService.GetAllPatientsAsync(cancellationToken);
-            return Ok(users);
-        }
-
-        [HttpGet("{id}")]
+		[HttpGet("{id}")]
 		[AllowAnonymous]
 		public async Task<ActionResult<UserDto>> GetById(int id, CancellationToken cancellationToken)
 		{
@@ -54,7 +46,7 @@ namespace SEP490_BE.API.Controllers
 		}
 
 		[HttpPost]
-		[Authorize(Roles = "Administrator, Receptionist")]
+		[Authorize(Roles = "Administrator")]
 		public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
 		{
 			try
@@ -96,9 +88,8 @@ namespace SEP490_BE.API.Controllers
 				// Check authorization: user can update themselves or admin can update anyone
 				var currentUserIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 				var isAdmin = User.IsInRole("Administrator");
-				var isReceptionist = User.IsInRole("Receptionist");
-				
-				if ((!isAdmin && !isReceptionist) && (!int.TryParse(currentUserIdClaim, out var currentUserId) || currentUserId != id))
+
+				if (!isAdmin && (!int.TryParse(currentUserIdClaim, out var currentUserId) || currentUserId != id))
 				{
 					return StatusCode(403, new { message = "Bạn chỉ có thể cập nhật thông tin của chính mình." });
 				}

@@ -22,4 +22,3 @@ namespace SEP490_BE.DAL.DTOs
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
     }
 }
-

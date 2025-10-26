@@ -28,4 +28,3 @@ namespace SEP490_BE.DAL.DTOs
         public string? MedicalHistory { get; set; }
     }
 }
-

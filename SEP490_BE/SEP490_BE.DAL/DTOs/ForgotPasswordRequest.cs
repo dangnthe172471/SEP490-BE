@@ -45,4 +45,3 @@ namespace SEP490_BE.DAL.DTOs
         public string NewPassword { get; set; } = string.Empty;
     }
 }
-
