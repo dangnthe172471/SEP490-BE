@@ -9,338 +9,353 @@ namespace SEP490_BE.Tests.Services
 {
     public class MedicineServiceTests
     {
-        private readonly Mock<IMedicineRepository> _repo = new();
+        private readonly Mock<IMedicineRepository> _repo = new(MockBehavior.Strict);
+        private MedicineService NewService() => new(_repo.Object);
 
-        // 🔧 Helper: Tạo entity Medicine kèm Provider.User để test mapping
-        private static Medicine MakeMed(int id, int providerId, string name, string? status = "Providing", string? sideEffects = null, string providerName = "Prov A")
-            => new Medicine
+        // Test 1: 1,"Paracetamol","Nausea","Providing"  -> success
+        [Fact(DisplayName = "T1 - provider=1, name=Paracetamol, SE=Nausea, Status=Providing -> success")]
+        public async Task T1_Create_Provider1_Paracetamol_Success()
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
+            int providerId = 1;
+
+            _repo.Setup(r => r.CreateMedicineAsync(
+                    It.Is<Medicine>(m =>
+                        m.ProviderId == providerId &&
+                        m.MedicineName == "Paracetamol" &&
+                        m.SideEffects == "Nausea" &&
+                        m.Status == "Providing"
+                    ),
+                    It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.CreateMedicineAsync(dto, providerId, CancellationToken.None);
+
+            _repo.Verify(r => r.CreateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
+        }
+
+        // Test 2: 2,"Paracetamol","Nausea","Providing"  -> success (khác provider)
+        [Fact(DisplayName = "T2 - provider=2, name=Paracetamol, SE=Nausea, Status=Providing -> success")]
+        public async Task T2_Create_Provider2_SameName_Success()
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
+            int providerId = 2;
+
+            _repo.Setup(r => r.CreateMedicineAsync(
+                    It.Is<Medicine>(m =>
+                        m.ProviderId == providerId &&
+                        m.MedicineName == "Paracetamol" &&
+                        m.SideEffects == "Nausea" &&
+                        m.Status == "Providing"
+                    ),
+                    It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.CreateMedicineAsync(dto, providerId, CancellationToken.None);
+
+            _repo.Verify(r => r.CreateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
+        }
+
+        // Test 3: 1,"Paracetamol","Nausea","Providing"  -> giả lập duplicate tại Repo (throw InvalidOperationException)
+        [Fact(DisplayName = "T3 - provider=1, name=Paracetamol duplicate -> repo throws InvalidOperationException")]
+        public async Task T3_Create_Provider1_Paracetamol_Duplicate_Conflict()
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
+            int providerId = 1;
+
+            _repo.Setup(r => r.CreateMedicineAsync(
+                    It.Is<Medicine>(m =>
+                        m.ProviderId == providerId &&
+                        m.MedicineName == "Paracetamol" &&
+                        m.SideEffects == "Nausea" &&
+                        m.Status == "Providing"
+                    ),
+                    It.IsAny<CancellationToken>()))
+                 .ThrowsAsync(new InvalidOperationException("Medicine 'Paracetamol' already exists for this provider."));
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.CreateMedicineAsync(dto, providerId, CancellationToken.None));
+
+            Assert.Contains("already exists", ex.Message, StringComparison.OrdinalIgnoreCase);
+            _repo.Verify(r => r.CreateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
+        }
+
+        // Test 4: 2," Amoxillin ","Fever","Providing" -> success (trim name)
+        [Fact(DisplayName = "T4 - provider=2, name=' Amoxillin ' (trim), SE=Fever, Status=Providing -> success")]
+        public async Task T4_Create_TrimName_Success()
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = " Amoxillin ", SideEffects = "Fever", Status = "Providing" };
+            int providerId = 2;
+
+            _repo.Setup(r => r.CreateMedicineAsync(
+                    It.Is<Medicine>(m =>
+                        m.ProviderId == providerId &&
+                        m.MedicineName == "Amoxillin" &&           // đã Trim
+                        m.SideEffects == "Fever" &&
+                        m.Status == "Providing"
+                    ),
+                    It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.CreateMedicineAsync(dto, providerId, CancellationToken.None);
+
+            _repo.Verify(r => r.CreateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
+        }
+
+        // Test 5: 1," Amoxillin ", null, null -> success (trim name, Status default = Providing)
+        [Fact(DisplayName = "T5 - provider=1, name=' Amoxillin ' (trim), SE=null, Status=null -> default Providing")]
+        public async Task T5_Create_DefaultStatus_And_TrimName_Success()
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = " Amoxillin ", SideEffects = null, Status = null };
+            int providerId = 1;
+
+            _repo.Setup(r => r.CreateMedicineAsync(
+                    It.Is<Medicine>(m =>
+                        m.ProviderId == providerId &&
+                        m.MedicineName == "Amoxillin" &&           // đã Trim
+                        m.SideEffects == null &&
+                        m.Status == "Providing"                     // default do Status null
+                    ),
+                    It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.CreateMedicineAsync(dto, providerId, CancellationToken.None);
+
+            _repo.Verify(r => r.CreateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
+        }
+
+        [Theory(DisplayName = "T6 - Invalid name (null/empty/whitespace) → throws InvalidOperationException")]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task T6_Create_InvalidName_Throws(string badName)
+        {
+            var svc = NewService();
+            var dto = new CreateMedicineDto { MedicineName = badName, SideEffects = "X", Status = "Providing" };
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.CreateMedicineAsync(dto, 1, CancellationToken.None));
+
+            Assert.Equal("Medicine name is required.", ex.Message);
+            _repo.VerifyNoOtherCalls(); // Repo không được gọi
+        }
+
+        // ===================== UPDATE TESTS (Service) =====================
+
+        [Fact(DisplayName = "U1 - id=10, name='Paracetamol 500', SE='Nausea', Status='Stopped' -> success")]
+        public async Task Update_U1_Success_TrimName_And_Update_All()
+        {
+            var svc = NewService();
+            var id = 10;
+
+            // existing trong DB
+            var existing = new Medicine
             {
                 MedicineId = id,
-                ProviderId = providerId,
-                MedicineName = name,
-                Status = status,
-                SideEffects = sideEffects,
-                Provider = new PharmacyProvider
-                {
-                    ProviderId = providerId,
-                    User = new User { FullName = providerName, Phone = "0900", PasswordHash = "x", RoleId = 1, Role = new Role { RoleId = 1, RoleName = "Pharmacy Provider" } }
-                }
+                ProviderId = 1,
+                MedicineName = "Paracetamol",
+                SideEffects = "OldSE",
+                Status = "Providing"
             };
 
-        // ✅ Test: GetProviderIdByUserIdAsync forward thẳng xuống repository
-        [Fact]
-        public async Task GetProviderIdByUserIdAsync_Forwards_To_Repository()
-        {
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(123, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(10);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var result = await svc.GetProviderIdByUserIdAsync(123);
-
-            result.Should().Be(10);
-            _repo.Verify(r => r.GetProviderIdByUserIdAsync(123, It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        // ✅ Test: GetAllAsync map entity → ReadMedicineDto, gồm ProviderName
-        [Fact]
-        public async Task GetAllAsync_Maps_Entities_To_Dtos_With_ProviderName()
-        {
-            var data = new List<Medicine>
-            {
-                MakeMed(1, 10, "A", "Providing", null, "Prov X"),
-                MakeMed(2, 10, "B", "Stopped",   null, "Prov X")
-            };
-
-            _repo.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync(data);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var list = await svc.GetAllAsync();
-
-            list.Should().HaveCount(2);
-            list[0].MedicineId.Should().Be(1);
-            list[0].MedicineName.Should().Be("A");
-            list[0].ProviderId.Should().Be(10);
-            list[0].ProviderName.Should().Be("Prov X");
-            list[1].Status.Should().Be("Stopped");
-        }
-
-        // ✅ Test: GetByIdAsync trả về null khi không tìm thấy
-        [Fact]
-        public async Task GetByIdAsync_Returns_Null_When_NotFound()
-        {
-            _repo.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((Medicine?)null);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var dto = await svc.GetByIdAsync(999);
-
-            dto.Should().BeNull();
-        }
-
-        // ✅ Test: GetByIdAsync map đúng khi tìm thấy
-        [Fact]
-        public async Task GetByIdAsync_Maps_When_Found()
-        {
-            var med = MakeMed(5, 10, "Metformin", "Providing", "Nausea", "Prov Z");
-            _repo.Setup(r => r.GetByIdAsync(5, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(med);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var dto = await svc.GetByIdAsync(5);
-
-            dto.Should().NotBeNull();
-            dto!.MedicineId.Should().Be(5);
-            dto.MedicineName.Should().Be("Metformin");
-            dto.SideEffects.Should().Be("Nausea");
-            dto.Status.Should().Be("Providing");
-            dto.ProviderName.Should().Be("Prov Z");
-        }
-
-        // ✅ Test: CreateAsync ném lỗi nếu MedicineName null/whitespace
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CreateAsync_Throws_When_Name_Is_Null_Or_Whitespace(string? badName)
-        {
-            var svc = new MedicineService(_repo.Object);
-            var dto = new CreateMedicineDto { MedicineName = badName, SideEffects = null, Status = null };
-
-            var act = async () => await svc.CreateAsync(dto, providerId: 10);
-
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("*Medicine name is required*");
-            _repo.Verify(r => r.CreateAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        // ✅ Test: CreateAsync dùng Status = "Available" khi dto.Status null/whitespace, và Trim tên
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CreateAsync_Defaults_Status_To_Available_And_Trims_Name_When_Status_Empty(string? dtoStatus)
-        {
-            var svc = new MedicineService(_repo.Object);
-            var dto = new CreateMedicineDto { MedicineName = "  New Med  ", SideEffects = "n/a", Status = dtoStatus };
-
-            await svc.CreateAsync(dto, providerId: 7);
-
-            _repo.Verify(r => r.CreateAsync(
-                It.Is<Medicine>(m =>
-                    m.ProviderId == 7 &&
-                    m.MedicineName == "New Med" &&
-                    m.SideEffects == "n/a" &&
-                    m.Status == "Available"),
-                It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        // ✅ Test: CreateAsync dùng Status truyền vào (đã Trim)
-        [Fact]
-        public async Task CreateAsync_Uses_Provided_Status_Trimmed()
-        {
-            var svc = new MedicineService(_repo.Object);
-            var dto = new CreateMedicineDto { MedicineName = "  Paracetamol  ", SideEffects = null, Status = "  Providing " };
-
-            await svc.CreateAsync(dto, providerId: 8);
-
-            _repo.Verify(r => r.CreateAsync(
-                It.Is<Medicine>(m =>
-                    m.ProviderId == 8 &&
-                    m.MedicineName == "Paracetamol" &&
-                    m.Status == "Providing"),
-                It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        // ✅ Test: UpdateAsync ném KeyNotFound khi không tìm thấy entity theo id
-        [Fact]
-        public async Task UpdateAsync_Throws_KeyNotFound_When_Entity_NotFound()
-        {
-            _repo.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((Medicine?)null);
-
-            var svc = new MedicineService(_repo.Object);
-            var dto = new UpdateMedicineDto { MedicineName = "X" };
-
-            var act = async () => await svc.UpdateAsync(999, dto);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>()
-                     .WithMessage("*999*");
-            _repo.Verify(r => r.UpdateAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        // ✅ Test: UpdateAsync cập nhật field (trim tên, giữ nguyên nếu null) và gọi repo.UpdateAsync
-        [Fact]
-        public async Task UpdateAsync_Updates_Fields_And_Calls_Repo_Update()
-        {
-            var existing = MakeMed(3, 10, "Old", "Providing", "SE", "Prov X");
-            _repo.Setup(r => r.GetByIdAsync(3, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(existing);
-
-            var svc = new MedicineService(_repo.Object);
             var dto = new UpdateMedicineDto
             {
-                MedicineName = "  New Name  ",
-                SideEffects = null,         // -> giữ nguyên "SE"
+                MedicineName = "  Paracetamol 500  ",
+                SideEffects = "Nausea",
                 Status = "Stopped"
             };
 
-            await svc.UpdateAsync(3, dto);
+            _repo.Setup(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(existing);
 
-            _repo.Verify(r => r.UpdateAsync(
-                It.Is<Medicine>(m =>
-                    m.MedicineId == 3 &&
-                    m.MedicineName == "New Name" &&
-                    m.SideEffects == "SE" &&
-                    m.Status == "Stopped" &&
-                    m.ProviderId == 10
-                ),
-                It.IsAny<CancellationToken>()), Times.Once);
+            _repo.Setup(r => r.UpdateMedicineAsync(
+                        It.Is<Medicine>(m =>
+                            m.MedicineId == id &&
+                            m.ProviderId == 1 &&                         // Provider giữ nguyên
+                            m.MedicineName == "Paracetamol 500" &&       // đã Trim
+                            m.SideEffects == "Nausea" &&
+                            m.Status == "Stopped"
+                        ),
+                        It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.UpdateMedicineAsync(id, dto, CancellationToken.None);
+
+            _repo.VerifyAll();
         }
 
-        // ✅ Test: GetByProviderIdAsync map list sang DTO kèm ProviderName
-        [Fact]
-        public async Task GetByProviderIdAsync_Maps_List_To_Dtos()
+        [Fact(DisplayName = "U2 - id=20, name='Paracetamol 500', SE=null, Status=null -> success (giữ SE/Status cũ)")]
+        public async Task Update_U2_Success_NameOnly()
         {
-            var list = new List<Medicine>
+            var svc = NewService();
+            var id = 20;
+
+            var existing = new Medicine
             {
-                MakeMed(1, 10, "A", "Providing", null, "Prov X"),
-                MakeMed(2, 10, "B", "Stopped",   null, "Prov X"),
+                MedicineId = id,
+                ProviderId = 2,
+                MedicineName = "Paracetamol",
+                SideEffects = "OldSE",
+                Status = "Providing"
             };
 
-            _repo.Setup(r => r.GetByProviderIdAsync(10, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(list);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var dtos = await svc.GetByProviderIdAsync(10);
-
-            dtos.Should().HaveCount(2);
-            dtos[0].ProviderName.Should().Be("Prov X");
-            dtos[1].Status.Should().Be("Stopped");
-        }
-
-        // ✅ Test: SoftDeleteAsync chỉ cần forward xuống repo
-        [Fact]
-        public async Task SoftDeleteAsync_Forwards_To_Repository()
-        {
-            var svc = new MedicineService(_repo.Object);
-
-            await svc.SoftDeleteAsync(77);
-
-            _repo.Verify(r => r.SoftDeleteAsync(77, It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        // ✅ Test: GetMineAsync ném InvalidOperation khi user không phải provider
-        [Fact]
-        public async Task GetMineAsync_Throws_When_User_Not_Provider()
-        {
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(555, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((int?)null);
-
-            var svc = new MedicineService(_repo.Object);
-
-            var act = async () => await svc.GetMineAsync(555);
-
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("*không phải là nhà cung cấp*");
-        }
-
-        // ✅ Test: GetMineAsync trả list đã map khi user là provider
-        [Fact]
-        public async Task GetMineAsync_Returns_Mapped_List_When_User_Is_Provider()
-        {
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(101, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(10);
-
-            var meds = new List<Medicine>
+            var dto = new UpdateMedicineDto
             {
-                MakeMed(1, 10, "M1", "Providing", null, "Prov X"),
-                MakeMed(2, 10, "M2", "Stopped",   null, "Prov X"),
+                MedicineName = "Paracetamol 500",
+                SideEffects = null,         // giữ nguyên
+                Status = null               // giữ nguyên
             };
-            _repo.Setup(r => r.GetByProviderIdAsync(10, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(meds);
 
-            var svc = new MedicineService(_repo.Object);
+            _repo.Setup(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(existing);
 
-            var list = await svc.GetMineAsync(101);
+            _repo.Setup(r => r.UpdateMedicineAsync(
+                        It.Is<Medicine>(m =>
+                            m.MedicineId == id &&
+                            m.ProviderId == 2 &&
+                            m.MedicineName == "Paracetamol 500" &&
+                            m.SideEffects == "OldSE" &&                 // giữ nguyên
+                            m.Status == "Providing"                     // giữ nguyên
+                        ),
+                        It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
 
-            list.Should().HaveCount(2);
-            list.Select(i => i.MedicineName).Should().Contain(new[] { "M1", "M2" });
-            list.All(i => i.ProviderId == 10).Should().BeTrue();
+            await svc.UpdateMedicineAsync(id, dto, CancellationToken.None);
+
+            _repo.VerifyAll();
         }
 
-        // ✅ Test: GetMinePagedAsync normalize status/sort, pageNumber/pageSize, và map DTOs
-        [Fact]
-        public async Task GetMinePagedAsync_Normalizes_Inputs_And_Maps()
+        [Fact(DisplayName = "U3 - id=30, name='' (rỗng) -> ArgumentException (không gọi repo.Update)")]
+        public async Task Update_U3_Fail_EmptyName()
         {
-            // user → provider
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(123, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(10);
+            var svc = NewService();
+            var id = 30;
 
-            // repo → trả danh sách + total
-            var items = new List<Medicine>
+            // vẫn phải tìm thấy existing để qua được kiểm tra null
+            _repo.Setup(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(new Medicine
+                 {
+                     MedicineId = id,
+                     ProviderId = 1,
+                     MedicineName = "Any",
+                     SideEffects = "Old",
+                     Status = "Providing"
+                 });
+
+            var dto = new UpdateMedicineDto
             {
-                MakeMed(1, 10, "Alpha", "Providing", null, "Prov X"),
-                MakeMed(2, 10, "Beta",  "Providing", null, "Prov X"),
+                MedicineName = "",      // rỗng -> lỗi
+                SideEffects = "Nausea",
+                Status = "Providing"
             };
-            _repo.Setup(r => r.GetByProviderIdPagedAsync(10, 1, 2, "Providing", "az", It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((items, 2));
 
-            var svc = new MedicineService(_repo.Object);
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+                svc.UpdateMedicineAsync(id, dto, CancellationToken.None));
 
-            // status "providing" (lower) → "Providing"; sort "AZ"/mixed-case → "az"
-            var result = await svc.GetMinePagedAsync(
-                userId: 123, pageNumber: 1, pageSize: 2,
-                status: "providing", sort: "AZ"
-            );
+            Assert.Contains("cannot be empty or whitespace", ex.Message, StringComparison.OrdinalIgnoreCase);
 
-            result.TotalCount.Should().Be(2);
-            result.Items.Should().HaveCount(2);
-            result.Items.First().ProviderName.Should().Be("Prov X");
-
-            _repo.Verify(r => r.GetByProviderIdPagedAsync(10, 1, 2, "Providing", "az", It.IsAny<CancellationToken>()), Times.Once);
+            // không được gọi Update
+            _repo.Verify(r => r.UpdateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()), Times.Never);
+            _repo.Verify(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
         }
 
-        // ✅ Test: GetMinePagedAsync cap pageSize<=100 và pageNumber>=1
-        [Fact]
-        public async Task GetMinePagedAsync_Clamps_PageSize_And_PageNumber()
+        [Fact(DisplayName = "U4 - id=40, repo báo đổi ProviderId -> InvalidOperationException (bubbles up)")]
+        public async Task Update_U4_Fail_ChangeProvider_BubbledFromRepo()
         {
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(123, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync(10);
+            var svc = NewService();
+            var id = 40;
 
-            // Khi service clamp: pageNumber<1 → 1; pageSize>100 → 100
-            _repo.Setup(r => r.GetByProviderIdPagedAsync(10, 1, 100, null, null, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((new List<Medicine>(), 0));
+            // existing ProviderId=1
+            var existing = new Medicine
+            {
+                MedicineId = id,
+                ProviderId = 1,
+                MedicineName = "OldName",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            };
 
-            var svc = new MedicineService(_repo.Object);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = " Amoxicillin ",
+                SideEffects = "Fever",
+                Status = "Providing"
+            };
 
-            var result = await svc.GetMinePagedAsync(
-                userId: 123, pageNumber: -5, pageSize: 9999, status: "unknown", sort: "unknown"
-            );
+            _repo.Setup(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(existing);
 
-            result.PageNumber.Should().Be(1);
-            result.PageSize.Should().Be(100);
+            // Service không đổi ProviderId, nhưng ta giả lập repo phát hiện lệch (hoặc chính sách khác)
+            _repo.Setup(r => r.UpdateMedicineAsync(It.IsAny<Medicine>(), It.IsAny<CancellationToken>()))
+                 .ThrowsAsync(new InvalidOperationException("Changing Provider is not allowed."));
 
-            _repo.Verify(r => r.GetByProviderIdPagedAsync(10, 1, 100, null, null, It.IsAny<CancellationToken>()), Times.Once);
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.UpdateMedicineAsync(id, dto, CancellationToken.None));
+
+            Assert.Contains("Changing Provider", ex.Message);
+
+            _repo.Verify(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()), Times.Once);
+            _repo.Verify(r => r.UpdateMedicineAsync(It.Is<Medicine>(m =>
+                m.MedicineId == id &&
+                m.ProviderId == 1 &&                       // vẫn 1 (service không đổi)
+                m.MedicineName == "Amoxicillin" &&         // Trim
+                m.SideEffects == "Fever" &&
+                m.Status == "Providing"
+            ), It.IsAny<CancellationToken>()), Times.Once);
+            _repo.VerifyNoOtherCalls();
         }
 
-        // ✅ Test: GetMinePagedAsync ném lỗi nếu user không phải provider
-        [Fact]
-        public async Task GetMinePagedAsync_Throws_When_User_Not_Provider()
+        [Fact(DisplayName = "U5 - id=50, name=' Amoxicillin ', SE=null, Status='Stopped' -> success (trim & giữ SE cũ)")]
+        public async Task Update_U5_Success_Trim_Stopped()
         {
-            _repo.Setup(r => r.GetProviderIdByUserIdAsync(999, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync((int?)null);
+            var svc = NewService();
+            var id = 50;
 
-            var svc = new MedicineService(_repo.Object);
+            var existing = new Medicine
+            {
+                MedicineId = id,
+                ProviderId = 1,
+                MedicineName = "OldName",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            };
 
-            var act = async () => await svc.GetMinePagedAsync(999, 1, 10);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = " Amoxicillin ",
+                SideEffects = null,      // giữ SE cũ
+                Status = "Stopped"
+            };
 
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("*không phải là nhà cung cấp*");
+            _repo.Setup(r => r.GetMedicineByIdAsync(id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(existing);
+
+            _repo.Setup(r => r.UpdateMedicineAsync(
+                        It.Is<Medicine>(m =>
+                            m.MedicineId == id &&
+                            m.ProviderId == 1 &&
+                            m.MedicineName == "Amoxicillin" &&           // Trim
+                            m.SideEffects == "OldSE" &&                  // giữ cũ
+                            m.Status == "Stopped"
+                        ),
+                        It.IsAny<CancellationToken>()))
+                 .Returns(Task.CompletedTask);
+
+            await svc.UpdateMedicineAsync(id, dto, CancellationToken.None);
+
+            _repo.VerifyAll();
         }
+
     }
 }

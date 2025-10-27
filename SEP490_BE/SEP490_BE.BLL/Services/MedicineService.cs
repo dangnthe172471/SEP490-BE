@@ -17,9 +17,9 @@ namespace SEP490_BE.BLL.Services
         public async Task<int?> GetProviderIdByUserIdAsync(int userId, CancellationToken ct = default)
         => await _medicineRepository.GetProviderIdByUserIdAsync(userId, ct);
 
-        public async Task<List<ReadMedicineDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<List<ReadMedicineDto>> GetAllMedicineAsync(CancellationToken cancellationToken = default)
         {
-            var medicines = await _medicineRepository.GetAllAsync(cancellationToken);
+            var medicines = await _medicineRepository.GetAllMedicineAsync(cancellationToken);
 
             return medicines.Select(m => new ReadMedicineDto
             {
@@ -32,9 +32,9 @@ namespace SEP490_BE.BLL.Services
             }).ToList();
         }
 
-        public async Task<ReadMedicineDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<ReadMedicineDto?> GetMedicineByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            var medicine = await _medicineRepository.GetByIdAsync(id, cancellationToken);
+            var medicine = await _medicineRepository.GetMedicineByIdAsync(id, cancellationToken);
 
             if (medicine == null) return null;
 
@@ -49,11 +49,13 @@ namespace SEP490_BE.BLL.Services
             };
         }
 
-        public async Task CreateAsync(CreateMedicineDto dto, int providerId, CancellationToken cancellationToken = default)
+        public async Task CreateMedicineAsync(CreateMedicineDto dto, int providerId, CancellationToken cancellationToken = default)
         {
             var name = dto.MedicineName?.Trim();
             if (string.IsNullOrWhiteSpace(name))
                 throw new InvalidOperationException("Medicine name is required.");
+
+
 
             var newMedicine = new Medicine
             {
@@ -63,22 +65,24 @@ namespace SEP490_BE.BLL.Services
                 Status = string.IsNullOrWhiteSpace(dto.Status) ? "Providing" : dto.Status!.Trim()
             };
 
-            await _medicineRepository.CreateAsync(newMedicine, cancellationToken);
+            await _medicineRepository.CreateMedicineAsync(newMedicine, cancellationToken);
         }
 
 
-        public async Task UpdateAsync(int id, UpdateMedicineDto dto, CancellationToken cancellationToken = default)
+        public async Task UpdateMedicineAsync(int id, UpdateMedicineDto dto, CancellationToken cancellationToken = default)
         {
-            var existingMedicine = await _medicineRepository.GetByIdAsync(id, cancellationToken);
+            var existingMedicine = await _medicineRepository.GetMedicineByIdAsync(id, cancellationToken);
 
             if (existingMedicine == null)
                 throw new KeyNotFoundException($"Medicine with ID {id} not found.");
+            if (dto.MedicineName != null && string.IsNullOrWhiteSpace(dto.MedicineName))
+                throw new ArgumentException("Medicine name cannot be empty or whitespace.");
 
             existingMedicine.MedicineName = dto.MedicineName?.Trim() ?? existingMedicine.MedicineName;
             existingMedicine.SideEffects = dto.SideEffects ?? existingMedicine.SideEffects;
             existingMedicine.Status = dto.Status ?? existingMedicine.Status;
 
-            await _medicineRepository.UpdateAsync(existingMedicine, cancellationToken);
+            await _medicineRepository.UpdateMedicineAsync(existingMedicine, cancellationToken);
         }
 
         public async Task<List<ReadMedicineDto>> GetByProviderIdAsync(int providerId, CancellationToken cancellationToken = default)
