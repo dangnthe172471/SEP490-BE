@@ -71,9 +71,28 @@ namespace SEP490_BE.BLL.Services
                 throw new ArgumentException("Room name is required.");
             }
 
+            var trimmedName = request.RoomName.Trim();
+
+            // Validate room name length
+            if (trimmedName.Length < 2)
+            {
+                throw new ArgumentException("Room name must be at least 2 characters long.");
+            }
+
+            if (trimmedName.Length > 100)
+            {
+                throw new ArgumentException("Room name cannot exceed 100 characters.");
+            }
+
+            // Validate room name format (only letters, numbers, spaces, and common punctuation)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(trimmedName, @"^[\p{L}\p{N}\s\-_.,()@#$%^&*]+$"))
+            {
+                throw new ArgumentException("Room name contains invalid characters. Only letters, numbers, spaces, and common punctuation are allowed.");
+            }
+
             var room = new Room
             {
-                RoomName = request.RoomName.Trim()
+                RoomName = trimmedName
             };
 
             await _roomRepository.AddAsync(room, cancellationToken);
@@ -93,7 +112,26 @@ namespace SEP490_BE.BLL.Services
                 throw new ArgumentException("Room name is required.");
             }
 
-            room.RoomName = request.RoomName.Trim();
+            var trimmedName = request.RoomName.Trim();
+
+            // Validate room name length
+            if (trimmedName.Length < 2)
+            {
+                throw new ArgumentException("Room name must be at least 2 characters long.");
+            }
+
+            if (trimmedName.Length > 100)
+            {
+                throw new ArgumentException("Room name cannot exceed 100 characters.");
+            }
+
+            // Validate room name format (only letters, numbers, spaces, and common punctuation)
+            if (!System.Text.RegularExpressions.Regex.IsMatch(trimmedName, @"^[\p{L}\p{N}\s\-_.,()@#$%^&*]+$"))
+            {
+                throw new ArgumentException("Room name contains invalid characters. Only letters, numbers, spaces, and common punctuation are allowed.");
+            }
+
+            room.RoomName = trimmedName;
 
             await _roomRepository.UpdateAsync(room, cancellationToken);
 

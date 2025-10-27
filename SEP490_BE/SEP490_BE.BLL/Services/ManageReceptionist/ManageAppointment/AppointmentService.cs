@@ -127,6 +127,38 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 throw new ArgumentException("Doctor not found.");
             }
 
+            // ✅ Business Rule 1: Patient chỉ được đặt 1 lịch trong 1 ngày
+            var hasExistingAppointment = await _appointmentRepository.HasAppointmentOnDateAsync(
+                patient.PatientId,
+                request.AppointmentDate,
+                cancellationToken);
+
+            if (hasExistingAppointment)
+            {
+                throw new ArgumentException($"Bạn đã có lịch hẹn vào ngày {request.AppointmentDate:dd/MM/yyyy}. Vui lòng chọn ngày khác.");
+            }
+
+            // ✅ Business Rule 2: Mỗi ca chỉ được tối đa 5 người (toàn hệ thống)
+            var appointmentTime = TimeOnly.FromDateTime(request.AppointmentDate);
+            var shift = await _appointmentRepository.GetShiftByTimeAsync(appointmentTime, cancellationToken);
+
+            if (shift != null)
+            {
+                var appointmentCount = await _appointmentRepository.CountAppointmentsInShiftAsync(
+                    request.AppointmentDate,
+                    shift.ShiftId,
+                    cancellationToken);
+
+                if (appointmentCount >= 5)
+                {
+                    throw new ArgumentException($"Ca {shift.ShiftType} đã đủ số lượng (5/5 người). Vui lòng chọn ca khác hoặc ngày khác.");
+                }
+            }
+            else
+            {
+                throw new ArgumentException("Thời gian đặt lịch không hợp lệ. Vui lòng chọn thời gian trong các ca: Sáng (08:00-12:00), Chiều (13:30-17:30), Tối (18:00-22:00).");
+            }
+
             // Create appointment
             var appointment = new Appointment
             {

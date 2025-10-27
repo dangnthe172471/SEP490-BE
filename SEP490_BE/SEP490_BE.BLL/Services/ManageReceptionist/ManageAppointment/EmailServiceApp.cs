@@ -154,7 +154,6 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 <ul>
                     <li>Vui lòng đến trước giờ hẹn 15 phút để làm thủ tục</li>
                     <li>Mang theo giấy tờ tùy thân và các xét nghiệm liên quan (nếu có)</li>
-                    <li>Nếu cần thay đổi lịch hẹn, vui lòng liên hệ trước 24 giờ</li>
                 </ul>
             </div>
             
