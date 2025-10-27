@@ -155,6 +155,9 @@ app.UseCors(options =>
 
 app.UseHttpsRedirection();
 
+// Enable static files serving for uploads
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
