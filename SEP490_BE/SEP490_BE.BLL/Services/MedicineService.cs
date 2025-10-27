@@ -60,7 +60,7 @@ namespace SEP490_BE.BLL.Services
                 MedicineName = name,
                 ProviderId = providerId,
                 SideEffects = dto.SideEffects,
-                Status = string.IsNullOrWhiteSpace(dto.Status) ? "Available" : dto.Status!.Trim()
+                Status = string.IsNullOrWhiteSpace(dto.Status) ? "Providing" : dto.Status!.Trim()
             };
 
             await _medicineRepository.CreateAsync(newMedicine, cancellationToken);
