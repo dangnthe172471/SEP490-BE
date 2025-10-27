@@ -128,6 +128,7 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
         // GET: api/appointments/debug/user-info
         [HttpGet("debug/user-info")]
         [Authorize(Roles = "Patient")]
+        [Authorize(Roles = "Patient")]
         public async Task<ActionResult> DebugUserInfo()
         {
             try
@@ -230,7 +231,7 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
 
         // GET: api/appointments
         [HttpGet]
-        [Authorize(Roles = "Clinic Manager,Receptionist,Doctor")]
+        //[Authorize(Roles = "Clinic Manager,Receptionist,Doctor")]
         public async Task<ActionResult<List<AppointmentDto>>> GetAll(CancellationToken cancellationToken)
         {
             var appointments = await _appointmentService.GetAllAsync(cancellationToken);
@@ -239,7 +240,7 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
 
         // GET: api/appointments/{id}
         [HttpGet("{id}")]
-        [Authorize]
+        //[Authorize(Roles = "Clinic Manager,Receptionist,Doctor")]
         public async Task<ActionResult<AppointmentDto>> GetById(int id, CancellationToken cancellationToken)
         {
             var appointment = await _appointmentService.GetByIdAsync(id, cancellationToken);
