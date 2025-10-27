@@ -46,7 +46,7 @@ namespace SEP490_BE.API.Controllers
 		}
 
 		[HttpPost]
-		[Authorize(Roles = "Administrator")]
+		[Authorize(Roles = "Administrator, Receptionist")]
 		public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
 		{
 			try
