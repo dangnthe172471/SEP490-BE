@@ -205,7 +205,7 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 DoctorId = request.DoctorId,
                 AppointmentDate = request.AppointmentDate,
                 ReasonForVisit = request.ReasonForVisit?.Trim(),
-                Status = "Pending", // Receptionist tạo thì pending
+                Status = "Confirmed", // Receptionist tạo thì pending
                 CreatedAt = DateTime.Now,
                 ReceptionistId = receptionistId // Có ReceptionistId
             };
