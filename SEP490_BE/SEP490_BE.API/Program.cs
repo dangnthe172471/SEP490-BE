@@ -22,6 +22,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
 
@@ -77,7 +78,6 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 // THÊM DÒNG NÀY để đăng ký IResetTokenService với lớp triển khai ResetTokenService
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 
-
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailServiceApp, EmailServiceApp>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
@@ -87,7 +87,8 @@ builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IDoctorShiftRepository, DoctorShiftRepository>();
-
+builder.Services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
+builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
 builder.Services.AddScoped<ITestTypeService, TestTypeService>();
 
