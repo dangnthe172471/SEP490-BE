@@ -1,4 +1,6 @@
-﻿using SEP490_BE.DAL.Models;
+﻿using SEP490_BE.DAL.DTOs.Common;
+using SEP490_BE.DAL.DTOs.PrescriptionDoctorDTO;
+using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.DAL.IRepositories
 {
@@ -9,5 +11,14 @@ namespace SEP490_BE.DAL.IRepositories
         Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(IEnumerable<int> ids, CancellationToken ct);
         Task<Prescription> CreatePrescriptionAsync(Prescription header, IEnumerable<PrescriptionDetail> details, CancellationToken ct);
         Task<Prescription?> GetPrescriptionGraphAsync(int prescriptionId, CancellationToken ct);
+
+        Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
+            int userIdFromToken,
+            DateOnly? visitDateFrom,
+            DateOnly? visitDateTo,
+            string? patientNameSearch,
+            int pageNumber,
+            int pageSize,
+            CancellationToken ct);
     }
 }

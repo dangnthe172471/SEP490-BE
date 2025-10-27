@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.PrescriptionDoctorDTO;
 using System.Security.Claims;
 
@@ -34,6 +35,28 @@ namespace SEP490_BE.API.Controllers
 
             var result = await _service.GetByIdAsync(userId, id, ct);
             return result is null ? NotFound() : Ok(result);
+        }
+
+        [HttpGet("records")]
+        [Authorize(Roles = "Doctor")]
+        public async Task<ActionResult<PagedResult<RecordListItemDto>>> GetRecordsForDoctor(
+            [FromQuery] DateOnly? from,
+            [FromQuery] DateOnly? to,
+            [FromQuery] string? search,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20,
+            CancellationToken ct = default)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+
+            // Giới hạn pageSize an toàn
+            pageSize = pageSize <= 0 ? 20 : Math.Min(pageSize, 100);
+
+            var result = await _service.GetRecordsForDoctorAsync(
+                userId, from, to, search, pageNumber, pageSize, ct);
+
+            return Ok(result);
         }
     }
 }

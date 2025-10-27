@@ -1,4 +1,5 @@
 ﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.PrescriptionDoctorDTO;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -134,5 +135,15 @@ namespace SEP490_BE.BLL.Services
                 ? new DiagnosisInfoDto { Code = parts[0], Text = parts[1] }
                 : new DiagnosisInfoDto { Text = raw };
         }
+
+        public Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
+            int userIdFromToken,
+            DateOnly? visitDateFrom,
+            DateOnly? visitDateTo,
+            string? patientNameSearch,
+            int pageNumber,
+            int pageSize,
+            CancellationToken ct)
+            => _repo.GetRecordsForDoctorAsync(userIdFromToken, visitDateFrom, visitDateTo, patientNameSearch, pageNumber, pageSize, ct);
     }
 }
