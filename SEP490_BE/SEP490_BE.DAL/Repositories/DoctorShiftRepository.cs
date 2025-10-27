@@ -14,14 +14,21 @@ namespace SEP490_BE.DAL.Repositories
         private readonly DiamondHealthContext _context;
         public DoctorShiftRepository(DiamondHealthContext context) => _context = context;
 
-        public async Task<bool> IsShiftConflictAsync(int doctorId, int shiftId, DateOnly from, DateOnly to)
+        public async Task<bool> IsShiftConflictAsync(
+      int doctorId,
+      int shiftId,
+      DateOnly newFrom,
+      DateOnly newTo)
         {
-            return await _context.DoctorShifts.AnyAsync(x =>
-                x.DoctorId == doctorId &&
-                x.ShiftId == shiftId &&
-                x.EffectiveTo >= from &&
-                x.EffectiveFrom <= to);
+            return await _context.DoctorShifts.AnyAsync(ds =>
+                ds.DoctorId == doctorId &&
+                ds.ShiftId == shiftId &&
+                ds.Status == "Active" &&
+                // Kiểm tra giao nhau giữa hai khoảng [EffectiveFrom, EffectiveTo]
+                ds.EffectiveFrom <= newTo && ds.EffectiveTo >= newFrom
+            );
         }
+
 
         public async Task AddDoctorShiftAsync(DoctorShift entity)
         {

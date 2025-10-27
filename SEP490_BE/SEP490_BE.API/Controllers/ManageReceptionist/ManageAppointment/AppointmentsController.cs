@@ -347,7 +347,7 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
 
         // PUT: api/appointments/{id}/status
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "Doctor,Receptionist,Clinic Manager")]
+        [Authorize(Roles = "Doctor,Receptionist,Clinic Manager,Patient")]
         public async Task<IActionResult> UpdateStatus(
             int id,
             [FromBody] UpdateAppointmentStatusRequest request,

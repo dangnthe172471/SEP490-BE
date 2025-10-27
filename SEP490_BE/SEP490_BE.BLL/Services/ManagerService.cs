@@ -1,13 +1,16 @@
-﻿using System;
+﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
+using SEP490_BE.DAL.DTOs.MedicineDTO;
+using SEP490_BE.DAL.Helpers;
+using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SEP490_BE.BLL.IServices;
-using SEP490_BE.DAL.DTOs;
-using SEP490_BE.DAL.IRepositories;
-using SEP490_BE.DAL.Models;
-using SEP490_BE.DAL.Repositories;
 
 namespace SEP490_BE.BLL.Services
 {
@@ -16,15 +19,18 @@ namespace SEP490_BE.BLL.Services
         private readonly IShiftRepository _shiftRepo;
         private readonly IDoctorRepository _doctorRepo;
         private readonly IDoctorShiftRepository _doctorShiftRepo;
+        private readonly IManagerRepository _managerRepo;
 
         public ManagerService(
             IShiftRepository shiftRepo,
             IDoctorRepository doctorRepo,
-            IDoctorShiftRepository doctorShiftRepo)
+            IDoctorShiftRepository doctorShiftRepo,
+            IManagerRepository managerRepo)
         {
             _shiftRepo = shiftRepo;
             _doctorRepo = doctorRepo;
             _doctorShiftRepo = doctorShiftRepo;
+            _managerRepo = managerRepo;
         }
 
         //  Danh sách ca làm việc
@@ -76,36 +82,136 @@ namespace SEP490_BE.BLL.Services
         {
             int createdCount = 0;
 
-            for (var date = dto.EffectiveFrom; date <= dto.EffectiveTo; date = date.AddDays(1))
+            foreach (var shift in dto.Shifts)
             {
-                foreach (var shift in dto.Shifts)
+                foreach (var doctorId in shift.DoctorIds)
                 {
-                    foreach (var doctorId in shift.DoctorIds)
+                    bool conflict = await _doctorShiftRepo.IsShiftConflictAsync(
+                        doctorId,
+                        shift.ShiftId,
+                        dto.EffectiveFrom,
+                        dto.EffectiveTo
+                    );
+
+                    if (!conflict)
                     {
-                        bool conflict = await _doctorShiftRepo.IsShiftConflictAsync(doctorId, shift.ShiftId, date, date);
-                        if (!conflict)
+                        var ds = new DoctorShift
                         {
-                            var ds = new DoctorShift
-                            {
-                                DoctorId = doctorId,
-                                ShiftId = shift.ShiftId,
-                                EffectiveFrom = date,
-                                EffectiveTo = date,
-                                Status = "Active"
-                            };
-                            await _doctorShiftRepo.AddDoctorShiftAsync(ds);
-                            createdCount++;
-                        }
+                            DoctorId = doctorId,
+                            ShiftId = shift.ShiftId,
+                            EffectiveFrom = dto.EffectiveFrom,
+                            EffectiveTo = dto.EffectiveTo,
+                            Status = "Active"
+                        };
+
+                        await _doctorShiftRepo.AddDoctorShiftAsync(ds);
+                        createdCount++;
                     }
                 }
             }
+
             return createdCount;
         }
+
 
         // Xem lịch làm việc đã tạo
         public async Task<List<DoctorShift>> GetSchedulesAsync(DateOnly from, DateOnly to)
         {
             return await _doctorShiftRepo.GetSchedulesAsync(from, to);
         }
+
+        public async Task<PaginationHelper.PagedResult<WorkScheduleDto>> GetAllSchedulesAsync(int pageNumber, int pageSize)
+        {
+            return await _managerRepo.GetAllSchedulesAsync(pageNumber, pageSize);
+        }
+        public async Task<List<DailyWorkScheduleViewDto>> GetWorkScheduleByDateRangeAsync(DateOnly startDate, DateOnly endDate)
+        {
+            var schedules = await _managerRepo.GetWorkScheduleByDateRangeAsync(startDate, endDate);
+            return schedules.OrderBy(s => s.Date).ToList();
+        }
+        public async Task<PaginationHelper.PagedResult<DailyWorkScheduleDto>> GetWorkSchedulesByDateAsync(DateOnly? date, int pageNumber, int pageSize)
+        {
+            return await _managerRepo.GetWorkSchedulesByDateAsync(date, pageNumber, pageSize);
+        }
+
+        public async Task UpdateWorkScheduleByDateAsync(UpdateWorkScheduleByDateRequest request)
+        {
+            await _managerRepo.UpdateWorkScheduleByDateAsync(request);
+        }
+
+        public async Task UpdateWorkScheduleByIdAsync(UpdateWorkScheduleByIdRequest request)
+        {
+            await _managerRepo.UpdateWorkScheduleByIdAsync(request);
+        }
+        public async Task<List<DailySummaryDto>> GetMonthlyWorkSummaryAsync(int year, int month)
+        {
+            if (year <= 0 || month <= 0 || month > 12)
+                throw new ArgumentException("Tháng hoặc năm không hợp lệ");
+
+            return await _managerRepo.GetMonthlyWorkSummaryAsync(year, month);
+        }
+        public async Task<PaginationHelper.PagedResult<WorkScheduleGroupDto>> GetGroupedWorkScheduleListAsync(
+      int pageNumber, int pageSize)
+        {
+            // Lấy toàn bộ lịch (DoctorShift)
+            var list = await _managerRepo.GetAllWorkSchedulesAsync(null, null);
+
+            //Nếu EffectiveTo = null → tự gán = EffectiveFrom + 1 tháng
+            var adjustedList = list.Select(x => new
+            {
+                x.DoctorId,
+                x.DoctorName,
+                x.Specialty,
+                x.ShiftId,
+                x.ShiftType,
+                x.StartTime,
+                x.EndTime,
+                x.EffectiveFrom,
+                EffectiveTo = x.EffectiveTo ?? x.EffectiveFrom.AddMonths(1)
+            }).ToList();
+
+            //  Gom nhóm theo khoảng thời gian (không group theo Shift)
+            var grouped = adjustedList
+                .GroupBy(x => new { x.EffectiveFrom, x.EffectiveTo })
+                .Select(g => new WorkScheduleGroupDto
+                {
+                    EffectiveFrom = g.Key.EffectiveFrom,
+                    EffectiveTo = g.Key.EffectiveTo,
+
+                    //  Gộp nhiều ca trong cùng khoảng thời gian
+                    Shifts = g.GroupBy(s => s.ShiftId)
+                        .Select(sg => new ShiftResponseDto
+                        {
+                            ShiftID = sg.Key,
+                            ShiftType = sg.First().ShiftType,
+                            StartTime = sg.First().StartTime.ToString("HH:mm:ss"),
+                            EndTime = sg.First().EndTime.ToString("HH:mm:ss"),
+                            Doctors = sg.Select(d => new DoctorDTO
+                            {
+                                DoctorID = d.DoctorId,
+                                FullName = d.DoctorName,
+                                Specialty = d.Specialty,
+                                Email = $"{d.DoctorName}@example.com"
+                            }).ToList()
+                        }).ToList()
+                })
+                .OrderBy(g => g.EffectiveFrom)
+                .ToList();
+
+          
+            var totalCount = grouped.Count;
+            var items = grouped.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+            
+            return new PaginationHelper.PagedResult<WorkScheduleGroupDto>
+            {
+                Items = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
+            };
+        }
+
+
     }
 }

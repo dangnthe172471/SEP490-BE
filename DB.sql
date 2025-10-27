@@ -83,7 +83,7 @@ CREATE TABLE DoctorShift (
     ShiftID INT NOT NULL,
     EffectiveFrom DATE NOT NULL,    -- Ngày bắt đầu có hiệu lực
     EffectiveTo DATE NULL,          -- Ngày kết thúc (NULL = vĩnh viễn)
-    Status NVARCHAR(255) NULL,       -- Ghi chú
+    Status NVARCHAR(255) NULL DEFAULT 'Active',       -- Ghi chú
     FOREIGN KEY (DoctorID) REFERENCES Doctor(DoctorID),
     FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
 );
@@ -234,7 +234,17 @@ CREATE TABLE ChatLog (
     FOREIGN KEY (PatientID) REFERENCES Patient(PatientID),
     FOREIGN KEY (ReceptionistID) REFERENCES Receptionist(ReceptionistID)
 );
-
+Go
+-- Thêm cột SwapType vào bảng DoctorShiftExchange
+ALTER TABLE DoctorShiftExchange 
+ADD SwapType NVARCHAR(20) DEFAULT 'Temporary';
+Go
+ALTER TABLE [dbo].[Appointment]
+ADD [ReasonForVisit] NVARCHAR(500) NULL;
+Go
+ALTER TABLE [dbo].[User]
+ADD [Avatar] NVARCHAR(500) NULL;
+GO
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Thêm các Role theo đúng thứ tự yêu cầu
@@ -288,7 +298,7 @@ GO
 --Doctor (liên kết UserID 1)
 INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears, RoomID)
 VALUES 
-(1, 1, N'Tim mạch', 10, 2);
+(1, 1, N'Sản phụ khoa', 10, 2);
 GO
 
 --Patient (UserID 2)
@@ -328,7 +338,7 @@ GO
 INSERT INTO Doctor (DoctorID, UserID, Specialty, ExperienceYears, RoomID)
 VALUES 
 (2, 8, N'Nội khoa', 8, 1),
-(3, 9, N'Nhi khoa', 6, 1),
+(3, 9, N'Da liễu', 6, 1),
 (4, 10, N'Sản phụ khoa', 12, 2);
 
 -- Thêm data cho các bệnh nhân mới
@@ -349,19 +359,19 @@ GO
 INSERT INTO DoctorShift (DoctorID, ShiftID, EffectiveFrom, EffectiveTo)
 VALUES
 -- Bác sĩ 1: Ca sáng, ca chiều
-(1, 1, '2025-01-01', NULL), -- Ca sáng vĩnh viễn
-(1, 2, '2025-01-01', NULL), -- Ca chiều vĩnh viễn
+(1, 1, '2025-01-01', '2026-01-01'), -- Ca sáng vĩnh viễn
+(1, 2, '2025-01-01', '2026-01-01'), -- Ca chiều vĩnh viễn
 
 -- Bác sĩ 2: Ca sáng, ca tối
-(2, 1, '2025-01-01', NULL), -- Ca sáng vĩnh viễn
-(2, 3, '2025-01-01', NULL), -- Ca tối vĩnh viễn
+(2, 1, '2025-01-01', '2026-01-01'), -- Ca sáng vĩnh viễn
+(2, 3, '2025-01-01', '2026-01-01'), -- Ca tối vĩnh viễn
 
 -- Bác sĩ 3: Ca chiều, ca tối
-(3, 2, '2025-01-01', NULL), -- Ca chiều vĩnh viễn
-(3, 3, '2025-01-01', NULL), -- Ca tối vĩnh viễn
+(3, 2, '2025-01-01', '2026-01-01'), -- Ca chiều vĩnh viễn
+(3, 3, '2025-01-01', '2026-01-01'), -- Ca tối vĩnh viễn
 
--- Bác sĩ 4: Làm tạm thời từ 1/1 đến 31/3/2025
-(4, 1, '2025-01-01', '2025-03-31'); -- Ca sáng tạm thời
+(4, 3, '2025-01-01','2026-01-01'); -- Ca sáng tạm thời
+
 GO
 
 INSERT INTO DoctorShiftExchange (Doctor1ID, Doctor1ShiftRefID, Doctor2ID, Doctor2ShiftRefID, ExchangeDate)

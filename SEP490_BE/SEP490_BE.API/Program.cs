@@ -97,6 +97,9 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IMedicineRepository, MedicineRepository>();
 builder.Services.AddScoped<IMedicineService, MedicineService>();
 
+// Doctor Shift Exchange DI
+builder.Services.AddScoped<IDoctorShiftExchangeRepository, DoctorShiftExchangeRepository>();
+builder.Services.AddScoped<IDoctorShiftExchangeService, DoctorShiftExchangeService>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 
