@@ -11,7 +11,7 @@ namespace SEP490_BE.Tests.Services
     {
         private readonly Mock<IMedicineRepository> _repo = new();
 
-        // 🔧 Helper: Tạo entity Medicine kèm Provider.User để test mapping
+        //  Helper: Tạo entity Medicine kèm Provider.User để test mapping
         private static Medicine MakeMed(int id, int providerId, string name, string? status = "Providing", string? sideEffects = null, string providerName = "Prov A")
             => new Medicine
             {

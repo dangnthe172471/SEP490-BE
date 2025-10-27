@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 
@@ -158,6 +159,28 @@ namespace SEP490_BE.API.Controllers
         {
             var data = await _service.GetGroupedWorkScheduleListAsync(pageNumber, pageSize);
             return Ok(data);
+        }
+
+        [HttpPut("update-doctor-shifts-range")]
+        public async Task<IActionResult> UpdateDoctorShiftsInRange([FromBody] UpdateDoctorShiftRangeRequest request)
+        {
+            try
+            {
+                await _service.UpdateDoctorShiftsInRangeAsync(request);
+                return Ok(new { message = " Cập nhật lịch làm việc thành công." });
+            }
+            catch (Exception ex)
+            {
+                // Ghi log (nếu có ILogger)
+                Console.WriteLine($"[ERROR] UpdateDoctorShiftsInRangeAsync: {ex.Message}");
+
+                // Trả thông tin lỗi cho FE
+                return BadRequest(new
+                {
+                    error = ex.Message,
+                    detail = ex.InnerException?.Message
+                });
+            }
         }
 
     }
