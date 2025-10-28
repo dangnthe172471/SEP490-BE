@@ -63,8 +63,7 @@ namespace SEP490_BE.Tests.Repositories
             Assert.NotNull(savedPatient);
             Assert.Equal(user.UserId, savedPatient.UserId);
         }
-    }
-}
+
         // Tạo DbContext InMemory mới cho mỗi test (độc lập với DB thật)
         private DiamondHealthContext NewCtx(string db)
         {
