@@ -25,7 +25,7 @@ namespace SEP490_BE.API.Controllers
             return Ok(rooms);
         }
 
-        
+
         [HttpGet("paged")]
         [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<PagedResponse<RoomDto>>> GetPaged(
@@ -38,7 +38,7 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
-        
+
         [HttpGet("{id}")]
         [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<RoomDto>> GetById(int id, CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ namespace SEP490_BE.API.Controllers
             return Ok(room);
         }
 
-        
+
         [HttpPost]
         [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<int>> Create(
@@ -68,9 +68,13 @@ namespace SEP490_BE.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-      
+
         [HttpPut("{id}")]
         [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<RoomDto>> Update(
@@ -92,20 +96,31 @@ namespace SEP490_BE.API.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "Clinic Manager")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
-            var success = await _roomService.DeleteAsync(id, cancellationToken);
-            if (!success)
+            try
             {
-                return NotFound();
-            }
+                var success = await _roomService.DeleteAsync(id, cancellationToken);
+                if (!success)
+                {
+                    return NotFound();
+                }
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

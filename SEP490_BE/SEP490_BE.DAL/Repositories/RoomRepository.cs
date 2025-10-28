@@ -58,21 +58,48 @@ namespace SEP490_BE.DAL.Repositories
 
         public async Task AddAsync(Room room, CancellationToken cancellationToken = default)
         {
+            // Check if room name already exists
+            var existingRoom = await _dbContext.Rooms
+                .FirstOrDefaultAsync(r => r.RoomName.ToLower() == room.RoomName.ToLower(), cancellationToken);
+
+            if (existingRoom != null)
+            {
+                throw new InvalidOperationException($"Room name '{room.RoomName}' already exists.");
+            }
+
             await _dbContext.Rooms.AddAsync(room, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         public async Task UpdateAsync(Room room, CancellationToken cancellationToken = default)
         {
+            // Check if room name already exists (excluding current room)
+            var existingRoom = await _dbContext.Rooms
+                .FirstOrDefaultAsync(r => r.RoomName.ToLower() == room.RoomName.ToLower() && r.RoomId != room.RoomId, cancellationToken);
+
+            if (existingRoom != null)
+            {
+                throw new InvalidOperationException($"Room name '{room.RoomName}' already exists.");
+            }
+
             _dbContext.Rooms.Update(room);
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         public async Task DeleteAsync(int roomId, CancellationToken cancellationToken = default)
         {
-            var room = await _dbContext.Rooms.FindAsync(new object[] { roomId }, cancellationToken: cancellationToken);
+            var room = await _dbContext.Rooms
+                .Include(r => r.Doctors)
+                .FirstOrDefaultAsync(r => r.RoomId == roomId, cancellationToken);
+
             if (room != null)
             {
+                // Check if room has doctors
+                if (room.Doctors.Any())
+                {
+                    throw new InvalidOperationException($"Cannot delete room '{room.RoomName}' because it has {room.Doctors.Count} doctor(s) assigned.");
+                }
+
                 _dbContext.Rooms.Remove(room);
                 await _dbContext.SaveChangesAsync(cancellationToken);
             }
