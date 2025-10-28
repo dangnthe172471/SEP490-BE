@@ -4,10 +4,10 @@ namespace SEP490_BE.DAL.IRepositories
 {
     public interface IMedicineRepository
     {
-        Task<List<Medicine>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<Medicine?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-        Task CreateAsync(Medicine medicine, CancellationToken cancellationToken = default);
-        Task UpdateAsync(Medicine medicine, CancellationToken cancellationToken = default);
+        Task<List<Medicine>> GetAllMedicineAsync(CancellationToken cancellationToken = default);
+        Task<Medicine?> GetMedicineByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task CreateMedicineAsync(Medicine medicine, CancellationToken cancellationToken = default);
+        Task UpdateMedicineAsync(Medicine medicine, CancellationToken cancellationToken = default);
         Task<List<Medicine>> GetByProviderIdAsync(int providerId, CancellationToken cancellationToken = default);
         Task SoftDeleteAsync(int medicineId, CancellationToken cancellationToken = default);
 

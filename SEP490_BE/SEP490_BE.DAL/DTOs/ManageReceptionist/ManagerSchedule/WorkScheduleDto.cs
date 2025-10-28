@@ -84,3 +84,12 @@ public class WorkScheduleGroupDto
     public DateOnly? EffectiveTo { get; set; }
     public List<ShiftResponseDto> Shifts { get; set; } = new();
 }
+public class UpdateDoctorShiftRangeRequest
+{
+    public int ShiftId { get; set; }
+    public DateOnly FromDate { get; set; }
+    public DateOnly ToDate { get; set; } 
+    public DateOnly? NewToDate { get; set; } 
+    public List<int> AddDoctorIds { get; set; } = new();
+    public List<int> RemoveDoctorIds { get; set; } = new();
+}

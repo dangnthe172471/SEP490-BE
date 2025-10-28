@@ -159,6 +159,7 @@ namespace SEP490_BE.BLL.Services
             //Nếu EffectiveTo = null → tự gán = EffectiveFrom + 1 tháng
             var adjustedList = list.Select(x => new
             {
+             x.DoctorShiftId,
                 x.DoctorId,
                 x.DoctorName,
                 x.Specialty,
@@ -180,13 +181,16 @@ namespace SEP490_BE.BLL.Services
 
                     //  Gộp nhiều ca trong cùng khoảng thời gian
                     Shifts = g.GroupBy(s => s.ShiftId)
+                    .OrderByDescending(sg => sg.Max(x => x.DoctorShiftId))
                         .Select(sg => new ShiftResponseDto
                         {
                             ShiftID = sg.Key,
                             ShiftType = sg.First().ShiftType,
                             StartTime = sg.First().StartTime.ToString("HH:mm:ss"),
                             EndTime = sg.First().EndTime.ToString("HH:mm:ss"),
-                            Doctors = sg.Select(d => new DoctorDTO
+                            Doctors = sg
+                            .OrderByDescending(d => d.DoctorShiftId)
+                            .Select(d => new DoctorDTO
                             {
                                 DoctorID = d.DoctorId,
                                 FullName = d.DoctorName,
@@ -195,7 +199,7 @@ namespace SEP490_BE.BLL.Services
                             }).ToList()
                         }).ToList()
                 })
-                .OrderBy(g => g.EffectiveFrom)
+                .OrderByDescending(g => g.EffectiveFrom)
                 .ToList();
 
           
@@ -211,7 +215,102 @@ namespace SEP490_BE.BLL.Services
                 TotalCount = totalCount
             };
         }
+        public async Task UpdateDoctorShiftsInRangeAsync(UpdateDoctorShiftRangeRequest request)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var newToDate = request.NewToDate ?? request.ToDate;
+
+            // Lấy nhóm hiện tại (chính xác theo from - to)
+            var existing = await _managerRepo.GetExactRangeAsync(request.ShiftId, request.FromDate, request.ToDate);
+
+            if (!existing.Any())
+                throw new Exception("Không tìm thấy nhóm lịch tương ứng để cập nhật.");
+
+            //  ĐỔI ToDate (tạo nhóm mới) 
+            if (newToDate != request.ToDate)
+            {
+                // 1. Inactivate nhóm cũ
+                foreach (var e in existing)
+                {
+                    e.Status = "Inactive";
+                    await _managerRepo.UpdateAsync(e);
+                }
+
+                // 2. Tạo nhóm mới với ToDate mới
+                var allDoctorIds = existing.Select(e => e.DoctorId)
+                    .Union(request.AddDoctorIds)
+                    .Except(request.RemoveDoctorIds)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var doctorId in allDoctorIds)
+                {
+                    var newShift = new DoctorShift
+                    {
+                        DoctorId = doctorId,
+                        ShiftId = request.ShiftId,
+                        EffectiveFrom = request.FromDate < today ? today : request.FromDate,
+                        EffectiveTo = newToDate,
+                        Status = "Active"
+                    };
+                    await _managerRepo.AddAsync(newShift);
+                }
+            }
+            else
+            {
+                //  KHÔNG ĐỔI ToDate, chỉ thêm/xóa bác sĩ 
+                foreach (var id in request.RemoveDoctorIds)
+                {
+                    var target = existing.FirstOrDefault(x => x.DoctorId == id);
+                    if (target != null)
+                    {
+                        target.EffectiveTo = today.AddDays(-1);
+                        target.Status = "Inactive";
+                        await _managerRepo.UpdateAsync(target);
+                    }
+                }
+
+                foreach (var id in request.AddDoctorIds)
+                {
+                    if (!existing.Any(x => x.DoctorId == id))
+                    {
+                        var newShift = new DoctorShift
+                        {
+                            DoctorId = id,
+                            ShiftId = request.ShiftId,
+                            EffectiveFrom = request.FromDate < today ? today : request.FromDate,
+                            EffectiveTo = request.ToDate,
+                            Status = "Active"
+                        };
+                        await _managerRepo.AddAsync(newShift);
+                    }
+                }
+            }
+
+            await _managerRepo.SaveChangesAsync();
+        }
 
 
+ //       public async Task RefreshShiftStatusAsync()
+ //       {
+ //           var today = DateTime.Today;
+
+     
+ //           var expiredShifts = await _managerRepo.GetAllAsync(
+ //    ds => ds.Status == "Active" &&
+ //          ds.EffectiveTo != null &&
+ //          ds.EffectiveTo.Value.ToDateTime(TimeOnly.MinValue) < today
+ //);
+
+ //           if (!expiredShifts.Any()) return;
+
+ //           foreach (var shift in expiredShifts)
+ //           {
+ //               shift.Status = "Inactive";
+ //               await _managerRepo.UpdateAsync(shift);
+ //           }
+
+ //           await _managerRepo.SaveChangesAsync();
+ //       }
     }
 }

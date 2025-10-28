@@ -13,7 +13,7 @@ namespace SEP490_BE.DAL.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<List<Medicine>> GetAllAsync(CancellationToken cancellationToken = default)
+        public async Task<List<Medicine>> GetAllMedicineAsync(CancellationToken cancellationToken = default)
         {
             return await _dbContext.Medicines
                 .Include(m => m.Provider)
@@ -22,7 +22,7 @@ namespace SEP490_BE.DAL.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<Medicine?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+        public async Task<Medicine?> GetMedicineByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _dbContext.Medicines
                 .Include(m => m.Provider)
@@ -30,9 +30,15 @@ namespace SEP490_BE.DAL.Repositories
                 .FirstOrDefaultAsync(m => m.MedicineId == id, cancellationToken);
         }
 
-        public async Task CreateAsync(Medicine medicine, CancellationToken cancellationToken = default)
+        public async Task CreateMedicineAsync(Medicine medicine, CancellationToken cancellationToken = default)
         {
-            medicine.MedicineName = medicine.MedicineName?.Trim();
+            if (medicine == null)
+                throw new ArgumentNullException(nameof(medicine), "Medicine object cannot be null.");
+
+            if (string.IsNullOrWhiteSpace(medicine.MedicineName))
+                throw new ArgumentException("Medicine name cannot be empty or whitespace.", nameof(medicine.MedicineName));
+
+            medicine.MedicineName = medicine.MedicineName.Trim();
 
             var exists = await _dbContext.Medicines.AnyAsync(
                 m => m.ProviderId == medicine.ProviderId && m.MedicineName == medicine.MedicineName,
@@ -45,8 +51,7 @@ namespace SEP490_BE.DAL.Repositories
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-
-        public async Task UpdateAsync(Medicine medicine, CancellationToken cancellationToken = default)
+        public async Task UpdateMedicineAsync(Medicine medicine, CancellationToken cancellationToken = default)
         {
             var existingMedicine = await _dbContext.Medicines
                 .AsTracking()
@@ -57,6 +62,9 @@ namespace SEP490_BE.DAL.Repositories
 
             if (existingMedicine.ProviderId != medicine.ProviderId)
                 throw new InvalidOperationException("Changing Provider is not allowed.");
+
+            if (existingMedicine.MedicineName != null && string.IsNullOrWhiteSpace(existingMedicine.MedicineName))
+                throw new ArgumentException("Medicine name cannot be empty or whitespace.");
 
             existingMedicine.MedicineName = medicine.MedicineName?.Trim() ?? existingMedicine.MedicineName;
             existingMedicine.SideEffects = medicine.SideEffects;
