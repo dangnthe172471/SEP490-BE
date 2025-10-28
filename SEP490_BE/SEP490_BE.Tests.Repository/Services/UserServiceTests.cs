@@ -122,6 +122,7 @@ namespace SEP490_BE.Tests.Services
 
             // Kiểm tra các thuộc tính khác (nếu cần)
             Assert.Equal(request.Phone, capturedUser.Phone);
+        }
 
         private readonly Mock<IUserRepository> _repo = new();
 
