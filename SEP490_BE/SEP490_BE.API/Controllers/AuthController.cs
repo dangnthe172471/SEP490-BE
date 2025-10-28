@@ -9,6 +9,7 @@ using SEP490_BE.DAL.Repositories;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.IO;
 
 namespace SEP490_BE.API.Controllers
 {
@@ -111,8 +112,152 @@ namespace SEP490_BE.API.Controllers
 				gender = user.Gender,
 				dob = user.Dob,
 				allergies = user.Allergies,
-				medicalHistory = user.MedicalHistory
+				medicalHistory = user.MedicalHistory,
+				avatar = user.Avatar
 			});
+		}
+
+		[HttpPost("change-password")]
+		[Authorize]
+		public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken)
+		{
+			var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+			{
+				return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+			}
+
+			// Validate input
+			if (string.IsNullOrEmpty(request.CurrentPassword))
+			{
+				return BadRequest(new { message = "Vui lòng nhập mật khẩu hiện tại" });
+			}
+
+			if (string.IsNullOrEmpty(request.NewPassword))
+			{
+				return BadRequest(new { message = "Vui lòng nhập mật khẩu mới" });
+			}
+
+			if (request.NewPassword.Length < 6)
+			{
+				return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 6 ký tự" });
+			}
+
+			if (request.CurrentPassword == request.NewPassword)
+			{
+				return BadRequest(new { message = "Mật khẩu mới phải khác mật khẩu hiện tại" });
+			}
+
+			try
+			{
+				// Get user from database
+				var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+				if (user == null)
+				{
+					return NotFound(new { message = "Không tìm thấy người dùng" });
+				}
+
+				// Verify current password
+				var isValidCurrentPassword = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash);
+				if (!isValidCurrentPassword)
+				{
+					return Unauthorized(new { message = "Mật khẩu hiện tại không đúng" });
+				}
+
+				// Update password
+				var success = await _userService.UpdatePasswordAsync(userId, request.NewPassword, cancellationToken);
+				if (!success)
+				{
+					return BadRequest(new { message = "Không thể cập nhật mật khẩu" });
+				}
+
+				return Ok(new { message = "Đổi mật khẩu thành công" });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Có lỗi xảy ra khi đổi mật khẩu", error = ex.Message });
+			}
+		}
+
+		[HttpPost("change-avatar")]
+		[Authorize]
+		public async Task<IActionResult> ChangeAvatar(IFormFile avatar, CancellationToken cancellationToken)
+		{
+			var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+			{
+				return Unauthorized(new { message = "Không tìm thấy thông tin người dùng" });
+			}
+
+			if (avatar == null || avatar.Length == 0)
+			{
+				return BadRequest(new { message = "Vui lòng chọn ảnh đại diện" });
+			}
+
+			// Validate file type
+			var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
+			if (!allowedTypes.Contains(avatar.ContentType.ToLower()))
+			{
+				return BadRequest(new { message = "Chỉ chấp nhận file ảnh (JPG, PNG, GIF)" });
+			}
+
+			// Validate file size (5MB max)
+			if (avatar.Length > 5 * 1024 * 1024)
+			{
+				return BadRequest(new { message = "Kích thước file không được vượt quá 5MB" });
+			}
+
+			try
+			{
+				// Generate unique filename
+				var fileExtension = Path.GetExtension(avatar.FileName);
+				var fileName = $"avatar_{userId}_{DateTime.Now:yyyyMMddHHmmss}{fileExtension}";
+				
+				// Create uploads directory if it doesn't exist
+				var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+				if (!Directory.Exists(uploadsPath))
+				{
+					Directory.CreateDirectory(uploadsPath);
+				}
+
+				var filePath = Path.Combine(uploadsPath, fileName);
+
+				// Save file
+				using (var stream = new FileStream(filePath, FileMode.Create))
+				{
+					await avatar.CopyToAsync(stream, cancellationToken);
+				}
+
+				// Generate URL for the avatar
+				var avatarUrl = $"/uploads/avatars/{fileName}";
+
+				// Update user avatar in database
+				var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+				if (user != null)
+				{
+					// Delete old avatar if exists
+					if (!string.IsNullOrEmpty(user.Avatar) && user.Avatar.StartsWith("/uploads/avatars/"))
+					{
+						var oldAvatarPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", user.Avatar.TrimStart('/'));
+						if (System.IO.File.Exists(oldAvatarPath))
+						{
+							System.IO.File.Delete(oldAvatarPath);
+						}
+					}
+
+					user.Avatar = avatarUrl;
+					await _userRepository.UpdateAsync(user, cancellationToken);
+				}
+
+				return Ok(new { 
+					message = "Cập nhật ảnh đại diện thành công",
+					avatarUrl = avatarUrl
+				});
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { message = "Có lỗi xảy ra khi cập nhật ảnh đại diện", error = ex.Message });
+			}
 		}
 
 		[HttpPost("forgot-password")]

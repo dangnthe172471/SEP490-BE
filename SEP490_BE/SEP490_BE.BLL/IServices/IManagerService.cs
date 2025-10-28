@@ -29,5 +29,7 @@ namespace SEP490_BE.BLL.IServices
         Task<PaginationHelper.PagedResult<WorkScheduleGroupDto>> GetGroupedWorkScheduleListAsync(
            int pageNumber,
            int pageSize);
+        Task UpdateDoctorShiftsInRangeAsync(UpdateDoctorShiftRangeRequest request);
+        //Task RefreshShiftStatusAsync();
     }
 }

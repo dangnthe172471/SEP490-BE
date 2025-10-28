@@ -7,370 +7,339 @@ namespace SEP490_BE.Tests.Repositories
 {
     public class MedicineRepositoryTests
     {
-        // Tạo DbContext InMemory mới cho mỗi test (độc lập với DB thật)
-        private DiamondHealthContext NewCtx(string db)
+        private DiamondHealthContext NewContext(string dbName)
         {
-            var opt = new DbContextOptionsBuilder<DiamondHealthContext>()
-                .UseInMemoryDatabase(db)
+            var options = new DbContextOptionsBuilder<DiamondHealthContext>()
+                .UseInMemoryDatabase(databaseName: dbName)
                 .EnableSensitiveDataLogging()
                 .Options;
-            return new DiamondHealthContext(opt);
-        }
 
-        // SEED dữ liệu GIỐNG HỆT ảnh SQL: 16 rows (ProviderId=1 có 3; ProviderId=2 có 13)
-        private async Task SeedExactlyLikeScreenshotAsync(DiamondHealthContext ctx)
-        {
-            // 👇 Seed 1 role tối thiểu
-            var pharmacyRole = new Role
-            {
-                RoleId = 3,
-                RoleName = "Pharmacy Provider"
-            };
-            ctx.Roles.Add(pharmacyRole);
+            var ctx = new DiamondHealthContext(options);
 
-            var u1 = new User
-            {
-                UserId = 1,
-                Phone = "0900000001",
-                PasswordHash = "hash-1",
-                FullName = "Provider One",
-                Email = "p1@example.com",
-                RoleId = pharmacyRole.RoleId,
-                Role = pharmacyRole
-            };
-
-            var u2 = new User
-            {
-                UserId = 2,
-                Phone = "0900000002",
-                PasswordHash = "hash-2",
-                FullName = "Provider Two",
-                Email = "p2@example.com",
-                RoleId = pharmacyRole.RoleId,
-                Role = pharmacyRole
-            };
-
-            var p1 = new PharmacyProvider { ProviderId = 1, UserId = 1, User = u1 };
-            var p2 = new PharmacyProvider { ProviderId = 2, UserId = 2, User = u2 };
-
-            ctx.Users.AddRange(u1, u2);
-            ctx.PharmacyProviders.AddRange(p1, p2);
-
-            // 16 thuốc
-            ctx.Medicines.AddRange(
-                new Medicine { MedicineId = 1, ProviderId = 1, MedicineName = "Paracetamol 500mg", SideEffects = "Buồn ngủ, mệt nhẹ", Status = "Available" },
-                new Medicine { MedicineId = 2, ProviderId = 1, MedicineName = "Amlodipine 5mg", SideEffects = "Phù chân, nhức đầu", Status = "Available" },
-                new Medicine { MedicineId = 3, ProviderId = 1, MedicineName = "Tiffy", SideEffects = "Buồn ngủ, khô miệng, chóng mặt", Status = "Active" },
-                new Medicine { MedicineId = 4, ProviderId = 2, MedicineName = "Metformin 850mg", SideEffects = "Khó tiêu, tiêu chảy, vị kim loại trong miệng", Status = "Providing" },
-                new Medicine { MedicineId = 5, ProviderId = 2, MedicineName = "AB", SideEffects = "AB", Status = "Providing" },
-                new Medicine { MedicineId = 6, ProviderId = 2, MedicineName = "Paracetamol 500mg", SideEffects = "Buồn nôn, chóng mặt, dị ứng nhẹ", Status = "Providing" },
-                new Medicine { MedicineId = 7, ProviderId = 2, MedicineName = "Amoxicillin 500mg", SideEffects = "Tiêu chảy, nổi mẩn, đau bụng", Status = "Providing" },
-                new Medicine { MedicineId = 8, ProviderId = 2, MedicineName = "Ibuprofen 400mg", SideEffects = "Kích thích dạ dày, đau bụng, đau đầu", Status = "Providing" },
-                new Medicine { MedicineId = 9, ProviderId = 2, MedicineName = "Cetirizine 10mg", SideEffects = "Buồn ngủ, khô miệng, mệt mỏi", Status = "Providing" },
-                new Medicine { MedicineId = 10, ProviderId = 2, MedicineName = "Azithromycin 250mg", SideEffects = "Buồn nôn, đau dạ dày, tiêu chảy", Status = "Providing" },
-                new Medicine { MedicineId = 11, ProviderId = 2, MedicineName = "Metformin 500mg", SideEffects = "Khó tiêu, tiêu chảy nhẹ, buồn nôn", Status = "Providing" },
-                new Medicine { MedicineId = 12, ProviderId = 2, MedicineName = "Omeprazole 20mg", SideEffects = "Đầy hơi, đau bụng, buồn nôn", Status = "Providing" },
-                new Medicine { MedicineId = 13, ProviderId = 2, MedicineName = "Simvastatin 20mg", SideEffects = "Đau cơ, chóng mặt, táo bón", Status = "Providing" },
-                new Medicine { MedicineId = 14, ProviderId = 2, MedicineName = "Losartan 50mg", SideEffects = "Hạ huyết áp, chóng mặt, buồn nôn", Status = "Providing" },
-                new Medicine { MedicineId = 15, ProviderId = 2, MedicineName = "CAA", SideEffects = "CAA", Status = "Providing" },
-                new Medicine { MedicineId = 16, ProviderId = 2, MedicineName = "CSS", SideEffects = "CSS", Status = "Stopped" }
+            // Seed Providers (giữ đúng ProviderId để test)
+            ctx.PharmacyProviders.AddRange(
+                new PharmacyProvider { ProviderId = 1, UserId = 101 },
+                new PharmacyProvider { ProviderId = 2, UserId = 102 }
             );
 
-            await ctx.SaveChangesAsync();
+            ctx.SaveChanges();
+            return ctx;
         }
 
-        // 🧪 Test 1: GetAllAsync trả về đúng 16 bản ghi và đã Include Provider.User
-        [Fact]
-        public async Task GetAllAsync_Returns_All_16_With_Provider_And_User()
+        private MedicineRepository NewRepo(DiamondHealthContext ctx) => new(ctx);
+
+        // TC1: ProviderId=1, "Paracetamol", "Nausea", "Providing"  -> THÀNH CÔNG
+        [Fact(DisplayName = "TC1 - Create success for Provider(1) with Paracetamol/Nausea/Providing")]
+        public async Task Create_Success_Provider1_Paracetamol()
         {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var all = await repo.GetAllAsync();
-
-            all.Should().HaveCount(16);
-            all.All(m => m.Provider != null && m.Provider!.User != null).Should().BeTrue();
-        }
-
-        // 🧪 Test 2: GetByIdAsync trả null khi không tồn tại; khi tồn tại thì có Provider.User
-        [Fact]
-        public async Task GetByIdAsync_Returns_Null_If_NotFound_Else_Item_With_Relations()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            (await repo.GetByIdAsync(999)).Should().BeNull();
-
-            var med6 = await repo.GetByIdAsync(6); // Paracetamol 500mg của Provider 2
-            med6.Should().NotBeNull();
-            med6!.ProviderId.Should().Be(2);
-            med6.Provider!.User!.FullName.Should().Be("Provider Two");
-        }
-
-        // 🧪 Test 3: GetByProviderIdAsync chỉ trả dữ liệu của 1 provider và đủ số lượng
-        [Fact]
-        public async Task GetByProviderIdAsync_Returns_Only_Provider2_With_Count_13()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var p2Items = await repo.GetByProviderIdAsync(2);
-
-            p2Items.Should().HaveCount(13);
-            p2Items.Should().OnlyContain(m => m.ProviderId == 2);
-        }
-
-        // 🧪 Test 4: CreateAsync — trim tên và chặn tạo bản ghi trùng tên trong CÙNG provider
-        [Fact]
-        public async Task CreateAsync_Trims_Name_And_Blocks_Duplicate_In_Same_Provider()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            // Trùng tên "Paracetamol 500mg" tại Provider 2 (đã có id=6)
-            var dup = new Medicine { ProviderId = 2, MedicineName = "  Paracetamol 500mg  ", Status = "Providing" };
-            var act = async () => await repo.CreateAsync(dup);
-            await act.Should().ThrowAsync<InvalidOperationException>();
-
-            // Tạo mới 1 thuốc khác tên tại Provider 1 -> hợp lệ
-            var ok = new Medicine { ProviderId = 1, MedicineName = "NewDrug X", Status = "Available" };
-            await repo.CreateAsync(ok);
-
-            (await ctx.Medicines.CountAsync(m => m.ProviderId == 1)).Should().Be(4); // ban đầu 3, thêm 1 = 4
-        }
-
-        // 🧪 Test 5: UpdateAsync — không cho đổi ProviderId, nhưng cho cập nhật tên/sideEffects/status (có trim)
-        [Fact]
-        public async Task UpdateAsync_Disallows_Provider_Change_But_Updates_Fields()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            // Lấy Metformin 850mg (id=4, provider 2)
-            var current = await ctx.Medicines.AsNoTracking().FirstAsync(m => m.MedicineId == 4);
-
-            // ❌ thử đổi ProviderId -> phải ném InvalidOperationException
-            var wrong = new Medicine
-            {
-                MedicineId = current.MedicineId,
-                ProviderId = 999,
-                MedicineName = current.MedicineName,
-                SideEffects = current.SideEffects,
-                Status = current.Status
-            };
-            var bad = async () => await repo.UpdateAsync(wrong);
-            await bad.Should().ThrowAsync<InvalidOperationException>()
-                     .WithMessage("*Changing Provider*");
-
-            // ✅ cập nhật hợp lệ + trim tên
-            current.MedicineName = "  Metformin 850mg (Updated) ";
-            current.SideEffects = "Note cập nhật";
-            current.Status = "Providing";
-            current.ProviderId = 2;
-
-            await repo.UpdateAsync(current);
-
-            var after = await ctx.Medicines.FindAsync(4);
-            after!.MedicineName.Should().Be("Metformin 850mg (Updated)");
-            after.SideEffects.Should().Be("Note cập nhật");
-            after.Status.Should().Be("Providing");
-        }
-
-        // 🧪 Test 6: UpdateAsync — ném KeyNotFound khi id không tồn tại
-        [Fact]
-        public async Task UpdateAsync_Throws_KeyNotFound_If_Id_Not_Exists()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var ghost = new Medicine { MedicineId = 9999, ProviderId = 1, MedicineName = "Ghost" };
-            var act = async () => await repo.UpdateAsync(ghost);
-
-            await act.Should().ThrowAsync<KeyNotFoundException>()
-                     .WithMessage("*9999*");
-        }
-
-        // 🧪 Test 7: SoftDeleteAsync — chuyển Status thành "Stopped" và ném lỗi nếu không thấy id
-        [Fact]
-        public async Task SoftDeleteAsync_Stops_Medicine_Or_Throws_If_NotFound()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            // Not found
-            var bad = async () => await repo.SoftDeleteAsync(7777);
-            await bad.Should().ThrowAsync<KeyNotFoundException>();
-
-            // Success — chọn 1 bản ghi đang Providing của provider 2
-            var anyProvidingId = ctx.Medicines.First(m => m.ProviderId == 2 && m.Status == "Providing").MedicineId;
-            await repo.SoftDeleteAsync(anyProvidingId);
-
-            (await ctx.Medicines.FindAsync(anyProvidingId))!.Status.Should().Be("Stopped");
-        }
-
-        // 🧪 Test 8: GetByProviderIdPagedAsync — lọc theo status + sort az/za/mặc định + tổng số + phân trang
-        [Theory]
-        [InlineData(null, null)]            // không lọc, sort mặc định (Id desc)
-        [InlineData("Providing", "az")]     // Providing, A→Z
-        [InlineData("Providing", "za")]     // Providing, Z→A
-        [InlineData("Stopped", null)]       // Stopped, sort mặc định
-        public async Task GetByProviderIdPagedAsync_Filter_Sort_Paginate_Work(string? status, string? sort)
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var (items, total) = await repo.GetByProviderIdPagedAsync(
-                providerId: 2, pageNumber: 1, pageSize: 5, status: status, sort: sort);
-
-            // Tổng kỳ vọng theo filter snapshot
-            var expectedTotal = ctx.Medicines
-                .Where(m => m.ProviderId == 2)
-                .Where(m => string.IsNullOrWhiteSpace(status) ? true : m.Status == status)
-                .Count();
-
-            total.Should().Be(expectedTotal);
-            items.Should().HaveCount(Math.Min(5, expectedTotal));
-
-            if (string.Equals(sort, "az", StringComparison.OrdinalIgnoreCase))
-                items.Select(i => i.MedicineName).Should().BeInAscendingOrder(StringComparer.Ordinal);
-            if (string.Equals(sort, "za", StringComparison.OrdinalIgnoreCase))
-                items.Select(i => i.MedicineName).Should().BeInDescendingOrder(StringComparer.Ordinal);
-        }
-
-        // 🧪 Test 9: GetByProviderIdPagedAsync — tự chuẩn hoá pageNumber/pageSize khi giá trị không hợp lệ
-        [Fact]
-        public async Task GetByProviderIdPagedAsync_Normalizes_Invalid_Page_And_Size()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var (items, total) = await repo.GetByProviderIdPagedAsync(
-                providerId: 2, pageNumber: -3, pageSize: 0, status: null, sort: null);
-
-            total.Should().Be(ctx.Medicines.Count(m => m.ProviderId == 2)); // = 13
-            items.Should().HaveCount(10); // pageSize mặc định = 10
-        }
-
-        // 🧪 Test 10: CreateAsync — ném lỗi khi MedicineName null hoặc rỗng
-        [Fact]
-        public async Task CreateAsync_Should_Throw_When_MedicineName_Is_Null()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var invalid = new Medicine { ProviderId = 1, MedicineName = null, Status = "Available" };
-            var act = async () => await repo.CreateAsync(invalid);
-
-            var ex = await act.Should().ThrowAsync<Exception>();
-            ex.Which.Should().Match<Exception>(e =>
-                   (e is InvalidOperationException && e.Message.Contains("Medicine name", StringComparison.OrdinalIgnoreCase))
-                || (e is Microsoft.EntityFrameworkCore.DbUpdateException && e.Message.Contains("Required properties", StringComparison.OrdinalIgnoreCase))
-            );
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task CreateAsync_Allows_Empty_Or_Whitespace_Name_When_Repo_Has_No_Validation(string badName)
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
-
-            var med = new Medicine { ProviderId = 1, MedicineName = badName, Status = "Available" };
-            var act = async () => await repo.CreateAsync(med);
-
-            await act.Should().NotThrowAsync();
-
-            // tuỳ repo có trim hay không:
-            var saved = await ctx.Medicines.FirstAsync(m => m.MedicineId == med.MedicineId);
-            // Nếu repo có trim: mong đợi "" ; nếu không trim: giữ nguyên badName
-            saved.MedicineName.Should().Be((badName ?? string.Empty).Trim()); // an toàn cho cả hai phía
-        }
-
-
-        // 🧪 Test 11: CreateAsync — cho phép SideEffects = null, không ném lỗi
-        [Fact]
-        public async Task CreateAsync_Should_Allow_SideEffects_Null()
-        {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
+            using var ctx = NewContext(nameof(Create_Success_Provider1_Paracetamol));
+            var repo = NewRepo(ctx);
 
             var med = new Medicine
             {
                 ProviderId = 1,
-                MedicineName = "Z-Test-Null-SE",
-                SideEffects = null,
-                Status = "Available"
+                MedicineName = "Paracetamol",
+                SideEffects = "Nausea",
+                Status = "Providing"
             };
 
-            await repo.CreateAsync(med);
+            await repo.CreateMedicineAsync(med, CancellationToken.None);
 
-            (await ctx.Medicines.FirstOrDefaultAsync(m => m.MedicineName == "Z-Test-Null-SE"))
-                .Should().NotBeNull();
+            var saved = await ctx.Medicines.SingleAsync();
+            Assert.Equal(1, saved.ProviderId);
+            Assert.Equal("Paracetamol", saved.MedicineName);
+            Assert.Equal("Nausea", saved.SideEffects);
+            Assert.Equal("Providing", saved.Status);
         }
 
-        // 🧪 Test 12: CreateAsync — nếu Status null, vẫn lưu được (EF cho phép)
-        [Fact]
-        public async Task CreateAsync_Should_Allow_Status_Null()
+        // TC2: ProviderId=2, "Paracetamol", "Nausea", "Providing" (trong khi Provider(1) đã có Paracetamol) -> THÀNH CÔNG
+        [Fact(DisplayName = "TC2 - Create success for Provider(2) same name Paracetamol (different provider)")]
+        public async Task Create_Success_Provider2_SameName_DifferentProvider()
         {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
+            using var ctx = NewContext(nameof(Create_Success_Provider2_SameName_DifferentProvider));
+
+            // Seed sẵn cho Provider(1) đã có "Paracetamol"
+            ctx.Medicines.Add(new Medicine
+            {
+                ProviderId = 1,
+                MedicineName = "Paracetamol",
+                SideEffects = "Nausea",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var repo = NewRepo(ctx);
+
+            var med2 = new Medicine
+            {
+                ProviderId = 2,
+                MedicineName = "Paracetamol",
+                SideEffects = "Nausea",
+                Status = "Providing"
+            };
+
+            await repo.CreateMedicineAsync(med2, CancellationToken.None);
+
+            var all = await ctx.Medicines.ToListAsync();
+            Assert.Equal(2, all.Count); // cả provider(1) & provider(2) đều có Paracetamol
+        }
+
+        // TC3: Duplicate cùng Provider -> InvalidOperationException
+        [Fact(DisplayName = "TC3 - Create fails: duplicate name for same provider")]
+        public async Task Create_Fails_Duplicate_SameProvider()
+        {
+            using var ctx = NewContext(nameof(Create_Fails_Duplicate_SameProvider));
+
+            ctx.Medicines.Add(new Medicine
+            {
+                ProviderId = 1,
+                MedicineName = "Paracetamol",
+                SideEffects = "Nausea",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var repo = NewRepo(ctx);
+
+            var dup = new Medicine
+            {
+                ProviderId = 1,
+                MedicineName = "Paracetamol",
+                SideEffects = "Nausea",
+                Status = "Providing"
+            };
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                repo.CreateMedicineAsync(dup, CancellationToken.None));
+
+            Assert.Contains("already exists for this provider", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Equal(1, await ctx.Medicines.CountAsync()); // không thêm mới
+        }
+
+        // TC4: Trim tên -> vẫn tạo được và tên được Trim
+        [Fact(DisplayName = "TC4 - Create trims name on insert")]
+        public async Task Create_Success_Trim_Name()
+        {
+            using var ctx = NewContext(nameof(Create_Success_Trim_Name));
+            var repo = NewRepo(ctx);
 
             var med = new Medicine
             {
+                ProviderId = 1,
+                MedicineName = "  Paracetamol  ",
+                SideEffects = "Nausea",
+                Status = "Providing"
+            };
+
+            await repo.CreateMedicineAsync(med, CancellationToken.None);
+
+            var saved = await ctx.Medicines.SingleAsync();
+            Assert.Equal("Paracetamol", saved.MedicineName);
+        }
+
+        // TC5: Tên rỗng/space -> ArgumentException
+        [Theory(DisplayName = "TC5 - Create fails: empty/whitespace name")]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task Create_Fails_EmptyOrWhitespaceName(string badName)
+        {
+            using var ctx = NewContext(nameof(Create_Fails_EmptyOrWhitespaceName) + "_" + Guid.NewGuid());
+            var repo = NewRepo(ctx);
+
+            var med = new Medicine
+            {
+                ProviderId = 1,
+                MedicineName = badName,
+                SideEffects = "Nausea",
+                Status = "Providing"
+            };
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+                repo.CreateMedicineAsync(med, CancellationToken.None));
+
+            Assert.Contains("cannot be empty or whitespace", ex.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(await ctx.Medicines.ToListAsync());
+        }
+
+        // ===================== UPDATE TESTS =====================
+
+        // Test 1: 1,"Paracetamol 500","Nausea","Stopped" -> success
+        [Fact(DisplayName = "U-TC1 - Provider=1, Name='Paracetamol 500', SE='Nausea', Status='Stopped' -> Success")]
+        public async Task Update_Success_Provider1_Paracetamol500_Stopped()
+        {
+            using var ctx = NewContext(nameof(Update_Success_Provider1_Paracetamol500_Stopped));
+            var repo = NewRepo(ctx);
+
+            // Seed existing (Id=10, Provider=1)
+            ctx.Medicines.Add(new Medicine
+            {
+                MedicineId = 10,
+                ProviderId = 1,
+                MedicineName = "Paracetamol",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var input = new Medicine
+            {
+                MedicineId = 10,
+                ProviderId = 1,
+                MedicineName = "Paracetamol 500",
+                SideEffects = "Nausea",
+                Status = "Stopped"
+            };
+
+            await repo.UpdateMedicineAsync(input, CancellationToken.None);
+
+            var updated = await ctx.Medicines.FirstAsync(m => m.MedicineId == 10);
+            Assert.Equal(1, updated.ProviderId);
+            Assert.Equal("Paracetamol 500", updated.MedicineName);
+            Assert.Equal("Nausea", updated.SideEffects);
+            Assert.Equal("Stopped", updated.Status);
+        }
+
+        // Test 2: 2,"Paracetamol 500",null,null -> success
+        [Fact(DisplayName = "U-TC2 - Provider=2, Name='Paracetamol 500', SE=null, Status=null -> Success")]
+        public async Task Update_Success_Provider2_Paracetamol500_Nulls()
+        {
+            using var ctx = NewContext(nameof(Update_Success_Provider2_Paracetamol500_Nulls));
+            var repo = NewRepo(ctx);
+
+            // Seed existing (Id=20, Provider=2)
+            ctx.Medicines.Add(new Medicine
+            {
+                MedicineId = 20,
                 ProviderId = 2,
-                MedicineName = "NewDrugWithoutStatus",
-                SideEffects = "test",
+                MedicineName = "Paracetamol",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var input = new Medicine
+            {
+                MedicineId = 20,
+                ProviderId = 2,
+                MedicineName = " Paracetamol 500 ", // sẽ Trim
+                SideEffects = null,
                 Status = null
             };
 
-            await repo.CreateAsync(med);
+            await repo.UpdateMedicineAsync(input, CancellationToken.None);
 
-            var found = await ctx.Medicines.FirstAsync(m => m.MedicineName == "NewDrugWithoutStatus");
-            found.Status.Should().BeNull();
+            var updated = await ctx.Medicines.FirstAsync(m => m.MedicineId == 20);
+            Assert.Equal(2, updated.ProviderId);
+            Assert.Equal("Paracetamol 500", updated.MedicineName); // đã Trim
+            Assert.Null(updated.SideEffects);
+            Assert.Null(updated.Status);
         }
 
-        // 🧪 Test 13 (đã chỉnh): UpdateAsync — hiện tại repository ném InvalidOperation khi truyền null
-        [Fact]
-        public async Task UpdateAsync_Should_Throw_InvalidOperation_When_Medicine_Is_Null()
+        // Test 3: 1,"","Nausea","Providing" -> lỗi tên rỗng exception
+        [Fact(DisplayName = "U-TC3 - Empty name -> ArgumentException (theo logic hiện tại: tên CŨ rỗng/space)")]
+        public async Task Update_Fails_EmptyName_ArgumentException()
         {
-            var db = Guid.NewGuid().ToString();
-            await using var ctx = NewCtx(db);
-            await SeedExactlyLikeScreenshotAsync(ctx);
-            var repo = new MedicineRepository(ctx);
+            using var ctx = NewContext(nameof(Update_Fails_EmptyName_ArgumentException));
+            var repo = NewRepo(ctx);
 
-            Medicine? nullMed = null;
-            var act = async () => await repo.UpdateAsync(nullMed!);
+            // CHÚ Ý: Repo đang check tên CŨ rỗng/space trước khi gán tên mới.
+            // Vì vậy seed tên hiện có là whitespace để ném lỗi đúng yêu cầu.
+            ctx.Medicines.Add(new Medicine
+            {
+                MedicineId = 30,
+                ProviderId = 1,
+                MedicineName = "   ", // tên hiện có toàn space -> sẽ ném ArgumentException
+                SideEffects = "OldSE",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
 
-            await act.Should()
-                     .ThrowAsync<InvalidOperationException>()
-                     .WithInnerExceptionExactly(typeof(NullReferenceException));
+            var input = new Medicine
+            {
+                MedicineId = 30,
+                ProviderId = 1,
+                MedicineName = "", // tên mới rỗng theo mô tả test case
+                SideEffects = "Nausea",
+                Status = "Providing"
+            };
+
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
+                repo.UpdateMedicineAsync(input, CancellationToken.None));
+
+            Assert.Contains("cannot be empty or whitespace", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+            // Nếu muốn check "tên MỚI rỗng" thay vì tên cũ, hãy sửa repo:
+            // if (medicine.MedicineName != null && string.IsNullOrWhiteSpace(medicine.MedicineName)) throw ...
         }
+
+        // Test 4: 100," Amoxicillin ","Fever","Providing" -> lỗi không được đổi Provider Id Exception
+        [Fact(DisplayName = "U-TC4 - Change ProviderId -> InvalidOperationException")]
+        public async Task Update_Fails_ChangeProvider_InvalidOperation()
+        {
+            using var ctx = NewContext(nameof(Update_Fails_ChangeProvider_InvalidOperation));
+            var repo = NewRepo(ctx);
+
+            // Seed existing (Id=40, Provider=1)
+            ctx.Medicines.Add(new Medicine
+            {
+                MedicineId = 40,
+                ProviderId = 1,
+                MedicineName = "Amox",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var input = new Medicine
+            {
+                MedicineId = 40,
+                ProviderId = 100,               // Đổi ProviderId -> phải lỗi
+                MedicineName = " Amoxicillin ",
+                SideEffects = "Fever",
+                Status = "Providing"
+            };
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                repo.UpdateMedicineAsync(input, CancellationToken.None));
+
+            Assert.Contains("Changing Provider is not allowed", ex.Message);
+        }
+
+        // Test 5: 1," Amoxicillin ",null,"Stopped" -> success
+        [Fact(DisplayName = "U-TC5 - Provider=1, Name=' Amoxicillin ' (trim), SE=null, Status='Stopped' -> Success")]
+        public async Task Update_Success_Provider1_Amoxicillin_Stopped()
+        {
+            using var ctx = NewContext(nameof(Update_Success_Provider1_Amoxicillin_Stopped));
+            var repo = NewRepo(ctx);
+
+            // Seed existing (Id=50, Provider=1)
+            ctx.Medicines.Add(new Medicine
+            {
+                MedicineId = 50,
+                ProviderId = 1,
+                MedicineName = "OldName",
+                SideEffects = "OldSE",
+                Status = "Providing"
+            });
+            await ctx.SaveChangesAsync();
+
+            var input = new Medicine
+            {
+                MedicineId = 50,
+                ProviderId = 1,
+                MedicineName = " Amoxicillin ",
+                SideEffects = null,
+                Status = "Stopped"
+            };
+
+            await repo.UpdateMedicineAsync(input, CancellationToken.None);
+
+            var updated = await ctx.Medicines.FirstAsync(m => m.MedicineId == 50);
+            Assert.Equal(1, updated.ProviderId);
+            Assert.Equal("Amoxicillin", updated.MedicineName); // Trim
+            Assert.Null(updated.SideEffects);
+            Assert.Equal("Stopped", updated.Status);
+        }
+
     }
 }

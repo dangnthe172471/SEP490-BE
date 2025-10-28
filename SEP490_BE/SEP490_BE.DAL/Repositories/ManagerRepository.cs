@@ -8,6 +8,7 @@ using SEP490_BE.DAL.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -153,6 +154,7 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(ds => ds.Doctor).ThenInclude(d => d.Room)
                 .Include(ds => ds.Shift)
                 .Where(ds =>
+                //ds.Status == "Active" &&
                     ds.EffectiveFrom <= endDate &&
                     (ds.EffectiveTo == null || ds.EffectiveTo >= startDate))
                 .ToListAsync();
@@ -528,6 +530,7 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(ds => ds.Doctor)
                     .ThenInclude(d => d.Room)
                 .Include(ds => ds.Shift)
+                .Where(ds=>ds.Status=="Active")
                 .Select(ds => new WorkScheduleDto
                 {
                     DoctorId = ds.DoctorId,
@@ -543,6 +546,57 @@ namespace SEP490_BE.DAL.Repositories
 
             return await query.ToListAsync();
         }
+        public async Task<List<DoctorShift>> GetExactRangeAsync(int shiftId, DateOnly fromDate, DateOnly toDate)
+        {
+            return await _context.DoctorShifts
+                .Where(ds => ds.ShiftId == shiftId &&
+                             ds.EffectiveFrom == fromDate &&
+                             ds.EffectiveTo == toDate)
+                .Include(ds => ds.Doctor)
+                .ToListAsync();
+        }
+        public async Task<List<DoctorShift>> GetAllAsync(Expression<Func<DoctorShift, bool>> predicate)
+        {
+            return await _context.DoctorShifts.Where(predicate).ToListAsync();
+        }
+        public async Task AddAsync(DoctorShift entity)
+        {
+            await _context.DoctorShifts.AddAsync(entity);
+        }
+
+        public Task UpdateAsync(DoctorShift entity)
+        {
+            _context.DoctorShifts.Update(entity);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(DoctorShift entity)
+        {
+            _context.DoctorShifts.Remove(entity);
+            return Task.CompletedTask;
+        }
+
+        public async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+        public async Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date)
+        {
+            var count = await _context.DoctorShifts
+                .AsNoTracking()
+                .Where(ds => ds.DoctorId == doctorId &&
+                             (ds.Status == null || ds.Status.ToLower() == "active") &&
+                             ds.EffectiveFrom <= date &&
+                             (ds.EffectiveTo == null || ds.EffectiveTo >= date))
+                .Select(ds => ds.ShiftId)
+                .Distinct()
+                .CountAsync();
+
+            return count < 2;
+        }
+
+
+
 
     }
 }

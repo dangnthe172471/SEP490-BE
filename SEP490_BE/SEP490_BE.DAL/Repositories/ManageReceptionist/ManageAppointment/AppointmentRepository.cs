@@ -131,6 +131,45 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
             };
         }
 
+        public async Task<bool> HasAppointmentOnDateAsync(int patientId, DateTime appointmentDate, CancellationToken cancellationToken = default)
+        {
+            var dateOnly = appointmentDate.Date;
+            return await _dbContext.Appointments
+                .AnyAsync(a => a.PatientId == patientId &&
+                              a.AppointmentDate.Date == dateOnly &&
+                              a.Status != "Cancelled", cancellationToken);
+        }
+
+        public async Task<int> CountAppointmentsInShiftAsync(DateTime appointmentDate, int shiftId, CancellationToken cancellationToken = default)
+        {
+            var dateOnly = appointmentDate.Date;
+
+            // Get shift times
+            var shift = await _dbContext.Shifts.FindAsync(new object[] { shiftId }, cancellationToken);
+            if (shift == null)
+            {
+                return 0;
+            }
+
+            // Count appointments within shift time range
+            var shiftStartTime = shift.StartTime.ToTimeSpan();
+            var shiftEndTime = shift.EndTime.ToTimeSpan();
+
+            return await _dbContext.Appointments
+                .Where(a => a.AppointmentDate.Date == dateOnly &&
+                           a.AppointmentDate.TimeOfDay >= shiftStartTime &&
+                           a.AppointmentDate.TimeOfDay < shiftEndTime &&
+                           a.Status != "Cancelled")
+                .CountAsync(cancellationToken);
+        }
+
+        public async Task<Shift?> GetShiftByTimeAsync(TimeOnly appointmentTime, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Shifts
+                .Where(s => appointmentTime >= s.StartTime && appointmentTime < s.EndTime)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
         #endregion
 
         #region User Methods

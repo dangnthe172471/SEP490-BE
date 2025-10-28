@@ -27,7 +27,8 @@ namespace SEP490_BE.BLL.Services
                 Role = u.Role?.RoleName,
                 Gender = u.Gender,
                 Dob = u.Dob,
-                IsActive = u.IsActive
+                IsActive = u.IsActive,
+                Avatar = u.Avatar
             });
         }
 
@@ -60,7 +61,8 @@ namespace SEP490_BE.BLL.Services
 				Role = user.Role?.RoleName,
 				Gender = user.Gender,
 				Dob = user.Dob,
-				IsActive = user.IsActive
+				IsActive = user.IsActive,
+				Avatar = user.Avatar
 			};
 		}
 
@@ -81,14 +83,18 @@ namespace SEP490_BE.BLL.Services
                 Phone = phone,
                 Dob = dob,
                 Gender = gender,
-                RoleId = roleId
+                RoleId = roleId,
+                IsActive = true
             };
 
             // Create Patient record if user is registering as a patient
             if (roleId == 2) // Patient role
             {
+                // Get next available PatientId
+                var maxPatientId = await _userRepository.GetMaxPatientIdAsync(cancellationToken);
                 user.Patient = new SEP490_BE.DAL.Models.Patient
                 {
+                    PatientId = maxPatientId + 1,
                     UserId = 0 // Will be set after user is saved
                 };
             }
@@ -113,7 +119,8 @@ namespace SEP490_BE.BLL.Services
                 Email = user.Email,
                 Role = user.Role?.RoleName,
                 Gender = user.Gender,
-                Dob = user.Dob
+                Dob = user.Dob,
+                Avatar = user.Avatar
             };
 
             // If user is a patient, include patient-specific information
@@ -155,6 +162,7 @@ namespace SEP490_BE.BLL.Services
                 Role = user.Role?.RoleName,
                 Gender = user.Gender,
                 Dob = user.Dob,
+                Avatar = user.Avatar,
                 Allergies = user.Patient?.Allergies,
                 MedicalHistory = user.Patient?.MedicalHistory
             };
@@ -207,6 +215,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = user.Gender,
                 Dob = user.Dob,
                 IsActive = user.IsActive,
+                Avatar = user.Avatar,
                 Allergies = user.Patient?.Allergies,
                 MedicalHistory = user.Patient?.MedicalHistory
             };
@@ -229,7 +238,8 @@ namespace SEP490_BE.BLL.Services
                 Role = user.Role?.RoleName,
                 Gender = user.Gender,
                 Dob = user.Dob,
-                IsActive = user.IsActive
+                IsActive = user.IsActive,
+                Avatar = user.Avatar
             };
 
             // If user is a patient, include patient-specific information
@@ -438,6 +448,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
+                Avatar = u.Avatar,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
             }).ToList();
@@ -502,6 +513,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
+                Avatar = u.Avatar,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
             });
