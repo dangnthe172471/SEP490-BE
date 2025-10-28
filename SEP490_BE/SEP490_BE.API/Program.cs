@@ -107,6 +107,9 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IAppointmentDoctorRepository, AppointmentDoctorRepository>();
 builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>();
 
+builder.Services.AddScoped<IPrescriptionDoctorRepository, PrescriptionDoctorRepository>();
+builder.Services.AddScoped<IPrescriptionDoctorService, PrescriptionDoctorService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
@@ -155,6 +158,9 @@ app.UseCors(options =>
 });
 
 app.UseHttpsRedirection();
+
+// Enable static files serving for uploads
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

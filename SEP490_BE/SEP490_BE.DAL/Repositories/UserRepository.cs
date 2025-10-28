@@ -51,14 +51,22 @@ namespace SEP490_BE.DAL.Repositories
 
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
+            // Temporarily remove Patient from user to avoid adding it with UserId = 0
+            var patient = user.Patient;
+            user.Patient = null;
+            
             await _dbContext.Users.AddAsync(user, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            // Set UserId for Patient record if it exists
-            if (user.Patient != null)
+            // Now add Patient record with correct UserId
+            if (patient != null)
             {
-                user.Patient.UserId = user.UserId;
+                patient.UserId = user.UserId;
+                await _dbContext.Patients.AddAsync(patient, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
+                
+                // Restore the relationship
+                user.Patient = patient;
             }
         }
 
