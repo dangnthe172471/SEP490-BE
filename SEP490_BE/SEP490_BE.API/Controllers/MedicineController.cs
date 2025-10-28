@@ -28,12 +28,12 @@ namespace SEP490_BE.API.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-            => Ok(await _medicineService.GetAllAsync(cancellationToken));
+            => Ok(await _medicineService.GetAllMedicineAsync(cancellationToken));
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
         {
-            var medicine = await _medicineService.GetByIdAsync(id, cancellationToken);
+            var medicine = await _medicineService.GetMedicineByIdAsync(id, cancellationToken);
             return medicine is null
                 ? NotFound(new { message = $"Medicine with ID {id} not found." })
                 : Ok(medicine);
@@ -59,9 +59,9 @@ namespace SEP490_BE.API.Controllers
                 if (!providerId.HasValue) return Forbid();
 
                 if (string.IsNullOrWhiteSpace(dto.Status)) dto.Status = "Providing";
-                if (dto.Status.Equals("Available", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
+                if (dto.Status.Equals("Providing", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
 
-                await _medicineService.CreateAsync(dto, providerId.Value, ct);
+                await _medicineService.CreateMedicineAsync(dto, providerId.Value, ct);
                 return Ok(new { message = "Medicine added successfully." });
             }
             catch (InvalidOperationException ex)
@@ -77,10 +77,10 @@ namespace SEP490_BE.API.Controllers
             {
                 if (!string.IsNullOrWhiteSpace(dto.Status))
                 {
-                    if (dto.Status.Equals("Available", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
+                    if (dto.Status.Equals("", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
                 }
 
-                await _medicineService.UpdateAsync(id, dto, cancellationToken);
+                await _medicineService.UpdateMedicineAsync(id, dto, cancellationToken);
                 return Ok(new { message = "Medicine updated successfully." });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
