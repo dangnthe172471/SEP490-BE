@@ -46,5 +46,37 @@ namespace SEP490_BE.DAL.Repositories
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.RecordId == id, cancellationToken);
         }
+
+        public async Task<MedicalRecord> CreateAsync(MedicalRecord record, CancellationToken cancellationToken = default)
+        {
+            await _context.MedicalRecords.AddAsync(record, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            return record;
+        }
+
+        public async Task<MedicalRecord?> UpdateAsync(int id, string? doctorNotes, string? diagnosis, CancellationToken cancellationToken = default)
+        {
+            var entity = await _context.MedicalRecords.FirstOrDefaultAsync(x => x.RecordId == id, cancellationToken);
+            if (entity == null) return null;
+
+            entity.DoctorNotes = doctorNotes;
+            entity.Diagnosis = diagnosis;
+            await _context.SaveChangesAsync(cancellationToken);
+            return entity;
+        }
+
+        public async Task<MedicalRecord?> GetByAppointmentIdAsync(int appointmentId, CancellationToken cancellationToken = default)
+        {
+            return await _context.MedicalRecords
+                .Include(m => m.Appointment)
+                .Include(m => m.InternalMedRecord)
+                .Include(m => m.ObstetricRecord)
+                .Include(m => m.PediatricRecord)
+                .Include(m => m.Payments)
+                .Include(m => m.Prescriptions)
+                .Include(m => m.TestResults)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(m => m.AppointmentId == appointmentId, cancellationToken);
+        }
     }
 }

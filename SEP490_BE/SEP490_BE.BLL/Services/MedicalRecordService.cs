@@ -5,6 +5,7 @@ using SEP490_BE.DAL.Repositories;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using SEP490_BE.DAL.DTOs.MedicalRecordDTO;
 
 namespace SEP490_BE.BLL.Services
 {
@@ -25,6 +26,34 @@ namespace SEP490_BE.BLL.Services
         public async Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _medicalRecordRepository.GetByIdAsync(id, cancellationToken);
+        }
+
+        public async Task<MedicalRecord> CreateAsync(CreateMedicalRecordDto dto, CancellationToken cancellationToken = default)
+        {
+            // Ensure one-to-one: return existing record for this appointment if present
+            var existing = await _medicalRecordRepository.GetByAppointmentIdAsync(dto.AppointmentId, cancellationToken);
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            var entity = new MedicalRecord
+            {
+                AppointmentId = dto.AppointmentId,
+                DoctorNotes = dto.DoctorNotes,
+                Diagnosis = dto.Diagnosis
+            };
+            return await _medicalRecordRepository.CreateAsync(entity, cancellationToken);
+        }
+
+        public async Task<MedicalRecord?> UpdateAsync(int id, UpdateMedicalRecordDto dto, CancellationToken cancellationToken = default)
+        {
+            return await _medicalRecordRepository.UpdateAsync(id, dto.DoctorNotes, dto.Diagnosis, cancellationToken);
+        }
+
+        public Task<MedicalRecord?> GetByAppointmentIdAsync(int appointmentId, CancellationToken cancellationToken = default)
+        {
+            return _medicalRecordRepository.GetByAppointmentIdAsync(appointmentId, cancellationToken);
         }
     }
 }
