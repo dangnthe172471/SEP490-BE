@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.BLL.Services.DoctorServices;
 using SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
@@ -91,6 +93,7 @@ builder.Services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
 builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
 builder.Services.AddScoped<ITestTypeService, TestTypeService>();
+builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
 
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomService, RoomService>();

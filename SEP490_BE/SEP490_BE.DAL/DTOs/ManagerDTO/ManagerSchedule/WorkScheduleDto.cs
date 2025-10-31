@@ -1,6 +1,6 @@
 using System;
 
-namespace SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
+namespace SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 
 public class WorkScheduleDto
 {
