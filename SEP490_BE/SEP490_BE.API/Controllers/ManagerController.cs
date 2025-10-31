@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.Services;
-using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
+using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 
 namespace SEP490_BE.API.Controllers

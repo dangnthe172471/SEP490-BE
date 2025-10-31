@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services;
 using SEP490_BE.BLL.Services.Dashboard;
+using SEP490_BE.BLL.Services.DoctorServices;
 using SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.IRepositories.Dashboard;
@@ -87,6 +89,7 @@ builder.Services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
 builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
 builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
 builder.Services.AddScoped<ITestTypeService, TestTypeService>();
+builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
 
 builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IRoomService, RoomService>();
@@ -109,6 +112,12 @@ builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>(
 
 builder.Services.AddScoped<IPrescriptionDoctorRepository, PrescriptionDoctorRepository>();
 builder.Services.AddScoped<IPrescriptionDoctorService, PrescriptionDoctorService>();
+
+//Patient DI
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IPatientService, PatientService>();
+
+
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");

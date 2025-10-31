@@ -3,7 +3,7 @@ using Moq;
 using SEP490_BE.API.Controllers;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
-using SEP490_BE.DAL.DTOs.ManageReceptionist.ManagerSchedule;
+using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.Models;

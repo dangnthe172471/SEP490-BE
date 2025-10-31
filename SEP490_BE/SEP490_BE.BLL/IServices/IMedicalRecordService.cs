@@ -1,4 +1,5 @@
 ﻿using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.DTOs.MedicalRecordDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +12,8 @@ namespace SEP490_BE.BLL.IServices
     {
         Task<List<MedicalRecord>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+        Task<MedicalRecord> CreateAsync(CreateMedicalRecordDto dto, CancellationToken cancellationToken = default);
+        Task<MedicalRecord?> UpdateAsync(int id, UpdateMedicalRecordDto dto, CancellationToken cancellationToken = default);
+        Task<MedicalRecord?> GetByAppointmentIdAsync(int appointmentId, CancellationToken cancellationToken = default);
     }
 }

@@ -1,17 +1,14 @@
 ﻿using SEP490_BE.DAL.DTOs;
-using SEP490_BE.DAL.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEP490_BE.DAL.IRepositories
+namespace SEP490_BE.BLL.IServices.IDoctorServices
 {
-    public interface IDoctorRepository
+    public interface IDoctorScheduleService
     {
-        Task<List<Doctor>> GetAllDoctorsAsync();
-        Task<List<Doctor>> SearchDoctorsAsync(string keyword);
         Task<List<DoctorActiveScheduleRangeDto>> GetDoctorActiveScheduleInRangeAsync(int doctorId, DateOnly startDate, DateOnly endDate);
     }
 }
