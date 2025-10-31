@@ -113,6 +113,12 @@ builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>(
 builder.Services.AddScoped<IPrescriptionDoctorRepository, PrescriptionDoctorRepository>();
 builder.Services.AddScoped<IPrescriptionDoctorService, PrescriptionDoctorService>();
 
+//Patient DI
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IPatientService, PatientService>();
+
+
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
