@@ -6,12 +6,15 @@ using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.BLL.Services.Dashboard;
 using SEP490_BE.BLL.Services.DoctorServices;
 using SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.IRepositories.Dashboard;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.Repositories;
+using SEP490_BE.DAL.Repositories.Dashboard;
 using SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment;
 using System.Security.Claims;
 using System.Text;
@@ -21,11 +24,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
+	.AddJsonOptions(options =>
+	{
+		options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+		options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+	});
 
 
 // Add CORS
@@ -74,15 +77,8 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-// ...
-
-// THÊM DÒNG NÀY để đăng ký IResetTokenService với lớp triển khai ResetTokenService
-builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
-
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailServiceApp, EmailServiceApp>();
-builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
 builder.Services.AddScoped<IManagerService, ManagerService>();
@@ -106,6 +102,10 @@ builder.Services.AddScoped<IDoctorShiftExchangeRepository, DoctorShiftExchangeRe
 builder.Services.AddScoped<IDoctorShiftExchangeService, DoctorShiftExchangeService>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
+// Dashboard
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 
 builder.Services.AddScoped<IAppointmentDoctorRepository, AppointmentDoctorRepository>();
 builder.Services.AddScoped<IAppointmentDoctorService, AppointmentDoctorService>();
@@ -132,9 +132,9 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.MapInboundClaims = false;
+	options.MapInboundClaims = false;
 
-    options.TokenValidationParameters = new TokenValidationParameters
+	options.TokenValidationParameters = new TokenValidationParameters
 	{
 		ValidateIssuer = true,
 		ValidateAudience = true,
@@ -143,9 +143,9 @@ builder.Services.AddAuthentication(options =>
 		ValidIssuer = jwtIssuer,
 		ValidAudience = jwtAudience,
 		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-        NameClaimType = ClaimTypes.NameIdentifier,
-        RoleClaimType = ClaimTypes.Role
-    };
+		NameClaimType = ClaimTypes.NameIdentifier,
+		RoleClaimType = ClaimTypes.Role
+	};
 });
 
 var app = builder.Build();
