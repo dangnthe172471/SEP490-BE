@@ -21,4 +21,10 @@
     <Folder Include="Controllers\ManageReceptionist\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="EmailTemplates\AppointmentReminder.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
