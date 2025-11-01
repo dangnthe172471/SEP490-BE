@@ -117,7 +117,8 @@ builder.Services.AddScoped<IPrescriptionDoctorService, PrescriptionDoctorService
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 
-
+builder.Services.AddScoped<ITestResultRepository, TestResultRepository>();
+builder.Services.AddScoped<ITestResultService, TestResultService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
