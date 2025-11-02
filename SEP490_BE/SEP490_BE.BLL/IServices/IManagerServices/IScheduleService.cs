@@ -9,9 +9,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEP490_BE.BLL.IServices
+namespace SEP490_BE.BLL.IServices.IManagerServices
 {
-    public interface IManagerService
+    public interface IScheduleService
     {
         Task<List<ShiftResponseDTO>> GetAllShiftsAsync();
         Task<List<DoctorDTO>> GetAllDoctorsAsync();

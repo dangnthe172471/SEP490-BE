@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.IManagerService;
+using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 
 namespace SEP490_BE.API.Controllers.NotificationControllers
 {
@@ -11,6 +12,7 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
     public class NotificationController : ControllerBase
     {
         private readonly INotificationService _notificationService;
+
 
         public NotificationController(INotificationService notificationService)
         {
@@ -27,6 +29,12 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
                 Success = true,
                 Message = "Đã gửi email nhắc lịch thành công cho các bệnh nhân có lịch khám ngày mai!"
             });
+        }
+        [HttpPost("send")]
+        public async Task<IActionResult> SendNotification([FromBody] CreateNotificationDTO dto)
+        {
+            await _notificationService.SendNotificationAsync(dto);
+            return Ok(new { Message = "Notification sent successfully!" });
         }
     }
 }

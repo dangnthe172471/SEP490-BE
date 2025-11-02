@@ -29,6 +29,10 @@ public partial class User
 
     public virtual Doctor? Doctor { get; set; }
 
+    public virtual ICollection<NotificationReceiver> NotificationReceivers { get; set; } = new List<NotificationReceiver>();
+
+    public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+
     public virtual Patient? Patient { get; set; }
 
     public virtual PharmacyProvider? PharmacyProvider { get; set; }

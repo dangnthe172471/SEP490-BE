@@ -1,0 +1,133 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Thông báo từ Diamond Health Clinic</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f2f5f9;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .email-wrapper {
+            width: 100%;
+            padding: 40px 0;
+            background-color: #f2f5f9;
+        }
+
+        .email-container {
+            max-width: 640px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        /* Header */
+        .email-header {
+            background-color: #004aad;
+            padding: 20px 30px;
+            color: white;
+            text-align: center;
+        }
+
+            .email-header h1 {
+                margin: 0;
+                font-size: 22px;
+                letter-spacing: 0.5px;
+            }
+
+        /* Body */
+        .email-body {
+            padding: 30px;
+        }
+
+            .email-body h2 {
+                color: #004aad;
+                margin-top: 0;
+                font-size: 20px;
+            }
+
+            .email-body p {
+                font-size: 15px;
+                line-height: 1.6;
+                margin: 10px 0;
+            }
+
+        .highlight-box {
+            background-color: #f0f6ff;
+            border-left: 4px solid #007bff;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        /* Button */
+        .action-btn {
+            display: inline-block;
+            background-color: #007bff;
+            color: #fff !important;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+            .action-btn:hover {
+                background-color: #005ec9;
+            }
+
+        /* Footer */
+        .email-footer {
+            background-color: #f9fafc;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 13px;
+            color: #888;
+            border-top: 1px solid #eee;
+        }
+
+            .email-footer a {
+                color: #007bff;
+                text-decoration: none;
+            }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="email-container">
+            <div class="email-header">
+                <h1>Diamond Health Clinic</h1>
+            </div>
+
+            <div class="email-body">
+                <h2>{{Title}}</h2>
+                <p>Xin chào <strong>{{UserName}}</strong>,</p>
+                <p>Bạn có một thông báo mới từ <strong>Diamond Health Clinic</strong>:</p>
+
+                <div class="highlight-box">
+                    <p>{{Content}}</p>
+                </div>
+
+                <p>Vui lòng đăng nhập vào hệ thống để xem chi tiết hoặc phản hồi (nếu cần).</p>
+
+                <a href="https://diamondhealth.vn" class="action-btn">Đến trang hệ thống</a>
+            </div>
+
+            <div class="email-footer">
+                <p>Trân trọng,<br><strong>Diamond Health Clinic</strong></p>
+                <p>
+                     Team G164_SEP490 <br>
+                    📧 <a href="mailto:support@diamondhealth.vn">support@diamondhealth.vn</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
