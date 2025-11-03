@@ -246,6 +246,10 @@ public partial class DiamondHealthContext : DbContext
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
 
+            // Ensure one MedicalRecord per Appointment
+            entity.HasIndex(e => e.AppointmentId)
+                .IsUnique();
+
             entity.HasOne(d => d.Appointment).WithMany(p => p.MedicalRecords)
                 .HasForeignKey(d => d.AppointmentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)

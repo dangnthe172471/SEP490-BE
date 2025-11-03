@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.DAL.DTOs.MedicalRecordDTO;
 using SEP490_BE.DAL.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -28,7 +30,7 @@ namespace SEP490_BE.API.Controllers
         }
 
         // ✅ GET: api/medicalrecord/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}", Name = "GetMedicalRecordById")]
         public async Task<ActionResult<MedicalRecord>> GetByIdAsync(int id, CancellationToken cancellationToken)
         {
             var record = await _medicalRecordService.GetByIdAsync(id, cancellationToken);
@@ -39,15 +41,30 @@ namespace SEP490_BE.API.Controllers
             return Ok(record);
         }
 
-        // 🔹 (Tuỳ chọn) POST: api/medicalrecord
-        // Nếu sau này bạn muốn thêm chức năng tạo hồ sơ bệnh án mới
-        /*
+        // ✅ POST: api/medicalrecord
         [HttpPost]
-        public async Task<ActionResult> CreateAsync([FromBody] MedicalRecord model, CancellationToken cancellationToken)
+        [Authorize(Roles = "Doctor")]
+        public async Task<ActionResult<MedicalRecord>> CreateAsync([FromBody] CreateMedicalRecordDto dto, CancellationToken cancellationToken)
         {
-            await _medicalRecordService.CreateAsync(model, cancellationToken);
-            return CreatedAtAction(nameof(GetByIdAsync), new { id = model.Id }, model);
+            var created = await _medicalRecordService.CreateAsync(dto, cancellationToken);
+            return CreatedAtRoute("GetMedicalRecordById", new { id = created.RecordId }, created);
         }
-        */
+
+        // ✅ PUT: api/medicalrecord/{id}
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = "Doctor")]
+        public async Task<ActionResult<MedicalRecord>> UpdateAsync(int id, [FromBody] UpdateMedicalRecordDto dto, CancellationToken cancellationToken)
+        {
+            var updated = await _medicalRecordService.UpdateAsync(id, dto, cancellationToken);
+            return updated is null ? NotFound(new { message = $"Medical record with ID {id} not found." }) : Ok(updated);
+        }
+
+        // ✅ GET: api/medicalrecord/by-appointment/{appointmentId}
+        [HttpGet("by-appointment/{appointmentId:int}")]
+        public async Task<ActionResult<MedicalRecord>> GetByAppointmentIdAsync(int appointmentId, CancellationToken cancellationToken)
+        {
+            var record = await _medicalRecordService.GetByAppointmentIdAsync(appointmentId, cancellationToken);
+            return record is null ? NotFound(new { message = $"No medical record for appointment {appointmentId}." }) : Ok(record);
+        }
     }
 }

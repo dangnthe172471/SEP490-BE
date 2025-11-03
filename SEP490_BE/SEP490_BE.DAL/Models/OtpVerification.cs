@@ -27,3 +27,4 @@ namespace SEP490_BE.DAL.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
+
