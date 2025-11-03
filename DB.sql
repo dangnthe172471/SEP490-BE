@@ -245,6 +245,33 @@ Go
 ALTER TABLE [dbo].[User]
 ADD [Avatar] NVARCHAR(500) NULL;
 GO
+CREATE TABLE [dbo].[Notification] (
+    [NotificationId] INT IDENTITY(1,1) PRIMARY KEY,
+    [Title] NVARCHAR(200) NOT NULL,             
+    [Content] NVARCHAR(MAX) NOT NULL,             
+    [Type] NVARCHAR(50) NOT NULL,                 
+    [CreatedBy] INT NULL,                         
+    [CreatedDate] DATETIME NOT NULL DEFAULT(GETDATE()),
+    [IsGlobal] BIT NOT NULL DEFAULT(0),          
+    [IsEmailSent] BIT NOT NULL DEFAULT(0),           
+    CONSTRAINT FK_Notification_User FOREIGN KEY ([CreatedBy]) 
+        REFERENCES [dbo].[User]([UserId]) ON DELETE SET NULL
+);
+GO
+
+
+CREATE TABLE [dbo].[NotificationReceiver] (
+    [NotificationId] INT NOT NULL,                    -- FK → Notification
+    [ReceiverId] INT NOT NULL,                        -- FK → User
+    [IsRead] BIT NOT NULL DEFAULT(0),                 -- 0 = chưa đọc, 1 = đã đọc
+    [ReadDate] DATETIME NULL,                         -- Thời điểm đọc
+    CONSTRAINT PK_NotificationReceiver PRIMARY KEY ([NotificationId], [ReceiverId]),
+    CONSTRAINT FK_NotificationReceiver_Notification FOREIGN KEY ([NotificationId]) 
+        REFERENCES [dbo].[Notification]([NotificationId]) ON DELETE CASCADE,
+    CONSTRAINT FK_NotificationReceiver_User FOREIGN KEY ([ReceiverId]) 
+        REFERENCES [dbo].[User]([UserId]) ON DELETE CASCADE
+);
+GO
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Thêm các Role theo đúng thứ tự yêu cầu

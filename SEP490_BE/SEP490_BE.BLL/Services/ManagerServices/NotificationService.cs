@@ -161,6 +161,12 @@ namespace SEP490_BE.BLL.Services.ManagerServices
             }
         }
 
+        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetListNotificationsAsync(
+     int pageNumber, int pageSize)
+        {
+            return await _notificationRepo.GetListNotificationsAsync(pageNumber, pageSize);
+        }
+
         public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetNotificationsByUserAsync(int userId, int pageNumber, int pageSize)
         {
             return await _notificationRepo.GetNotificationsByUserAsync(userId, pageNumber, pageSize);

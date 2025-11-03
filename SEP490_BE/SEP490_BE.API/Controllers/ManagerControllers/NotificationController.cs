@@ -66,5 +66,11 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
             await _notificationService.MarkAllAsReadAsync(userId);
             return NoContent();
         }
+        [HttpGet("list-notification")]
+        public async Task<IActionResult> GetAllNotifications( int pageNumber = 1, int pageSize = 10)
+        {
+            var result = await _notificationService.GetListNotificationsAsync( pageNumber, pageSize);
+            return Ok(result);
+        }
     }
 }

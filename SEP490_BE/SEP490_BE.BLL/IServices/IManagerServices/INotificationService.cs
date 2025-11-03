@@ -12,6 +12,7 @@ namespace SEP490_BE.BLL.IServices.IManagerService
     {
         Task SendAppointmentReminderAsync(CancellationToken cancellationToken = default);
         Task SendNotificationAsync(CreateNotificationDTO dto);
+        Task<PaginationHelper.PagedResult<NotificationDTO>> GetListNotificationsAsync(int pageNumber, int pageSize);
         Task<PaginationHelper.PagedResult<NotificationDTO>> GetNotificationsByUserAsync(int userId, int pageNumber, int pageSize);
         Task<bool> MarkAsReadAsync(int userId, int notificationId);
         Task<int> CountUnreadAsync(int userId);

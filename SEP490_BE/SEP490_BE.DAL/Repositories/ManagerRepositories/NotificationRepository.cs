@@ -56,6 +56,23 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepository
                 .Select(u => u.UserId)
                 .ToListAsync();
         }
+        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetListNotificationsAsync( int pageNumber, int pageSize)
+        {
+            var query = _context.Notifications
+                .Select(n => new NotificationDTO
+                {
+                    NotificationId = n.NotificationId,
+                    Title = n.Title,
+                    Content = n.Content,
+                    Type = n.Type,
+                    CreatedDate = n.CreatedDate,
+                    // Admin không cần cột IsRead, mặc định false
+                    IsRead = false
+                })
+                .OrderByDescending(x => x.NotificationId);
+
+            return await query.ToPagedResultAsync(pageNumber, pageSize);
+        }
         public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetNotificationsByUserAsync(
     int userId, int pageNumber, int pageSize)
         {
