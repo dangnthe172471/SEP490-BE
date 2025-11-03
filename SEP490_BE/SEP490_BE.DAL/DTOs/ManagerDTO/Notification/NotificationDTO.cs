@@ -31,5 +31,6 @@ namespace SEP490_BE.DAL.DTOs.ManagerDTO.Notification
             public DateTime CreatedDate { get; set; }
             public bool IsRead { get; set; }
         }
+
     
 }

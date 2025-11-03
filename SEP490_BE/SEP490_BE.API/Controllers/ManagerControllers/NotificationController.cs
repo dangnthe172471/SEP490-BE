@@ -36,5 +36,35 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
             await _notificationService.SendNotificationAsync(dto);
             return Ok(new { Message = "Notification sent successfully!" });
         }
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetUserNotifications(int userId, int pageNumber = 1, int pageSize = 10)
+        {
+            var result = await _notificationService.GetNotificationsByUserAsync(userId, pageNumber, pageSize);
+            return Ok(result);
+        }
+
+        [HttpPut("read/{userId}/{notificationId}")]
+        public async Task<IActionResult> MarkAsRead(int userId, int notificationId)
+        {
+            var result = await _notificationService.MarkAsReadAsync(userId, notificationId);
+            if (!result)
+                return NotFound(new { message = "Không tìm thấy thông báo hoặc user tương ứng." });
+
+            return Ok(new { message = "Đã đánh dấu thông báo là đã đọc." });
+        }
+
+
+        [HttpGet("unread-count/{userId}")]
+        public async Task<IActionResult> GetUnreadCount(int userId)
+        {
+            var count = await _notificationService.CountUnreadAsync(userId);
+            return Ok(count);
+        }
+        [HttpPut("read-all/{userId}")]
+        public async Task<IActionResult> MarkAllAsRead(int userId)
+        {
+            await _notificationService.MarkAllAsReadAsync(userId);
+            return NoContent();
+        }
     }
 }

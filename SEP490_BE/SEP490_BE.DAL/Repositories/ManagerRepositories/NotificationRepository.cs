@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
+using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.IRepositories.IManagerRepository;
 using SEP490_BE.DAL.Models;
 using System;
@@ -54,6 +55,68 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepository
                 .Where(u => roleNames.Contains(u.Role.RoleName))
                 .Select(u => u.UserId)
                 .ToListAsync();
+        }
+        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetNotificationsByUserAsync(
+    int userId, int pageNumber, int pageSize)
+        {
+            var query = _context.Notifications
+                .Join(
+                    _context.NotificationReceivers,
+                    n => n.NotificationId,
+                    nr => nr.NotificationId,
+                    (n, nr) => new { n, nr }
+                )
+                .Where(x => x.nr.ReceiverId == userId)
+                
+                .OrderBy(x => x.nr.IsRead)
+                .ThenByDescending(x => x.n.CreatedDate)
+                .Select(x => new NotificationDTO
+                {
+                    NotificationId = x.n.NotificationId,
+                    Title = x.n.Title,
+                    Content = x.n.Content,
+                    Type = x.n.Type,
+                    CreatedDate = x.n.CreatedDate,
+                    IsRead = x.nr.IsRead
+                });
+
+            return await query.ToPagedResultAsync(pageNumber, pageSize);
+        }
+
+        public async Task<bool> MarkAsReadAsync(int userId, int notificationId)
+        {
+            var record = await _context.NotificationReceivers
+                .FirstOrDefaultAsync(nr => nr.NotificationId == notificationId && nr.ReceiverId == userId);
+
+            if (record == null) return false;
+
+            record.IsRead = true;
+            record.ReadDate = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<int> CountUnreadAsync(int userId)
+        {
+            return await _context.NotificationReceivers
+                .CountAsync(nr => nr.ReceiverId == userId && nr.IsRead == false);
+        }
+        public async Task MarkAllAsReadAsync(int userId)
+        {
+            var unreadList = await _context.NotificationReceivers
+                .Where(nr => nr.ReceiverId == userId && !nr.IsRead)
+                .ToListAsync();
+
+            if (unreadList.Any())
+            {
+                foreach (var item in unreadList)
+                {
+                    item.IsRead = true;
+                }
+
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

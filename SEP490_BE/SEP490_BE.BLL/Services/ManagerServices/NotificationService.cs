@@ -3,9 +3,11 @@ using SEP490_BE.BLL.Helpers;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
+using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.IRepositories.IManagerRepositories;
 using SEP490_BE.DAL.IRepositories.IManagerRepository;
 using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.Repositories.ManagerRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,10 +74,10 @@ namespace SEP490_BE.BLL.Services.ManagerServices
         {
             try
             {
-                // 1. Tạo thông báo trong DB
+              
                 var notificationId = await _notificationRepo.CreateNotificationAsync(dto);
 
-                // 2. Xác định danh sách người nhận
+                // Xác định danh sách người nhận
                 List<int> receivers = new();
 
                 if (dto.IsGlobal)
@@ -94,13 +96,13 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                     receivers = dto.ReceiverIds;
                 }
 
-                // 3. Lưu danh sách người nhận
+                //  Lưu danh sách người nhận
                 if (receivers.Any())
                 {
                     await _notificationRepo.AddReceiversAsync(notificationId, receivers.Distinct().ToList());
                 }
 
-                // 4. Lấy danh sách user có email (lọc theo receivers)
+              
                 var users = await _context.Users
                     .Where(u => receivers.Contains(u.UserId) && !string.IsNullOrEmpty(u.Email))
                     .ToListAsync();
@@ -113,7 +115,7 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                     return;
                 }
 
-                // 5. Load template duy nhất GenericNotification.html
+              
                 string template;
                 try
                 {
@@ -125,7 +127,6 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                     Console.WriteLine("Không tìm thấy file GenericNotification.html, dùng fallback mặc định.");
                 }
 
-                // 6. Gửi email song song để tăng tốc
                 var sendTasks = users.Select(async user =>
                 {
                     try
@@ -160,6 +161,23 @@ namespace SEP490_BE.BLL.Services.ManagerServices
             }
         }
 
+        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetNotificationsByUserAsync(int userId, int pageNumber, int pageSize)
+        {
+            return await _notificationRepo.GetNotificationsByUserAsync(userId, pageNumber, pageSize);
+        }
 
+        public async Task<bool> MarkAsReadAsync(int userId, int notificationId)
+        {
+            return await _notificationRepo.MarkAsReadAsync(userId, notificationId);
+        }
+
+        public async Task<int> CountUnreadAsync(int userId)
+        {
+            return await _notificationRepo.CountUnreadAsync(userId);
+        }
+        public async Task MarkAllAsReadAsync(int userId)
+        {
+            await _notificationRepo.MarkAllAsReadAsync(userId);
+        }
     }
 }
