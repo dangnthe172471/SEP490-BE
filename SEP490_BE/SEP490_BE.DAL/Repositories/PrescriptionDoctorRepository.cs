@@ -29,7 +29,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             var arr = ids.Distinct().ToArray();
             var meds = await _db.Medicines
-                .Include(m => m.Provider) // 🔹 lấy luôn nhà cung cấp
+                .Include(m => m.Provider)
                 .Where(m => arr.Contains(m.MedicineId))
                 .ToListAsync(ct);
 
@@ -94,12 +94,10 @@ namespace SEP490_BE.DAL.Repositories
             }
             if (visitDateTo.HasValue)
             {
-                // inclusive theo ngày: < (to + 1 ngày)
                 var toExclusive = visitDateTo.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
                 q = q.Where(r => r.Appointment.AppointmentDate < toExclusive);
             }
 
-            // Tìm theo tên bệnh nhân (FullName) – có Like để dùng chỉ mục theo collation mặc định
             if (!string.IsNullOrWhiteSpace(patientNameSearch))
             {
                 var s = patientNameSearch.Trim();
@@ -107,13 +105,10 @@ namespace SEP490_BE.DAL.Repositories
                                  EF.Functions.Like(r.Appointment.Patient.User.FullName, $"%{s}%"));
             }
 
-            // Tổng trước khi paging
             var total = await q.CountAsync(ct);
 
-            // Subquery prescriptions để biết đã kê/đơn mới nhất
             var presQ = _db.Prescriptions.AsQueryable();
 
-            // Lấy trang
             var items = await q
                 .OrderByDescending(r => r.Appointment.AppointmentDate)
                 .Skip((pageNumber - 1) * pageSize)
