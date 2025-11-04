@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.MedicalRecordDTO;
 using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.API.Controllers

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs.Common;
-using SEP490_BE.DAL.DTOs.TestResults;
+using SEP490_BE.DAL.DTOs.TestReDTO;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
 

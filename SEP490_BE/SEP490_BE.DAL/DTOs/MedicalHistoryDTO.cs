@@ -1,4 +1,4 @@
-namespace SEP490_BE.DAL.DTOs
+namespace SEP490_BE.DAL.DTOs.MedicalRecordDTO
 {
     public class MedicalHistoryDTO
     {
