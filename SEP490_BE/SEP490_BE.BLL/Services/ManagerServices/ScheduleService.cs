@@ -1,9 +1,10 @@
-﻿using SEP490_BE.BLL.IServices;
+﻿using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.IRepositories.IManagerRepositories;
 using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.Repositories;
 using System;
@@ -12,20 +13,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SEP490_BE.BLL.Services
+namespace SEP490_BE.BLL.Services.ManagerServices
 {
-    public class ManagerService : IManagerService
+    public class ScheduleService : IScheduleService
     {
         private readonly IShiftRepository _shiftRepo;
         private readonly IDoctorRepository _doctorRepo;
         private readonly IDoctorShiftRepository _doctorShiftRepo;
-        private readonly IManagerRepository _managerRepo;
+        private readonly IScheduleRepository _managerRepo;
 
-        public ManagerService(
+        public ScheduleService(
             IShiftRepository shiftRepo,
             IDoctorRepository doctorRepo,
             IDoctorShiftRepository doctorShiftRepo,
-            IManagerRepository managerRepo)
+            IScheduleRepository managerRepo)
         {
             _shiftRepo = shiftRepo;
             _doctorRepo = doctorRepo;

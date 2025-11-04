@@ -1,20 +1,20 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 
-namespace SEP490_BE.API.Controllers
+namespace SEP490_BE.API.Controllers.ManagerControllers
 {
     [Route("api/[controller]")]
     [ApiController]
     //[Authorize(Roles = "Clinic Manager")]
-    public class ManagerController : ControllerBase
+    public class ManageScheduleController : ControllerBase
     {
-        private readonly IManagerService _service;
-        public ManagerController(IManagerService service) => _service = service;
+        private readonly IScheduleService _service;
+        public ManageScheduleController(IScheduleService service) => _service = service;
 
         // Lấy danh sách ca làm việc
         [HttpGet("shifts")]
@@ -23,7 +23,7 @@ namespace SEP490_BE.API.Controllers
             var data = await _service.GetAllShiftsAsync();
             return Ok(data);
         }
-        // Tìm bác sĩ theo tên
+        // All bsi
         [HttpGet("doctors")]
         public async Task<IActionResult> GetAllDoctors([FromQuery] string? keyword)
         {
@@ -66,7 +66,7 @@ namespace SEP490_BE.API.Controllers
             return Ok(new { message = $"Tạo thành công {created} lịch làm việc." });
         }
 
-        // Xem lịch làm việc
+        // Xem lịch làm việc --
         [HttpGet("schedules")]
         public async Task<IActionResult> GetSchedules(DateOnly from, DateOnly to)
         {
@@ -82,7 +82,7 @@ namespace SEP490_BE.API.Controllers
             });
             return Ok(result);
         }
-
+        //--
         [HttpGet("allSchedules")]
         public async Task<ActionResult<PagedResult<WorkScheduleDto>>> GetAllSchedule(
          [FromQuery] int pageNumber = 1,
@@ -128,7 +128,7 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
-        //  Thêm / xóa bác sĩ  của lịch theo ngày
+        //  Thêm / xóa bác sĩ  của lịch theo ngày --
         [HttpPut("updateScheduleByDate")]
         public async Task<IActionResult> UpdateByDate([FromBody] UpdateWorkScheduleByDateRequest request)
         {
@@ -143,7 +143,7 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
-        // Cập nhật lịch theo ID lịch (DoctorShiftId)
+        // Cập nhật lịch theo ID lịch (DoctorShiftId) --
         [HttpPut("updateScheduleByScheduleId")]
         public async Task<IActionResult> UpdateById([FromBody] UpdateWorkScheduleByIdRequest request)
         {

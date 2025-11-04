@@ -3,7 +3,7 @@ using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 using SEP490_BE.DAL.Helpers;
-using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.IRepositories.IManagerRepositories;
 using SEP490_BE.DAL.Models;
 using System;
 using System.Collections.Generic;
@@ -13,13 +13,13 @@ using System.Text;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace SEP490_BE.DAL.Repositories
+namespace SEP490_BE.DAL.Repositories.ManagerRepositories
 {
-    public class ManagerRepository : IManagerRepository
+    public class ScheduleRepository : IScheduleRepository
     {
         private readonly DiamondHealthContext _context;
 
-        public ManagerRepository(DiamondHealthContext context)
+        public ScheduleRepository(DiamondHealthContext context)
         {
             _context = context;
         }
@@ -479,8 +479,8 @@ namespace SEP490_BE.DAL.Repositories
             var filtered = shifts.Where(ds =>
                 ds.EffectiveFrom <= endDate &&
                 (
-                    (ds.EffectiveTo != null && ds.EffectiveTo >= startDate)
-                    || (ds.EffectiveTo == null && ds.EffectiveFrom.AddMonths(1) >= startDate)
+                    ds.EffectiveTo != null && ds.EffectiveTo >= startDate
+                    || ds.EffectiveTo == null && ds.EffectiveFrom.AddMonths(1) >= startDate
                 )
             ).ToList();
 
@@ -490,8 +490,8 @@ namespace SEP490_BE.DAL.Repositories
             {
                 var from = ds.EffectiveFrom < startDate ? startDate : ds.EffectiveFrom;
                 var to = ds.EffectiveTo != null
-                    ? (ds.EffectiveTo > endDate ? endDate : ds.EffectiveTo.Value)
-                    : (ds.EffectiveFrom.AddMonths(1) > endDate ? endDate : ds.EffectiveFrom.AddMonths(1));
+                    ? ds.EffectiveTo > endDate ? endDate : ds.EffectiveTo.Value
+                    : ds.EffectiveFrom.AddMonths(1) > endDate ? endDate : ds.EffectiveFrom.AddMonths(1);
 
                 for (var d = from; d <= to; d = d.AddDays(1))
                 {
