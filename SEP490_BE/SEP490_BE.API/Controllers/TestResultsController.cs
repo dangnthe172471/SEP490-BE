@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.Common;
-using SEP490_BE.DAL.DTOs.TestResults;
+using SEP490_BE.DAL.DTOs.TestReDTO;
 
 namespace SEP490_BE.API.Controllers
 {
