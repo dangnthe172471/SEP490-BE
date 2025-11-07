@@ -127,6 +127,22 @@ namespace SEP490_BE.BLL.Services
             if (request.RoleId.HasValue)
             {
                 user.RoleId = request.RoleId.Value;
+                // Update Role object to match new RoleId for subsequent checks
+                if (user.Role != null)
+                {
+                    user.Role.RoleId = request.RoleId.Value;
+                    // Update RoleName based on RoleId (common roles: 1=Admin, 2=Patient, 3=Doctor, 4=Nurse, 5=Receptionist, 6=Pharmacy Provider)
+                    user.Role.RoleName = request.RoleId.Value switch
+                    {
+                        1 => "Administrator",
+                        2 => "Patient",
+                        3 => "Doctor",
+                        4 => "Nurse",
+                        5 => "Receptionist",
+                        6 => "Pharmacy Provider",
+                        _ => user.Role.RoleName
+                    };
+                }
             }
 
             if (!string.IsNullOrEmpty(request.Password))
@@ -135,7 +151,7 @@ namespace SEP490_BE.BLL.Services
             }
 
             // Handle Patient specific fields
-            if (user.Role?.RoleName == "Patient")
+            if (user.Role?.RoleName == "Patient" || user.RoleId == 2)
             {
                 // Create Patient record if it doesn't exist
                 if (user.Patient == null)
