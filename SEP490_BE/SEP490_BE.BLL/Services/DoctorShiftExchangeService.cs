@@ -23,33 +23,16 @@ namespace SEP490_BE.BLL.Services
             }
 
             var exchange = await _repository.CreateShiftSwapRequestAsync(request);
+            var requests = await _repository.GetRequestsByDoctorIdAsync(exchange.Doctor1Id);
+            var dto = requests.FirstOrDefault(r => r.ExchangeId == exchange.ExchangeId);
             
-            // Get the created request with full details
-            var result = await _repository.GetRequestByIdAsync(exchange.ExchangeId);
-            if (result == null)
+            if (dto == null)
             {
                 throw new InvalidOperationException("Failed to create shift swap request");
             }
 
-            return new ShiftSwapRequestResponseDTO
-            {
-                ExchangeId = result.ExchangeId,
-                Doctor1Id = result.Doctor1Id,
-                Doctor1Name = result.Doctor1?.User?.FullName ?? "",
-                Doctor1Specialty = result.Doctor1?.Specialty ?? "",
-                Doctor2Id = result.Doctor2Id ?? 0,
-                Doctor2Name = result.Doctor2?.User?.FullName ?? "",
-                Doctor2Specialty = result.Doctor2?.Specialty ?? "",
-                Doctor1ShiftRefId = result.Doctor1ShiftRefId,
-                Doctor1ShiftName = result.Doctor1ShiftRef?.Shift?.ShiftType ?? "",
-                Doctor2ShiftRefId = result.Doctor2ShiftRefId ?? 0,
-                Doctor2ShiftName = result.Doctor2ShiftRef?.Shift?.ShiftType ?? "",
-                ExchangeDate = result.ExchangeDate,
-                Status = result.Status ?? "Pending",
-                SwapType = result.SwapType ?? "Temporary"
-            };
+            return dto;
         }
-
 
         public async Task<List<ShiftSwapRequestResponseDTO>> GetAllRequestsAsync()
         {
@@ -63,27 +46,8 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<ShiftSwapRequestResponseDTO?> GetRequestByIdAsync(int exchangeId)
         {
-            var result = await _repository.GetRequestByIdAsync(exchangeId);
-            if (result == null)
-                return null;
-
-            return new ShiftSwapRequestResponseDTO
-            {
-                ExchangeId = result.ExchangeId,
-                Doctor1Id = result.Doctor1Id,
-                Doctor1Name = result.Doctor1?.User?.FullName ?? "",
-                Doctor1Specialty = result.Doctor1?.Specialty ?? "",
-                Doctor2Id = result.Doctor2Id ?? 0,
-                Doctor2Name = result.Doctor2?.User?.FullName ?? "",
-                Doctor2Specialty = result.Doctor2?.Specialty ?? "",
-                Doctor1ShiftRefId = result.Doctor1ShiftRefId,
-                Doctor1ShiftName = result.Doctor1ShiftRef?.Shift?.ShiftType ?? "",
-                Doctor2ShiftRefId = result.Doctor2ShiftRefId ?? 0,
-                Doctor2ShiftName = result.Doctor2ShiftRef?.Shift?.ShiftType ?? "",
-                ExchangeDate = result.ExchangeDate,
-                Status = result.Status ?? "Pending",
-                SwapType = result.SwapType ?? "Temporary"
-            };
+            var requests = await _repository.GetAllRequestsAsync();
+            return requests.FirstOrDefault(r => r.ExchangeId == exchangeId);
         }
 
         public async Task<bool> ReviewShiftSwapRequestAsync(ReviewShiftSwapRequestDTO review)
@@ -106,21 +70,7 @@ namespace SEP490_BE.BLL.Services
                 throw new InvalidOperationException("Request has already been processed");
             }
 
-            // Update status và xử lý đổi ca (nếu chấp nhận)
-            var result = await _repository.UpdateRequestStatusAsync(
-                review.ExchangeId, 
-                review.Status, 
-                null, 
-                null
-            );
-
-            if (result && review.Status == "Approved")
-            {
-                // Log thành công đổi ca
-                Console.WriteLine($"Successfully processed shift swap for exchange {review.ExchangeId}");
-            }
-
-            return result;
+            return await _repository.UpdateRequestStatusAsync(review.ExchangeId, review.Status, null, null);
         }
 
         public async Task<List<DoctorShiftDTO>> GetDoctorShiftsAsync(int doctorId, DateOnly from, DateOnly to)
@@ -169,18 +119,45 @@ namespace SEP490_BE.BLL.Services
             }
 
             // Check if both doctors have the shifts they want to swap
-            if (!await _repository.HasExistingShiftAsync(request.Doctor1Id, request.Doctor1ShiftRefId, request.ExchangeDate))
+            if (request.SwapType?.ToLower() == "permanent")
             {
-                return false;
+                // Permanent: Chỉ cho phép đổi ca của tháng sau
+                var nextMonthStart = DateOnly.FromDateTime(new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1));
+                
+                // Check Doctor1ShiftRefId có EffectiveFrom >= đầu tháng sau
+                var doctor1Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor1ShiftRefId);
+                if (doctor1Shift == null || doctor1Shift.EffectiveFrom < nextMonthStart)
+                {
+                    return false;
+                }
+                
+                // Check Doctor2ShiftRefId có EffectiveFrom >= đầu tháng sau
+                var doctor2Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor2ShiftRefId);
+                if (doctor2Shift == null || doctor2Shift.EffectiveFrom < nextMonthStart)
+                {
+                    return false;
+                }
             }
-
-            if (!await _repository.HasExistingShiftAsync(request.Doctor2Id, request.Doctor2ShiftRefId, request.ExchangeDate))
+            else
             {
-                return false;
+                // Temporary: dùng ExchangeDate để check
+                if (!request.ExchangeDate.HasValue)
+                {
+                    return false;
+                }
+                
+                if (!await _repository.HasExistingShiftAsync(request.Doctor1Id, request.Doctor1ShiftRefId, request.ExchangeDate.Value))
+                {
+                    return false;
+                }
+
+                if (!await _repository.HasExistingShiftAsync(request.Doctor2Id, request.Doctor2ShiftRefId, request.ExchangeDate.Value))
+                {
+                    return false;
+                }
             }
 
             return true;
         }
-
     }
 }

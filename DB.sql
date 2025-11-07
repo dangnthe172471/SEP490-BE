@@ -91,11 +91,13 @@ CREATE TABLE DoctorShift (
 CREATE TABLE DoctorShiftExchange (
     ExchangeID INT PRIMARY KEY IDENTITY,
     Doctor1ID INT NOT NULL,                   -- Bác sĩ 1
-    Doctor1ShiftRefID INT NOT NULL,           -- Tham chiếu bản ghi DoctorShift của bác sĩ 1
+    Doctor1ShiftRefID INT NOT NULL, 
+	DoctorOld1ShiftID INT NOT NULL,
     Doctor2ID INT NULL,                       -- Bác sĩ 2 (NULL = nghỉ phép)
-    Doctor2ShiftRefID INT NULL,               -- Tham chiếu bản ghi DoctorShift của bác sĩ 2 (NULL = nghỉ phép)
-    ExchangeDate DATE NOT NULL,               -- Ngày đổi ca/nghỉ
-    Status NVARCHAR(20) DEFAULT 'Approved',   -- Pending, Approved, Rejected
+    Doctor2ShiftRefID INT NULL,  
+	DoctorOld2ShiftID INT NULL,
+    ExchangeDate DATE NULL,					  -- Ngày đổi ca/nghỉ
+    Status NVARCHAR(20) DEFAULT 'Pending',   -- Pending, Approved, Rejected
     FOREIGN KEY (Doctor1ID) REFERENCES Doctor(DoctorID),
     FOREIGN KEY (Doctor1ShiftRefID) REFERENCES DoctorShift(DoctorShiftID),
     FOREIGN KEY (Doctor2ID) REFERENCES Doctor(DoctorID),
@@ -386,29 +388,23 @@ GO
 INSERT INTO DoctorShift (DoctorID, ShiftID, EffectiveFrom, EffectiveTo)
 VALUES
 -- Bác sĩ 1: Ca sáng, ca chiều
-(1, 1, '2025-01-01', '2026-01-01'), -- Ca sáng vĩnh viễn
-(1, 2, '2025-01-01', '2026-01-01'), -- Ca chiều vĩnh viễn
+(1, 1, '2025-11-01', '2025-12-01'),
+(1, 2, '2025-11-01', '2025-12-01'), 
+
+(1, 1, '2025-12-01', '2026-01-01'),
+(1, 2, '2025-12-01', '2026-01-01'), 
 
 -- Bác sĩ 2: Ca sáng, ca tối
-(2, 1, '2025-01-01', '2026-01-01'), -- Ca sáng vĩnh viễn
-(2, 3, '2025-01-01', '2026-01-01'), -- Ca tối vĩnh viễn
+(2, 1, '2025-11-01', '2025-12-01'),
+(2, 3, '2025-11-01', '2025-12-01'),
 
 -- Bác sĩ 3: Ca chiều, ca tối
-(3, 2, '2025-01-01', '2026-01-01'), -- Ca chiều vĩnh viễn
-(3, 3, '2025-01-01', '2026-01-01'), -- Ca tối vĩnh viễn
+(3, 2, '2025-01-01', '2026-01-01'),
+(3, 3, '2025-01-01', '2026-01-01'),
 
-(4, 3, '2025-01-01','2026-01-01'); -- Ca sáng tạm thời
+(4, 3, '2025-11-01','2025-12-01'),
+(4, 3, '2025-12-01','2026-01-01');
 
-GO
-
-INSERT INTO DoctorShiftExchange (Doctor1ID, Doctor1ShiftRefID, Doctor2ID, Doctor2ShiftRefID, ExchangeDate)
-VALUES
-(1, 1, NULL, NULL, '2025-01-15'); -- DoctorShiftID=1: Bác sĩ 1, ca sáng
-GO
-
-INSERT INTO DoctorShiftExchange (Doctor1ID, Doctor1ShiftRefID, Doctor2ID, Doctor2ShiftRefID, ExchangeDate)
-VALUES
-(1, 1, 3, 5, '2025-01-20'); -- DoctorShiftID=1 (BS1-ca sáng) đổi với DoctorShiftID=5 (BS3-ca chiều)
 GO
 
 --Appointment

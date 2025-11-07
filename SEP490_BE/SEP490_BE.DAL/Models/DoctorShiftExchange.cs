@@ -11,11 +11,15 @@ public partial class DoctorShiftExchange
 
     public int Doctor1ShiftRefId { get; set; }
 
+    public int DoctorOld1ShiftId { get; set; }
+
     public int? Doctor2Id { get; set; }
 
     public int? Doctor2ShiftRefId { get; set; }
 
-    public DateOnly ExchangeDate { get; set; }
+    public int? DoctorOld2ShiftId { get; set; }
+
+    public DateOnly? ExchangeDate { get; set; }
 
     public string? Status { get; set; }
 
