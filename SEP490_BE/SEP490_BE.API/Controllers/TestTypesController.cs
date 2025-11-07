@@ -41,7 +41,7 @@ namespace SEP490_BE.API.Controllers
 
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Clinic Manager")]
+        //[Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<TestTypeDto>> GetById(int id, CancellationToken cancellationToken)
         {
             var testType = await _testTypeService.GetByIdAsync(id, cancellationToken);
