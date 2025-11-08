@@ -245,7 +245,7 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepositories
         {
             try
             {
-                // Lấy tất cả ca làm việc hiệu lực trong ngày được chọn (và còn Active)
+              
                 var existingShifts = await _context.DoctorShifts
                     .Where(ds => ds.ShiftId == request.ShiftId &&
                                  ds.Status == "Active" &&
@@ -253,7 +253,7 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepositories
                                  (ds.EffectiveTo == null || ds.EffectiveTo >= request.Date))
                     .ToListAsync();
 
-                // Cập nhật trạng thái Inactive cho các bác sĩ bị xóa khỏi ca
+               
                 foreach (var doctorId in request.RemoveDoctorIds)
                 {
                     var toUpdate = existingShifts.FirstOrDefault(s => s.DoctorId == doctorId);
@@ -595,6 +595,21 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepositories
             return count < 2;
         }
 
+        public async Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to)
+        {
+            var count = await _context.DoctorShifts
+                .AsNoTracking()
+                .Where(ds =>
+                    ds.DoctorId == doctorId &&
+                    (ds.Status == null || ds.Status.ToLower() == "active") &&
+                    ds.EffectiveFrom <= to &&
+                    (ds.EffectiveTo == null || ds.EffectiveTo >= from))
+                .Select(ds => ds.ShiftId)
+                .Distinct()
+                .CountAsync();
+
+            return count < 2;
+        }
 
 
 

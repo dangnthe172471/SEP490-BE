@@ -31,5 +31,7 @@ namespace SEP490_BE.BLL.IServices.IManagerServices
            int pageSize);
         Task UpdateDoctorShiftsInRangeAsync(UpdateDoctorShiftRangeRequest request);
         //Task RefreshShiftStatusAsync();
+        Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date);
+        Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to);
     }
 }

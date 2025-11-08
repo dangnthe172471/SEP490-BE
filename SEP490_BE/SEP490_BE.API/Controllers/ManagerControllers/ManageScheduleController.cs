@@ -183,5 +183,26 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
             }
         }
 
+        [HttpGet("check-limit")]
+        public async Task<bool> CheckDoctorShiftLimit([FromQuery] int doctorId, [FromQuery] DateOnly date)
+        {
+            if (doctorId <= 0) return false;
+            return await _service.CheckDoctorShiftLimitAsync(doctorId, date);
+        }
+
+        [HttpGet("check-limit-range")]
+        public async Task<IActionResult> CheckDoctorShiftLimitRange([FromQuery] int doctorId, [FromQuery] DateOnly from, [FromQuery] DateOnly to)
+        {
+            try
+            {
+                var result = await _service.CheckDoctorShiftLimitRangeAsync(doctorId, from, to);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
     }
 }

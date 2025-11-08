@@ -292,26 +292,36 @@ namespace SEP490_BE.BLL.Services.ManagerServices
         }
 
 
- //       public async Task RefreshShiftStatusAsync()
- //       {
- //           var today = DateTime.Today;
+        public async Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date)
+        {
+            
+            return await _managerRepo.CheckDoctorShiftLimitAsync(doctorId, date);
+        }
 
-     
- //           var expiredShifts = await _managerRepo.GetAllAsync(
- //    ds => ds.Status == "Active" &&
- //          ds.EffectiveTo != null &&
- //          ds.EffectiveTo.Value.ToDateTime(TimeOnly.MinValue) < today
- //);
+        public async Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to)
+        {
+            return await _managerRepo.CheckDoctorShiftLimitRangeAsync(doctorId, from, to);
+        }
+        //       public async Task RefreshShiftStatusAsync()
+        //       {
+        //           var today = DateTime.Today;
 
- //           if (!expiredShifts.Any()) return;
 
- //           foreach (var shift in expiredShifts)
- //           {
- //               shift.Status = "Inactive";
- //               await _managerRepo.UpdateAsync(shift);
- //           }
+        //           var expiredShifts = await _managerRepo.GetAllAsync(
+        //    ds => ds.Status == "Active" &&
+        //          ds.EffectiveTo != null &&
+        //          ds.EffectiveTo.Value.ToDateTime(TimeOnly.MinValue) < today
+        //);
 
- //           await _managerRepo.SaveChangesAsync();
- //       }
+        //           if (!expiredShifts.Any()) return;
+
+        //           foreach (var shift in expiredShifts)
+        //           {
+        //               shift.Status = "Inactive";
+        //               await _managerRepo.UpdateAsync(shift);
+        //           }
+
+        //           await _managerRepo.SaveChangesAsync();
+        //       }
     }
 }
