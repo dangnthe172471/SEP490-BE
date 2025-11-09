@@ -108,7 +108,7 @@ namespace SEP490_BE.DAL.Repositories
             // Áp các Exchange 
             foreach (var ex in approvedExchanges)
             {
-                var exDate = ex.ExchangeDate;
+                var exDate = ex.ExchangeDate!.Value;
 
                 // 2 ca được đổi
                 var s1 = baseShifts.FirstOrDefault(s => s.DoctorShiftId == ex.Doctor1ShiftRefId);
