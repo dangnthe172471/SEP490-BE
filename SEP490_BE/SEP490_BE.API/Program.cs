@@ -80,6 +80,12 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn"))
 );
 
+
+//Administrator DI
+builder.Services.AddScoped<IAdministratorRepository, AdministratorRepository>();
+builder.Services.AddScoped<IAdministratorService, AdministratorService>();
+
+
 // Users DI
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();

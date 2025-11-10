@@ -84,7 +84,7 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                 {
                     receivers = await _notificationRepo.GetUserIdsByRolesAsync(new List<string>
             {
-                "Doctor", "Receptionist", "Manager", "Patient"
+                "Doctor", "Receptionist", "Nurse"
             });
                 }
                 else if (dto.RoleNames != null && dto.RoleNames.Any())
@@ -104,7 +104,7 @@ namespace SEP490_BE.BLL.Services.ManagerServices
 
               
                 var users = await _context.Users
-                    .Where(u => receivers.Contains(u.UserId) && !string.IsNullOrEmpty(u.Email))
+                    .Where(u => receivers.Contains(u.UserId) && !string.IsNullOrEmpty(u.Email) && u.IsActive==true)
                     .ToListAsync();
 
                 Console.WriteLine($"Đang gửi thông báo đến {users.Count} người dùng.");

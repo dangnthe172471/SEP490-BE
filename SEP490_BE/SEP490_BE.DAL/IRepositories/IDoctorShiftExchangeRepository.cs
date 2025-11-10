@@ -12,7 +12,8 @@ namespace SEP490_BE.DAL.IRepositories
         Task<bool> UpdateRequestStatusAsync(int exchangeId, string status, string? managerNote, int? reviewedBy);
         Task<bool> IsSameSpecialtyAsync(int doctor1Id, int doctor2Id);
         Task<bool> HasExistingShiftAsync(int doctorId, int doctorShiftId, DateOnly date);
-        Task<bool> HasPendingRequestAsync(int doctor1Id, int doctor2Id, DateOnly exchangeDate);
+        Task<bool> HasPendingRequestAsync(int doctor1Id, int doctor2Id, DateOnly? exchangeDate);
+        Task<DoctorShift?> GetDoctorShiftByIdAsync(int doctorShiftId);
         Task<List<DoctorShiftDTO>> GetDoctorShiftsAsync(int doctorId, DateOnly from, DateOnly to);
         Task<List<DoctorDTO>> GetDoctorsBySpecialtyAsync(string specialty);
         Task<List<DoctorDTO>> GetAllDoctorsAsync();

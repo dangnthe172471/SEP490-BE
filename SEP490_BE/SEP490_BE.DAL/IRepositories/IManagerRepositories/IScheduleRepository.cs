@@ -29,6 +29,7 @@ namespace SEP490_BE.DAL.IRepositories.IManagerRepositories
         Task DeleteAsync(DoctorShift entity);
         Task SaveChangesAsync();
         Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date);
+        Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to);
         #endregion
 
     }

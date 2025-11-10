@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IManagerService;
+using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 
 namespace SEP490_BE.API.Controllers.NotificationControllers
@@ -13,13 +15,23 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
     {
         private readonly INotificationService _notificationService;
 
-
-        public NotificationController(INotificationService notificationService)
-        {
-            _notificationService = notificationService;
-        }
+        private readonly IAdministratorService _administratorService;
 
      
+        public NotificationController(INotificationService notificationService, IAdministratorService administratorService)
+        {
+            _notificationService = notificationService;
+            _administratorService = administratorService;
+        }
+
+        [HttpGet("all-user")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAll(CancellationToken cancellationToken)
+        {
+            var users = await _administratorService.GetAllAsync(cancellationToken);
+            return Ok(users);
+        }
+
+
         [HttpPost("send-reminder")]
         public async Task<IActionResult> SendReminder()
         {
