@@ -495,6 +495,16 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             };
         }
 
+        public Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default)
+        {
+            return _appointmentRepository.GetAppointmentTimeSeriesAsync(from, to, groupBy, cancellationToken);
+        }
+
+        public Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default)
+        {
+            return _appointmentRepository.GetAppointmentHeatmapAsync(from, to, cancellationToken);
+        }
+
         public async Task<bool> DeleteAsync(int appointmentId, CancellationToken cancellationToken = default)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);

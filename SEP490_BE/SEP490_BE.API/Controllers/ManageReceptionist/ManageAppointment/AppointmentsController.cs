@@ -488,6 +488,31 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
             return Ok(statistics);
         }
 
+        // GET: api/appointments/stats/timeseries
+        [HttpGet("stats/timeseries")]
+        [Authorize(Roles = "Clinic Manager")]
+        public async Task<ActionResult<List<AppointmentTimeSeriesPointDto>>> GetTimeSeries(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] string groupBy = "day",
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _appointmentService.GetAppointmentTimeSeriesAsync(from, to, groupBy, cancellationToken);
+            return Ok(result);
+        }
+
+        // GET: api/appointments/stats/heatmap
+        [HttpGet("stats/heatmap")]
+        [Authorize(Roles = "Clinic Manager")]
+        public async Task<ActionResult<List<AppointmentHeatmapPointDto>>> GetHeatmap(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _appointmentService.GetAppointmentHeatmapAsync(from, to, cancellationToken);
+            return Ok(result);
+        }
+
         // DELETE: api/appointments/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "Clinic Manager,Receptionist")]

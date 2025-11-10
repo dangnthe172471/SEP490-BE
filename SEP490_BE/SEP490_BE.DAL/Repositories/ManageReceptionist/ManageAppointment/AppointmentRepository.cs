@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -129,6 +130,81 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
                 { "Cancelled", cancelled },
                 { "No-Show", noShow }
             };
+        }
+
+        public async Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default)
+        {
+            var query = _dbContext.Appointments.AsQueryable();
+
+            if (from.HasValue)
+            {
+                var f = from.Value.Date;
+                query = query.Where(a => a.AppointmentDate >= f);
+            }
+            if (to.HasValue)
+            {
+                var t = to.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(a => a.AppointmentDate <= t);
+            }
+
+            groupBy = (groupBy ?? "day").ToLower().Trim();
+
+            if (groupBy == "month")
+            {
+                var data = await query
+                    .GroupBy(a => new { a.AppointmentDate.Year, a.AppointmentDate.Month })
+                    .Select(g => new AppointmentTimeSeriesPointDto
+                    {
+                        Period = g.Key.Year.ToString("0000") + "-" + g.Key.Month.ToString("00"),
+                        Count = g.Count()
+                    })
+                    .OrderBy(x => x.Period)
+                    .ToListAsync(cancellationToken);
+                return data;
+            }
+            else
+            {
+                // default: day
+                var data = await query
+                    .GroupBy(a => a.AppointmentDate.Date)
+                    .Select(g => new AppointmentTimeSeriesPointDto
+                    {
+                        Period = g.Key.ToString("yyyy-MM-dd"),
+                        Count = g.Count()
+                    })
+                    .OrderBy(x => x.Period)
+                    .ToListAsync(cancellationToken);
+                return data;
+            }
+        }
+
+        public async Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default)
+        {
+            var query = _dbContext.Appointments.AsQueryable();
+
+            if (from.HasValue)
+            {
+                var f = from.Value.Date;
+                query = query.Where(a => a.AppointmentDate >= f);
+            }
+            if (to.HasValue)
+            {
+                var t = to.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(a => a.AppointmentDate <= t);
+            }
+
+            var data = await query
+                .GroupBy(a => new { Weekday = (int)a.AppointmentDate.DayOfWeek, Hour = a.AppointmentDate.Hour })
+                .Select(g => new AppointmentHeatmapPointDto
+                {
+                    Weekday = g.Key.Weekday,
+                    Hour = g.Key.Hour,
+                    Count = g.Count()
+                })
+                .OrderBy(x => x.Weekday).ThenBy(x => x.Hour)
+                .ToListAsync(cancellationToken);
+
+            return data;
         }
 
         public async Task<bool> HasAppointmentOnDateAsync(int patientId, DateTime appointmentDate, CancellationToken cancellationToken = default)
