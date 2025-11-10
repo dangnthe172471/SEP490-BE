@@ -10,5 +10,9 @@ namespace SEP490_BE.BLL.IServices.IDoctorServices
     public interface IDoctorScheduleService
     {
         Task<List<DoctorActiveScheduleRangeDto>> GetDoctorActiveScheduleInRangeAsync(int doctorId, DateOnly startDate, DateOnly endDate);
+        Task<List<DoctorActiveScheduleRangeDto>> GetAllDoctorSchedulesByRangeAsync(DateOnly startDate, DateOnly endDate);
+
+        Task<List<int>> GetUserIdsByDoctorIdsAsync(List<int> doctorIds);
     }
+
 }

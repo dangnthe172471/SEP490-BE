@@ -160,6 +160,37 @@ namespace SEP490_BE.DAL.Repositories
                 .ToList();
         }
 
+        public async Task<List<DoctorActiveScheduleRangeDto>> GetAllDoctorSchedulesInRangeAsync(
+         DateOnly startDate, DateOnly endDate)
+        {
+            var doctorIds = await _context.Doctors
+                .Include(d => d.User)
+                .Where(d => d.User.IsActive == true)
+                .Select(d => d.DoctorId)
+                .ToListAsync();
+
+            var all = new List<DoctorActiveScheduleRangeDto>();
+
+            foreach (var id in doctorIds)
+            {
+                var each = await GetDoctorActiveScheduleInRangeAsync(id, startDate, endDate);
+                all.AddRange(each);
+            }
+
+            return all
+                .OrderBy(x => x.DoctorName)
+                .ThenBy(x => x.Date)
+                .ThenBy(x => x.StartTime)
+                .ToList();
+        }
+        public async Task<List<int>> GetUserIdsByDoctorIdsAsync(List<int> doctorIds)
+        {
+            return await _context.Doctors
+                .Where(d => doctorIds.Contains(d.DoctorId))
+                .Select(d => d.UserId)
+                .Distinct()
+                .ToListAsync();
+        }
 
     }
 }

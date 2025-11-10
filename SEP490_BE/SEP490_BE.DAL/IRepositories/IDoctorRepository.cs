@@ -13,5 +13,7 @@ namespace SEP490_BE.DAL.IRepositories
         Task<List<Doctor>> GetAllDoctorsAsync();
         Task<List<Doctor>> SearchDoctorsAsync(string keyword);
         Task<List<DoctorActiveScheduleRangeDto>> GetDoctorActiveScheduleInRangeAsync(int doctorId, DateOnly startDate, DateOnly endDate);
+        Task<List<DoctorActiveScheduleRangeDto>> GetAllDoctorSchedulesInRangeAsync(DateOnly startDate, DateOnly endDate);
+        Task<List<int>> GetUserIdsByDoctorIdsAsync(List<int> doctorIds);
     }
 }
