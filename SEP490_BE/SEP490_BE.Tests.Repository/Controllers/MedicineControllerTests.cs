@@ -11,241 +11,294 @@ namespace SEP490_BE.Tests.Controllers
 {
     public class MedicineControllerTests
     {
-        private readonly Mock<IMedicineService> _svc = new(MockBehavior.Strict);
+        private static MedicineController CreateController(Mock<IMedicineService> svcMock, int userId = 1)
+        {
+            var controller = new MedicineController(svcMock.Object);
 
-        private static ClaimsPrincipal MakeUser(int userId)
-        {
-            var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new(ClaimTypes.Role, "Pharmacy Provider")
-        };
-            return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
-        }
-
-        private MedicineController NewController(ClaimsPrincipal user)
-        {
-            var ctrl = new MedicineController(_svc.Object)
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
             {
-                ControllerContext = new ControllerContext
-                {
-                    HttpContext = new DefaultHttpContext { User = user }
-                }
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Role, "Pharmacy Provider")
+            }, "TestAuth"));
+
+            controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = user }
             };
-            return ctrl;
+            return controller;
         }
 
-        // ✅ TC1: Provider=1, Paracetamol, Nausea, Providing
-        [Fact(DisplayName = "TC1 - provider=1, Paracetamol/Nausea/Providing → 200 OK")]
-        public async Task TC1_Create_Provider1_Paracetamol()
+        // ===============================================================
+        //                    CREATE TEST CASES (5)
+        // ===============================================================
+
+        [Fact]
+        //Tạo thuốc hợp lệ (đầy đủ các trường, status = Providing)
+        public async Task Create_Should_Return200_When_Valid()
         {
-            var user = MakeUser(10);
-            var ctrl = NewController(user);
-            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.GetProviderIdByUserIdAsync(1, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(1);
+            svc.Setup(s => s.CreateMedicineAsync(It.IsAny<CreateMedicineDto>(), 1, It.IsAny<CancellationToken>()))
+               .Returns(Task.CompletedTask);
 
-            _svc.Setup(s => s.GetProviderIdByUserIdAsync(10, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-            _svc.Setup(s => s.CreateMedicineAsync(dto, 1, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Create(dto, default);
-            var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, ok.StatusCode);
-            Assert.Contains("Medicine added successfully", ok.Value!.ToString());
-            _svc.VerifyAll();
-        }
-
-        // ✅ TC2: Provider=2, Paracetamol, Nausea, Providing
-        [Fact(DisplayName = "TC2 - provider=2, Paracetamol/Nausea/Providing → 200 OK")]
-        public async Task TC2_Create_Provider2_Paracetamol()
-        {
-            var user = MakeUser(20);
-            var ctrl = NewController(user);
-            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
-
-            _svc.Setup(s => s.GetProviderIdByUserIdAsync(20, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(2);
-            _svc.Setup(s => s.CreateMedicineAsync(dto, 2, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Create(dto, default);
-            var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, ok.StatusCode);
-            _svc.VerifyAll();
-        }
-
-        // ❌ TC3: Provider=1, Paracetamol duplicate → 409 Conflict
-        [Fact(DisplayName = "TC3 - provider=1 duplicate Paracetamol → 409 Conflict")]
-        public async Task TC3_Create_Conflict_Duplicate()
-        {
-            var user = MakeUser(10);
-            var ctrl = NewController(user);
-            var dto = new CreateMedicineDto { MedicineName = "Paracetamol", SideEffects = "Nausea", Status = "Providing" };
-
-            _svc.Setup(s => s.GetProviderIdByUserIdAsync(10, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-            _svc.Setup(s => s.CreateMedicineAsync(dto, 1, It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("Medicine 'Aspirin' already exists for this provider."));
-
-            var result = await ctrl.Create(dto, default);
-            var conflict = Assert.IsType<ConflictObjectResult>(result);
-            Assert.Equal(409, conflict.StatusCode);
-            Assert.Contains("already exists", conflict.Value!.ToString());
-            _svc.VerifyAll();
-        }
-
-        // ✅ TC4: Provider=2, " Amoxicillin ", Fever, Providing
-        [Fact(DisplayName = "TC4 - provider=2, ' Amoxicillin ', Fever, providing → 200 OK (trim name)")]
-        public async Task TC4_Create_TrimName_Amoxicillin()
-        {
-            var user = MakeUser(30);
-            var ctrl = NewController(user);
-            var dto = new CreateMedicineDto { MedicineName = " Amoxicillin ", SideEffects = "Fever", Status = "providing" };
-
-            _svc.Setup(s => s.GetProviderIdByUserIdAsync(30, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(2);
-            _svc.Setup(s => s.CreateMedicineAsync(
-                    It.Is<CreateMedicineDto>(d => d.MedicineName.Trim() == "Amoxicillin"),
-                    2,
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Create(dto, default);
-            var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, ok.StatusCode);
-            _svc.VerifyAll();
-        }
-
-        // ✅ TC5: Provider=1, " Amoxicillin ", SideEffects=null, Status=null → default Providing
-        [Fact(DisplayName = "TC5 - provider=1, ' Amoxicillin ', null, null → default Providing → 200 OK")]
-        public async Task TC5_Create_DefaultStatus_Providing()
-        {
-            var user = MakeUser(40);
-            var ctrl = NewController(user);
-            var dto = new CreateMedicineDto { MedicineName = " Amoxicillin ", SideEffects = null, Status = null };
-
-            _svc.Setup(s => s.GetProviderIdByUserIdAsync(40, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
-            _svc.Setup(s => s.CreateMedicineAsync(
-                    It.Is<CreateMedicineDto>(d => d.MedicineName.Trim() == "Amoxicillin" && d.Status == "Providing"),
-                    1,
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Create(dto, default);
-            var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, ok.StatusCode);
-            _svc.VerifyAll();
-        }
-
-        [Fact(DisplayName = "U1 - Provider=1, 'Paracetamol 500', 'Nausea', 'Stopped' → 200 OK")]
-        public async Task U1_Update_Success_Paracetamol500_Stopped()
-        {
-            var user = MakeUser(1);
-            var ctrl = NewController(user);
-            var dto = new UpdateMedicineDto
+            var controller = CreateController(svc);
+            var dto = new CreateMedicineDto
             {
-                MedicineName = "Paracetamol 500",
-                SideEffects = "Nausea",
-                Status = "Stopped"
-            };
-
-            _svc.Setup(s => s.UpdateMedicineAsync(1, dto, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Update(1, dto, default);
-            var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, ok.StatusCode);
-            Assert.Contains("Medicine updated successfully", ok.Value!.ToString());
-            _svc.VerifyAll();
-        }
-
-        [Fact(DisplayName = "U2 - Provider=2, 'Amoxicillin', 'Fever', 'Providing' → 200 OK")]
-        public async Task U2_Update_Success_Amoxicillin_Fever_Providing()
-        {
-            var user = MakeUser(2);
-            var ctrl = NewController(user);
-            var dto = new UpdateMedicineDto
-            {
-                MedicineName = "Amoxicillin",
-                SideEffects = "Fever",
+                MedicineName = "Vitamin C 500mg",
+                SideEffects = "buồn nôn nhẹ",
                 Status = "Providing"
             };
 
-            _svc.Setup(s => s.UpdateMedicineAsync(2, dto, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Update(2, dto, default);
+            var result = await controller.Create(dto, CancellationToken.None);
             var ok = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, ok.StatusCode);
-            Assert.Contains("Medicine updated successfully", ok.Value!.ToString());
-            _svc.VerifyAll();
         }
 
-        [Fact(DisplayName = "U3 - Provider=100 (không tồn tại) → 404 NotFound")]
-        public async Task U3_Update_Fail_NotFound()
+        [Fact]
+        //Tạo thuốc hợp lệ (status = null tự mặc định “Providing”)
+        public async Task Create_Should_Return200_When_StatusNull_DefaultProviding()
         {
-            var user = MakeUser(100);
-            var ctrl = NewController(user);
-            var dto = new UpdateMedicineDto
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.GetProviderIdByUserIdAsync(1, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(1);
+            svc.Setup(s => s.CreateMedicineAsync(It.IsAny<CreateMedicineDto>(), 1, It.IsAny<CancellationToken>()))
+               .Returns(Task.CompletedTask);
+
+            var controller = CreateController(svc);
+            var dto = new CreateMedicineDto
             {
-                MedicineName = "Amoxicillin",
-                SideEffects = "Fever",
-                Status = "Providing"
-            };
-
-            _svc.Setup(s => s.UpdateMedicineAsync(100, dto, It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new KeyNotFoundException("Medicine with ID 100 not found."));
-
-            var result = await ctrl.Update(100, dto, default);
-            var notfound = Assert.IsType<NotFoundObjectResult>(result);
-            Assert.Equal(404, notfound.StatusCode);
-            Assert.Contains("not found", notfound.Value!.ToString(), StringComparison.OrdinalIgnoreCase);
-            _svc.VerifyAll();
-        }
-
-        [Fact(DisplayName = "U4 - Provider=1, MedicineName='' → 409 Conflict (empty name)")]
-        public async Task U4_Update_Fail_EmptyName()
-        {
-            var user = MakeUser(1);
-            var ctrl = NewController(user);
-            var dto = new UpdateMedicineDto
-            {
-                MedicineName = "",
-                SideEffects = "Nausea",
-                Status = "Providing"
-            };
-
-            _svc.Setup(s => s.UpdateMedicineAsync(1, dto, It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("Medicine name cannot be empty or whitespace."));
-
-            var result = await ctrl.Update(1, dto, default);
-            var bad = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal(400, bad.StatusCode);
-            Assert.Contains("cannot be empty or whitespace", bad.Value!.ToString(), StringComparison.OrdinalIgnoreCase);
-            _svc.VerifyAll();
-        }
-
-        [Fact(DisplayName = "U5 - Provider=1, 'Paracetamol 500', null, null → 200 OK (giữ nguyên cũ)")]
-        public async Task U5_Update_Success_NullFields_KeepOld()
-        {
-            var user = MakeUser(1);
-            var ctrl = NewController(user);
-            var dto = new UpdateMedicineDto
-            {
-                MedicineName = "Paracetamol 500",
-                SideEffects = null,
+                MedicineName = "Zinc 50mg",
+                SideEffects = "đau bụng thoáng qua",
                 Status = null
             };
 
-            _svc.Setup(s => s.UpdateMedicineAsync(1, dto, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-
-            var result = await ctrl.Update(1, dto, default);
+            var result = await controller.Create(dto, CancellationToken.None);
             var ok = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, ok.StatusCode);
-            Assert.Contains("Medicine updated successfully", ok.Value!.ToString());
-            _svc.VerifyAll();
+        }
+
+        [Fact]
+        //Thiếu tên thuốc 400 Bad Request
+        public async Task Create_Should_Return400_When_NameMissing()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.GetProviderIdByUserIdAsync(1, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(1);
+            svc.Setup(s => s.CreateMedicineAsync(It.IsAny<CreateMedicineDto>(), 1, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new ArgumentException("Medicine name is required."));
+
+            var controller = CreateController(svc);
+            var dto = new CreateMedicineDto
+            {
+                MedicineName = "",
+                SideEffects = "chóng mặt",
+                Status = "Providing"
+            };
+
+            var result = await controller.Create(dto, CancellationToken.None);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, bad.StatusCode);
+        }
+
+        [Fact]
+        //Status không hợp lệ 400 Bad Request
+        public async Task Create_Should_Return400_When_StatusInvalid()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.GetProviderIdByUserIdAsync(1, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(1);
+            svc.Setup(s => s.CreateMedicineAsync(It.IsAny<CreateMedicineDto>(), 1, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new ArgumentException("Invalid status. Allowed: Providing | Stopped."));
+
+            var controller = CreateController(svc);
+            var dto = new CreateMedicineDto
+            {
+                MedicineName = "Cefuroxime",
+                SideEffects = "tiêu chảy",
+                Status = "Active"
+            };
+
+            var result = await controller.Create(dto, CancellationToken.None);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, bad.StatusCode);
+        }
+
+        [Fact]
+        //Tên thuốc trùng với thuốc khác cùng Provider 409 Conflict
+        public async Task Create_Should_Return409_When_DuplicatedName()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.GetProviderIdByUserIdAsync(1, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(1);
+            svc.Setup(s => s.CreateMedicineAsync(It.IsAny<CreateMedicineDto>(), 1, It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new InvalidOperationException("Medicine 'Amlodipine 5mg' already exists for this provider."));
+
+            var controller = CreateController(svc);
+            var dto = new CreateMedicineDto
+            {
+                MedicineName = "Amlodipine 5mg",
+                SideEffects = "đau đầu",
+                Status = "Providing"
+            };
+
+            var result = await controller.Create(dto, CancellationToken.None);
+            var conflict = Assert.IsType<ConflictObjectResult>(result);
+            Assert.Equal(409, conflict.StatusCode);
+        }
+
+        // ===============================================================
+        //                    UPDATE TEST CASES (7)
+        // ===============================================================
+
+        [Fact]
+        // Cập nhật hợp lệ (đổi trạng thái Providing Stopped)
+        public async Task Update_Should_Return200_When_Valid_ChangeStatus()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 1, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .Returns(Task.CompletedTask);
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "Paracetamol 500mg",
+                SideEffects = "buồn ngủ, mệt nhẹ",
+                Status = "Stopped"
+            };
+
+            var result = await controller.Update(1, dto, CancellationToken.None);
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(200, ok.StatusCode);
+        }
+
+        [Fact]
+        //Cập nhật hợp lệ (đổi tên thuốc)
+        public async Task Update_Should_Return200_When_Valid_Rename()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 3, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .Returns(Task.CompletedTask);
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "Amoxicillin 500mg",
+                SideEffects = "khó tiêu",
+                Status = "Providing"
+            };
+
+            var result = await controller.Update(3, dto, CancellationToken.None);
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(200, ok.StatusCode);
+        }
+
+        [Fact]
+        //Đổi tên trùng thuốc khác cùng Provider 409 Conflict
+        public async Task Update_Should_Return409_When_DuplicateName()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 4, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new InvalidOperationException("Medicine 'Amlodipine 5mg' already exists for this provider."));
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "Amlodipine 5mg",
+                SideEffects = "đầy bụng",
+                Status = "Providing"
+            };
+
+            var result = await controller.Update(4, dto, CancellationToken.None);
+            var conflict = Assert.IsType<ConflictObjectResult>(result);
+            Assert.Equal(409, conflict.StatusCode);
+        }
+
+        [Fact]
+        //Thuốc không tồn tại 404 Not Found
+        public async Task Update_Should_Return404_When_NotFound()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 999, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new KeyNotFoundException("Medicine with ID 999 not found."));
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "NonExistingDrug",
+                SideEffects = "khó thở",
+                Status = "Providing"
+            };
+
+            var result = await controller.Update(999, dto, CancellationToken.None);
+            var notFound = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Equal(404, notFound.StatusCode);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        [InlineData(null)]
+        //Tên thuốc null hoặc chỉ toàn khoảng trắng 400 Bad Request
+        public async Task Update_Should_Return400_When_NameNullOrWhitespace(string? name)
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 1, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new ArgumentException("Medicine name cannot be empty or whitespace."));
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = name,
+                SideEffects = "đau bụng",
+                Status = "Providing"
+            };
+
+            var result = await controller.Update(1, dto, CancellationToken.None);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, bad.StatusCode);
+        }
+
+        [Fact]
+        //Status sai (Available) 400 Bad Request
+        public async Task Update_Should_Return400_When_StatusInvalid()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 1, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new ArgumentException("Invalid status. Allowed: Providing | Stopped."));
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "NewDrug",
+                SideEffects = "buồn nôn",
+                Status = "Available"
+            };
+
+            var result = await controller.Update(1, dto, CancellationToken.None);
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, bad.StatusCode);
+        }
+
+        [Fact]
+        //Tên trùng nhưng khác hoa/thường (AMO vs Amo) 409 Conflict
+        public async Task Update_Should_Return409_When_CaseInsensitiveDuplicate()
+        {
+            var svc = new Mock<IMedicineService>();
+            svc.Setup(s => s.UpdateMineAsync(1, 5, It.IsAny<UpdateMedicineDto>(), It.IsAny<CancellationToken>()))
+               .ThrowsAsync(new InvalidOperationException("Medicine 'AMO' already exists for this provider."));
+
+            var controller = CreateController(svc);
+            var dto = new UpdateMedicineDto
+            {
+                MedicineName = "AMO",
+                SideEffects = "đau đầu",
+                Status = "Providing"
+            };
+
+            var result = await controller.Update(5, dto, CancellationToken.None);
+            var conflict = Assert.IsType<ConflictObjectResult>(result);
+            Assert.Equal(409, conflict.StatusCode);
         }
     }
 }

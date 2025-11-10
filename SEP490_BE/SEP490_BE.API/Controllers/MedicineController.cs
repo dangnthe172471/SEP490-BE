@@ -27,21 +27,17 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-            => Ok(await _medicineService.GetAllMedicineAsync(cancellationToken));
+        public async Task<IActionResult> GetAll(CancellationToken ct)
+            => Ok(await _medicineService.GetAllMedicineAsync(ct));
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
-            var medicine = await _medicineService.GetMedicineByIdAsync(id, cancellationToken);
+            var medicine = await _medicineService.GetMedicineByIdAsync(id, ct);
             return medicine is null
                 ? NotFound(new { message = $"Medicine with ID {id} not found." })
                 : Ok(medicine);
         }
-
-        [HttpGet("provider/{providerId:int}")]
-        public async Task<IActionResult> GetByProviderId(int providerId, CancellationToken cancellationToken)
-            => Ok(await _medicineService.GetByProviderIdAsync(providerId, cancellationToken));
 
         [Authorize(Roles = ProviderRole)]
         [HttpPost("create")]
@@ -51,51 +47,37 @@ namespace SEP490_BE.API.Controllers
 
             int userId;
             try { userId = RequireUserId(User); }
-            catch (UnauthorizedAccessException) { return Unauthorized("Thiếu/không hợp lệ claim NameIdentifier."); }
+            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
 
             try
             {
                 var providerId = await _medicineService.GetProviderIdByUserIdAsync(userId, ct);
                 if (!providerId.HasValue) return Forbid();
 
-                if (string.IsNullOrWhiteSpace(dto.Status)) dto.Status = "Providing";
-                if (dto.Status.Equals("Providing", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
-
                 await _medicineService.CreateMedicineAsync(dto, providerId.Value, ct);
                 return Ok(new { message = "Medicine added successfully." });
             }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
         }
 
+        [Authorize(Roles = ProviderRole)]
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateMedicineDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateMedicineDto dto, CancellationToken ct)
         {
+            int userId;
+            try { userId = RequireUserId(User); }
+            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
+
             try
             {
-                if (!string.IsNullOrWhiteSpace(dto.Status))
-                {
-                    if (dto.Status.Equals("", StringComparison.OrdinalIgnoreCase)) dto.Status = "Providing";
-                }
-
-                await _medicineService.UpdateMedicineAsync(id, dto, cancellationToken);
+                await _medicineService.UpdateMineAsync(userId, id, dto, ct);
                 return Ok(new { message = "Medicine updated successfully." });
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
-        }
-
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> SoftDelete(int id, CancellationToken cancellationToken)
-        {
-            try
-            {
-                await _medicineService.SoftDeleteAsync(id, cancellationToken);
-                return Ok(new { message = "Medicine changed status successfully." });
-            }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Forbid(); }
         }
 
         [Authorize(Roles = ProviderRole)]
@@ -109,21 +91,15 @@ namespace SEP490_BE.API.Controllers
         {
             int userId;
             try { userId = RequireUserId(User); }
-            catch (UnauthorizedAccessException) { return Unauthorized("Thiếu/không hợp lệ claim NameIdentifier."); }
+            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
 
             try
             {
                 var result = await _medicineService.GetMinePagedAsync(userId, pageNumber, pageSize, status, sort, ct);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("không phải là nhà cung cấp", StringComparison.OrdinalIgnoreCase))
-            {
-                return Forbid();
-            }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Forbid(); }
         }
     }
 }
