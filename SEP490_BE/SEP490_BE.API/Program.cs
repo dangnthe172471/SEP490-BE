@@ -144,6 +144,9 @@ builder.Services.AddScoped<IInternalMedRecordRepository, InternalMedRecordReposi
 builder.Services.AddScoped<IPediatricRecordService, PediatricRecordService>();
 builder.Services.AddScoped<IInternalMedRecordService, InternalMedRecordService>();
 
+builder.Services.AddScoped<IDoctorStatisticsRepository, DoctorStatisticsRepository>();
+builder.Services.AddScoped<IDoctorStatisticsService, DoctorStatisticsService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
