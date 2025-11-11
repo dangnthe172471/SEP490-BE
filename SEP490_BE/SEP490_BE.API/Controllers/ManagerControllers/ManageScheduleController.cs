@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SEP490_BE.BLL.IServices.IDoctorServices;
+using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
+using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 
 namespace SEP490_BE.API.Controllers.ManagerControllers
@@ -14,7 +17,13 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
     public class ManageScheduleController : ControllerBase
     {
         private readonly IScheduleService _service;
-        public ManageScheduleController(IScheduleService service) => _service = service;
+        private readonly INotificationService _notificationService;
+        private readonly IDoctorScheduleService _doctorService;
+        public ManageScheduleController(IScheduleService service, INotificationService notificationService, IDoctorScheduleService doctorService) { 
+            _service = service;
+            _notificationService = notificationService;
+            _doctorService = doctorService;
+        }
 
         // Lấy danh sách ca làm việc
         [HttpGet("shifts")]
@@ -58,11 +67,28 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
             });
         }
 
-        //  Tạo lịch làm việc
+        //  Tạo lịch làm việc + gui thong bao tu dong
         [HttpPost("create-schedule")]
         public async Task<IActionResult> CreateSchedule([FromBody] CreateScheduleRequestDTO dto)
         {
+         
+      
             var created = await _service.CreateScheduleAsync(dto);
+            var listDoctorIds = dto.Shifts
+       .SelectMany(s => s.DoctorIds ?? new List<int>()) 
+       .Distinct()
+       .ToList();
+           var listReceive =  await _doctorService.GetUserIdsByDoctorIdsAsync(listDoctorIds);
+
+            CreateNotificationDTO dtoNotify = new CreateNotificationDTO
+            {
+               Title = "Lịch làm việc mới",
+                Content = $"Lịch làm việc của bạn từ {dto.EffectiveFrom} đến {dto.EffectiveTo} đã được tạo. Vui lòng kiểm tra lịch làm việc của bạn.",
+                ReceiverIds = listReceive,
+                Type = "Schedule",
+                CreatedBy = null,
+            };
+            await _notificationService.SendNotificationAsync(dtoNotify);
             return Ok(new { message = $"Tạo thành công {created} lịch làm việc." });
         }
 
@@ -80,6 +106,12 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
                 Date = x.EffectiveFrom.ToString("yyyy-MM-dd"),
                 x.Status
             });
+            return Ok(result);
+        }
+        [HttpGet("get-all-doctor-schedule")]
+        public async Task<IActionResult> GetAll([FromQuery] DateOnly startDate, [FromQuery] DateOnly endDate)
+        {
+            var result = await _doctorService.GetAllDoctorSchedulesByRangeAsync(startDate, endDate);
             return Ok(result);
         }
         //--

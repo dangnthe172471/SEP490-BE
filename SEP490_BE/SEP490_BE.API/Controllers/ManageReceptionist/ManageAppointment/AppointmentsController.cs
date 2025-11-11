@@ -484,8 +484,78 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
         [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<AppointmentStatisticsDto>> GetStatistics(CancellationToken cancellationToken)
         {
-            var statistics = await _appointmentService.GetAppointmentStatisticsAsync(cancellationToken);
-            return Ok(statistics);
+            try
+            {
+                Console.WriteLine($"[AppointmentsController] GetStatistics called");
+                var statistics = await _appointmentService.GetAppointmentStatisticsAsync(cancellationToken);
+                Console.WriteLine($"[AppointmentsController] GetStatistics success");
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AppointmentsController] GetStatistics error: {ex.Message}");
+                Console.WriteLine($"[AppointmentsController] StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[AppointmentsController] InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = $"Error loading statistics: {ex.Message}", error = ex.GetType().Name });
+            }
+        }
+
+        // GET: api/appointments/stats/timeseries
+        [HttpGet("stats/timeseries")]
+        [Authorize(Roles = "Clinic Manager")]
+        public async Task<ActionResult<List<AppointmentTimeSeriesPointDto>>> GetTimeSeries(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromQuery] string groupBy = "day",
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                Console.WriteLine($"[AppointmentsController] GetTimeSeries called: from={from}, to={to}, groupBy={groupBy}");
+                var result = await _appointmentService.GetAppointmentTimeSeriesAsync(from, to, groupBy, cancellationToken);
+                Console.WriteLine($"[AppointmentsController] GetTimeSeries success: {result?.Count ?? 0} items");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AppointmentsController] GetTimeSeries error: {ex.Message}");
+                Console.WriteLine($"[AppointmentsController] StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[AppointmentsController] InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = $"Error loading time series data: {ex.Message}", error = ex.GetType().Name });
+            }
+        }
+
+        // GET: api/appointments/stats/heatmap
+        [HttpGet("stats/heatmap")]
+        [Authorize(Roles = "Clinic Manager")]
+        public async Task<ActionResult<List<AppointmentHeatmapPointDto>>> GetHeatmap(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                Console.WriteLine($"[AppointmentsController] GetHeatmap called: from={from}, to={to}");
+                var result = await _appointmentService.GetAppointmentHeatmapAsync(from, to, cancellationToken);
+                Console.WriteLine($"[AppointmentsController] GetHeatmap success: {result?.Count ?? 0} items");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AppointmentsController] GetHeatmap error: {ex.Message}");
+                Console.WriteLine($"[AppointmentsController] StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[AppointmentsController] InnerException: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, new { message = $"Error loading heatmap data: {ex.Message}", error = ex.GetType().Name });
+            }
         }
 
         // DELETE: api/appointments/{id}

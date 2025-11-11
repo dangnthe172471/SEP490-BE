@@ -97,6 +97,20 @@ namespace SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment
         public int NoShowAppointments { get; set; }
     }
 
+    // --- New statistics DTOs ---
+    public class AppointmentTimeSeriesPointDto
+    {
+        public string Period { get; set; } = string.Empty; // yyyy-MM-dd | yyyy-MM
+        public int Count { get; set; }
+    }
+
+    public class AppointmentHeatmapPointDto
+    {
+        public int Weekday { get; set; } // 0=Sunday..6=Saturday
+        public int Hour { get; set; }    // 0..23
+        public int Count { get; set; }
+    }
+
     public class DoctorInfoDto
     {
         public int DoctorId { get; set; }
