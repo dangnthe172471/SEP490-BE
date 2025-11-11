@@ -11,6 +11,10 @@ namespace SEP490_BE.DAL.IRepositories
     {
         Task<List<MedicalRecord>> GetAllAsync(CancellationToken cancellationToken = default);
 
+        Task<List<MedicalRecord>> GetAllByDoctorAsync(int id, CancellationToken cancellationToken = default);
+
+        Task<int?> GetDoctorIdByUserIdAsync(int id, CancellationToken cancellationToken = default);
+
         Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
         Task<MedicalRecord> CreateAsync(MedicalRecord record, CancellationToken cancellationToken = default);

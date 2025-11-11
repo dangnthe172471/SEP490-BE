@@ -11,6 +11,7 @@ namespace SEP490_BE.BLL.IServices
     public interface IMedicalRecordService
     {
         Task<List<MedicalRecord>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<List<MedicalRecord>> GetAllByDoctorAsync(int id, CancellationToken cancellationToken = default);
         Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<MedicalRecord> CreateAsync(CreateMedicalRecordDto dto, CancellationToken cancellationToken = default);
         Task<MedicalRecord?> UpdateAsync(int id, UpdateMedicalRecordDto dto, CancellationToken cancellationToken = default);

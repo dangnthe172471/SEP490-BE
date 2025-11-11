@@ -29,6 +29,16 @@ namespace SEP490_BE.API.Controllers
             return Ok(records);
         }
 
+        [HttpGet("by-doctor/{id}")]
+        public async Task<ActionResult<List<MedicalRecord>>> GetAllByDoctorAsync(int id, CancellationToken cancellationToken)
+        {
+            var records = await _medicalRecordService.GetAllByDoctorAsync(id, cancellationToken);
+
+            if (records == null || !records.Any())
+                return Ok("Không có hồ sơ bệnh án");
+            return Ok(records);
+        }
+
         // ✅ GET: api/medicalrecord/{id}
         [HttpGet("{id:int}", Name = "GetMedicalRecordById")]
         public async Task<ActionResult<MedicalRecord>> GetByIdAsync(int id, CancellationToken cancellationToken)

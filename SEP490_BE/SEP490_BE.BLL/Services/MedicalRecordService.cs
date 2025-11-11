@@ -23,6 +23,11 @@ namespace SEP490_BE.BLL.Services
             return await _medicalRecordRepository.GetAllAsync(cancellationToken);
         }
 
+        public async Task<List<MedicalRecord>> GetAllByDoctorAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _medicalRecordRepository.GetAllByDoctorAsync(id, cancellationToken);
+        }
+
         public async Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             return await _medicalRecordRepository.GetByIdAsync(id, cancellationToken);

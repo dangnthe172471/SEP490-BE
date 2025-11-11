@@ -32,6 +32,23 @@ namespace SEP490_BE.DAL.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<List<MedicalRecord>> GetAllByDoctorAsync(int id, CancellationToken cancellationToken = default)
+        {
+            var doctorId = await GetDoctorIdByUserIdAsync(id, cancellationToken);
+            return await _context.MedicalRecords
+                .Include(m => m.Appointment)
+                    .ThenInclude(a => a.Doctor)
+                .Include(m => m.InternalMedRecord)
+                .Include(m => m.ObstetricRecord)
+                .Include(m => m.PediatricRecord)
+                .Include(m => m.Payments)
+                .Include(m => m.Prescriptions)
+                .Include(m => m.TestResults)
+                .Where(m => m.Appointment.DoctorId == doctorId)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+        }
+
         // ✅ Lấy 1 MedicalRecord theo ID, kèm theo dữ liệu liên quan
         public async Task<MedicalRecord?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
@@ -77,6 +94,15 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(m => m.TestResults)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.AppointmentId == appointmentId, cancellationToken);
+        }
+
+        public async Task<int?> GetDoctorIdByUserIdAsync(int id, CancellationToken cancellationToken = default)
+        {
+            return await _context.Doctors
+                .AsNoTracking()
+                .Where(d => d.UserId == id)
+                .Select(d => (int?)d.DoctorId)
+                .FirstOrDefaultAsync(cancellationToken);
         }
     }
 }
