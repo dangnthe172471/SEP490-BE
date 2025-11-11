@@ -1,4 +1,5 @@
 using SEP490_BE.DAL.Models;
+using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -18,6 +19,8 @@ namespace SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment
         Task UpdateAsync(Appointment appointment, CancellationToken cancellationToken = default);
         Task DeleteAsync(int appointmentId, CancellationToken cancellationToken = default);
         Task<Dictionary<string, int>> GetAppointmentStatisticsAsync(CancellationToken cancellationToken = default);
+        Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default);
+        Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
         Task<bool> HasAppointmentOnDateAsync(int patientId, DateTime appointmentDate, CancellationToken cancellationToken = default);
         Task<int> CountAppointmentsInShiftAsync(DateTime appointmentDate, int shiftId, CancellationToken cancellationToken = default);
         Task<Shift?> GetShiftByTimeAsync(TimeOnly appointmentTime, CancellationToken cancellationToken = default);

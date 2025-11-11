@@ -22,6 +22,8 @@ namespace SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment
         Task<bool> CanCancelAppointmentAsync(int appointmentId, CancellationToken cancellationToken = default);
         Task<AppointmentConfirmationDto?> GetAppointmentConfirmationAsync(int appointmentId, CancellationToken cancellationToken = default);
         Task<AppointmentStatisticsDto> GetAppointmentStatisticsAsync(CancellationToken cancellationToken = default);
+        Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default);
+        Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
         Task<bool> DeleteAsync(int appointmentId, CancellationToken cancellationToken = default);
         #endregion
 

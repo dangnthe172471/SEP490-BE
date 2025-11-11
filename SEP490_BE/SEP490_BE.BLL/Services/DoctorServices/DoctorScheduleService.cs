@@ -1,6 +1,7 @@
 ﻿using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +34,15 @@ namespace SEP490_BE.BLL.Services.DoctorServices
             var schedules = await _repo.GetDoctorActiveScheduleInRangeAsync(doctorId, startDate, endDate);
 
             return schedules ?? new List<DoctorActiveScheduleRangeDto>();
+        }
+        public async Task<List<int>> GetUserIdsByDoctorIdsAsync(List<int> doctorIds)
+        {
+            return await _repo.GetUserIdsByDoctorIdsAsync(doctorIds);
+        }
+        public async Task<List<DoctorActiveScheduleRangeDto>> GetAllDoctorSchedulesByRangeAsync(
+          DateOnly startDate, DateOnly endDate)
+        {
+            return await _repo.GetAllDoctorSchedulesInRangeAsync(startDate, endDate);
         }
     }
 }
