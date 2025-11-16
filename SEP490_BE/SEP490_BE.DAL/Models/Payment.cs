@@ -17,5 +17,9 @@ public partial class Payment
 
     public string? Status { get; set; }
 
+    public long? OrderCode { get; set; }
+
+    public string? CheckoutUrl { get; set; }
+
     public virtual MedicalRecord Record { get; set; } = null!;
 }

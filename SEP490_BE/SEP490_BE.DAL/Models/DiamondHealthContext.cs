@@ -29,6 +29,8 @@ public partial class DiamondHealthContext : DbContext
 
     public virtual DbSet<MedicalRecord> MedicalRecords { get; set; }
 
+    public virtual DbSet<MedicalService> MedicalServices { get; set; }
+
     public virtual DbSet<Medicine> Medicines { get; set; }
 
     public virtual DbSet<Notification> Notifications { get; set; }
@@ -55,6 +57,8 @@ public partial class DiamondHealthContext : DbContext
 
     public virtual DbSet<Room> Rooms { get; set; }
 
+    public virtual DbSet<Service> Services { get; set; }
+
     public virtual DbSet<Shift> Shifts { get; set; }
 
     public virtual DbSet<TestResult> TestResults { get; set; }
@@ -64,19 +68,14 @@ public partial class DiamondHealthContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer("server =.; database =DiamondHealth;uid=sa;pwd=123; TrustServerCertificate=True;");
-        }
-    }
+        => optionsBuilder.UseSqlServer("server =.; database = DiamondHealth;uid=sa;pwd=123;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Appointment>(entity =>
         {
-            entity.HasKey(e => e.AppointmentId).HasName("PK__Appointm__8ECDFCA2F74247A6");
+            entity.HasKey(e => e.AppointmentId).HasName("PK__Appointm__8ECDFCA2277C2836");
 
             entity.ToTable("Appointment");
 
@@ -96,25 +95,25 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Doctor).WithMany(p => p.Appointments)
                 .HasForeignKey(d => d.DoctorId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Appointme__Docto__619B8048");
+                .HasConstraintName("FK__Appointme__Docto__4E88ABD4");
 
             entity.HasOne(d => d.Patient).WithMany(p => p.Appointments)
                 .HasForeignKey(d => d.PatientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Appointme__Patie__60A75C0F");
+                .HasConstraintName("FK__Appointme__Patie__4D94879B");
 
             entity.HasOne(d => d.Receptionist).WithMany(p => p.Appointments)
                 .HasForeignKey(d => d.ReceptionistId)
-                .HasConstraintName("FK__Appointme__Recep__628FA481");
+                .HasConstraintName("FK__Appointme__Recep__4F7CD00D");
 
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.Appointments)
                 .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK__Appointme__Updat__6383C8BA");
+                .HasConstraintName("FK__Appointme__Updat__5070F446");
         });
 
         modelBuilder.Entity<ChatLog>(entity =>
         {
-            entity.HasKey(e => e.ChatId).HasName("PK__ChatLog__A9FBE6261CF82787");
+            entity.HasKey(e => e.ChatId).HasName("PK__ChatLog__A9FBE626429C5DE1");
 
             entity.ToTable("ChatLog");
 
@@ -128,21 +127,21 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Patient).WithMany(p => p.ChatLogs)
                 .HasForeignKey(d => d.PatientId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ChatLog__Patient__0B91BA14");
+                .HasConstraintName("FK__ChatLog__Patient__787EE5A0");
 
             entity.HasOne(d => d.Receptionist).WithMany(p => p.ChatLogs)
                 .HasForeignKey(d => d.ReceptionistId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ChatLog__Recepti__0C85DE4D");
+                .HasConstraintName("FK__ChatLog__Recepti__797309D9");
         });
 
         modelBuilder.Entity<Doctor>(entity =>
         {
-            entity.HasKey(e => e.DoctorId).HasName("PK__Doctor__2DC00EDF85EFE43E");
+            entity.HasKey(e => e.DoctorId).HasName("PK__Doctor__2DC00EDF287B714A");
 
             entity.ToTable("Doctor");
 
-            entity.HasIndex(e => e.UserId, "UQ__Doctor__1788CCADD0D8D28C").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Doctor__1788CCADE06CBA29").IsUnique();
 
             entity.Property(e => e.DoctorId)
                 .ValueGeneratedNever()
@@ -159,12 +158,12 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.Doctor)
                 .HasForeignKey<Doctor>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Doctor__UserID__403A8C7D");
+                .HasConstraintName("FK__Doctor__UserID__2D27B809");
         });
 
         modelBuilder.Entity<DoctorShift>(entity =>
         {
-            entity.HasKey(e => e.DoctorShiftId).HasName("PK__DoctorSh__9BD0D8BB24E1BC80");
+            entity.HasKey(e => e.DoctorShiftId).HasName("PK__DoctorSh__9BD0D8BBC58BB1C3");
 
             entity.ToTable("DoctorShift");
 
@@ -178,17 +177,17 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Doctor).WithMany(p => p.DoctorShifts)
                 .HasForeignKey(d => d.DoctorId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DoctorShi__Docto__5441852A");
+                .HasConstraintName("FK__DoctorShi__Docto__412EB0B6");
 
             entity.HasOne(d => d.Shift).WithMany(p => p.DoctorShifts)
                 .HasForeignKey(d => d.ShiftId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DoctorShi__Shift__5535A963");
+                .HasConstraintName("FK__DoctorShi__Shift__4222D4EF");
         });
 
         modelBuilder.Entity<DoctorShiftExchange>(entity =>
         {
-            entity.HasKey(e => e.ExchangeId).HasName("PK__DoctorSh__72E600ABAF6A339F");
+            entity.HasKey(e => e.ExchangeId).HasName("PK__DoctorSh__72E600AB372427A3");
 
             entity.ToTable("DoctorShiftExchange");
 
@@ -209,25 +208,25 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Doctor1).WithMany(p => p.DoctorShiftExchangeDoctor1s)
                 .HasForeignKey(d => d.Doctor1Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DoctorShi__Docto__59063A47");
+                .HasConstraintName("FK__DoctorShi__Docto__45F365D3");
 
             entity.HasOne(d => d.Doctor1ShiftRef).WithMany(p => p.DoctorShiftExchangeDoctor1ShiftRefs)
                 .HasForeignKey(d => d.Doctor1ShiftRefId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__DoctorShi__Docto__59FA5E80");
+                .HasConstraintName("FK__DoctorShi__Docto__46E78A0C");
 
             entity.HasOne(d => d.Doctor2).WithMany(p => p.DoctorShiftExchangeDoctor2s)
                 .HasForeignKey(d => d.Doctor2Id)
-                .HasConstraintName("FK__DoctorShi__Docto__5AEE82B9");
+                .HasConstraintName("FK__DoctorShi__Docto__47DBAE45");
 
             entity.HasOne(d => d.Doctor2ShiftRef).WithMany(p => p.DoctorShiftExchangeDoctor2ShiftRefs)
                 .HasForeignKey(d => d.Doctor2ShiftRefId)
-                .HasConstraintName("FK__DoctorShi__Docto__5BE2A6F2");
+                .HasConstraintName("FK__DoctorShi__Docto__48CFD27E");
         });
 
         modelBuilder.Entity<InternalMedRecord>(entity =>
         {
-            entity.HasKey(e => e.RecordId).HasName("PK__Internal__FBDF78C90DA522C8");
+            entity.HasKey(e => e.RecordId).HasName("PK__Internal__FBDF78C96E8262C7");
 
             entity.ToTable("InternalMedRecord");
 
@@ -240,12 +239,12 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Record).WithOne(p => p.InternalMedRecord)
                 .HasForeignKey<InternalMedRecord>(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__InternalM__Recor__6FE99F9F");
+                .HasConstraintName("FK__InternalM__Recor__5CD6CB2B");
         });
 
         modelBuilder.Entity<MedicalRecord>(entity =>
         {
-            entity.HasKey(e => e.RecordId).HasName("PK__MedicalR__FBDF78C9D735F6A9");
+            entity.HasKey(e => e.RecordId).HasName("PK__MedicalR__FBDF78C917348F81");
 
             entity.ToTable("MedicalRecord");
 
@@ -258,12 +257,42 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Appointment).WithMany(p => p.MedicalRecords)
                 .HasForeignKey(d => d.AppointmentId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__MedicalRe__Appoi__6754599E");
+                .HasConstraintName("FK__MedicalRe__Appoi__5441852A");
+        });
+
+        modelBuilder.Entity<MedicalService>(entity =>
+        {
+            entity.HasKey(e => e.MedicalServiceId).HasName("PK__MedicalS__BA70D88B4FB2AFAE");
+
+            entity.ToTable("MedicalService");
+
+            entity.Property(e => e.MedicalServiceId).HasColumnName("MedicalServiceID");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.Quantity).HasDefaultValue(1);
+            entity.Property(e => e.RecordId).HasColumnName("RecordID");
+            entity.Property(e => e.ServiceId).HasColumnName("ServiceID");
+            entity.Property(e => e.TotalPrice)
+                .HasComputedColumnSql("([Quantity]*[UnitPrice])", true)
+                .HasColumnType("decimal(29, 2)");
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.Record).WithMany(p => p.MedicalServices)
+                .HasForeignKey(d => d.RecordId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MedicalService_Record");
+
+            entity.HasOne(d => d.Service).WithMany(p => p.MedicalServices)
+                .HasForeignKey(d => d.ServiceId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MedicalService_Service");
         });
 
         modelBuilder.Entity<Medicine>(entity =>
         {
-            entity.HasKey(e => e.MedicineId).HasName("PK__Medicine__4F2128F08836CC87");
+            entity.HasKey(e => e.MedicineId).HasName("PK__Medicine__4F2128F056503602");
 
             entity.ToTable("Medicine");
 
@@ -278,12 +307,12 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Provider).WithMany(p => p.Medicines)
                 .HasForeignKey(d => d.ProviderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Medicine__Provid__7A672E12");
+                .HasConstraintName("FK__Medicine__Provid__6754599E");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E12B8C2C7C0");
+            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E124910AFC1");
 
             entity.ToTable("Notification");
 
@@ -318,7 +347,7 @@ public partial class DiamondHealthContext : DbContext
 
         modelBuilder.Entity<ObstetricRecord>(entity =>
         {
-            entity.HasKey(e => e.RecordId).HasName("PK__Obstetri__FBDF78C9402C0747");
+            entity.HasKey(e => e.RecordId).HasName("PK__Obstetri__FBDF78C9044E9673");
 
             entity.ToTable("ObstetricRecord");
 
@@ -332,16 +361,16 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Record).WithOne(p => p.ObstetricRecord)
                 .HasForeignKey<ObstetricRecord>(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Obstetric__Recor__6A30C649");
+                .HasConstraintName("FK__Obstetric__Recor__571DF1D5");
         });
 
         modelBuilder.Entity<Patient>(entity =>
         {
-            entity.HasKey(e => e.PatientId).HasName("PK__Patient__970EC346743ED817");
+            entity.HasKey(e => e.PatientId).HasName("PK__Patient__970EC346ED286431");
 
             entity.ToTable("Patient");
 
-            entity.HasIndex(e => e.UserId, "UQ__Patient__1788CCADEF40DCE3").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Patient__1788CCAD428D4662").IsUnique();
 
             entity.Property(e => e.PatientId)
                 .ValueGeneratedNever()
@@ -353,17 +382,18 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.Patient)
                 .HasForeignKey<Patient>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Patient__UserID__440B1D61");
+                .HasConstraintName("FK__Patient__UserID__30F848ED");
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__9B556A580D7DE754");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payment__9B556A5836A96B11");
 
             entity.ToTable("Payment");
 
             entity.Property(e => e.PaymentId).HasColumnName("PaymentID");
             entity.Property(e => e.Amount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.CheckoutUrl).HasMaxLength(500);
             entity.Property(e => e.Method).HasMaxLength(50);
             entity.Property(e => e.PaymentDate)
                 .HasDefaultValueSql("(getdate())")
@@ -376,12 +406,12 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Record).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Payment__RecordI__07C12930");
+                .HasConstraintName("FK__Payment__RecordI__74AE54BC");
         });
 
         modelBuilder.Entity<PediatricRecord>(entity =>
         {
-            entity.HasKey(e => e.RecordId).HasName("PK__Pediatri__FBDF78C9B4717646");
+            entity.HasKey(e => e.RecordId).HasName("PK__Pediatri__FBDF78C931583E4E");
 
             entity.ToTable("PediatricRecord");
 
@@ -395,16 +425,16 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Record).WithOne(p => p.PediatricRecord)
                 .HasForeignKey<PediatricRecord>(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Pediatric__Recor__6D0D32F4");
+                .HasConstraintName("FK__Pediatric__Recor__59FA5E80");
         });
 
         modelBuilder.Entity<PharmacyProvider>(entity =>
         {
-            entity.HasKey(e => e.ProviderId).HasName("PK__Pharmacy__B54C689D1B0A397E");
+            entity.HasKey(e => e.ProviderId).HasName("PK__Pharmacy__B54C689D3A9373A2");
 
             entity.ToTable("PharmacyProvider");
 
-            entity.HasIndex(e => e.UserId, "UQ__Pharmacy__1788CCAD6C43EFC8").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Pharmacy__1788CCADE9698603").IsUnique();
 
             entity.Property(e => e.ProviderId)
                 .ValueGeneratedNever()
@@ -415,12 +445,12 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.PharmacyProvider)
                 .HasForeignKey<PharmacyProvider>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__PharmacyP__UserI__4BAC3F29");
+                .HasConstraintName("FK__PharmacyP__UserI__38996AB5");
         });
 
         modelBuilder.Entity<Prescription>(entity =>
         {
-            entity.HasKey(e => e.PrescriptionId).HasName("PK__Prescrip__4013081296173C52");
+            entity.HasKey(e => e.PrescriptionId).HasName("PK__Prescrip__40130812D2F20A00");
 
             entity.ToTable("Prescription");
 
@@ -434,17 +464,17 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Doctor).WithMany(p => p.Prescriptions)
                 .HasForeignKey(d => d.DoctorId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Prescript__Docto__7F2BE32F");
+                .HasConstraintName("FK__Prescript__Docto__6C190EBB");
 
             entity.HasOne(d => d.Record).WithMany(p => p.Prescriptions)
                 .HasForeignKey(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Prescript__Recor__7E37BEF6");
+                .HasConstraintName("FK__Prescript__Recor__6B24EA82");
         });
 
         modelBuilder.Entity<PrescriptionDetail>(entity =>
         {
-            entity.HasKey(e => e.PrescriptionDetailId).HasName("PK__Prescrip__6DB7668A68345F7E");
+            entity.HasKey(e => e.PrescriptionDetailId).HasName("PK__Prescrip__6DB7668AA15FED02");
 
             entity.ToTable("PrescriptionDetail");
 
@@ -457,21 +487,21 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Medicine).WithMany(p => p.PrescriptionDetails)
                 .HasForeignKey(d => d.MedicineId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Prescript__Medic__02FC7413");
+                .HasConstraintName("FK__Prescript__Medic__6FE99F9F");
 
             entity.HasOne(d => d.Prescription).WithMany(p => p.PrescriptionDetails)
                 .HasForeignKey(d => d.PrescriptionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Prescript__Presc__02084FDA");
+                .HasConstraintName("FK__Prescript__Presc__6EF57B66");
         });
 
         modelBuilder.Entity<Receptionist>(entity =>
         {
-            entity.HasKey(e => e.ReceptionistId).HasName("PK__Receptio__0F8C2048D97F5318");
+            entity.HasKey(e => e.ReceptionistId).HasName("PK__Receptio__0F8C204809538302");
 
             entity.ToTable("Receptionist");
 
-            entity.HasIndex(e => e.UserId, "UQ__Receptio__1788CCAD9F4516F0").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Receptio__1788CCAD32601146").IsUnique();
 
             entity.Property(e => e.ReceptionistId)
                 .ValueGeneratedNever()
@@ -481,16 +511,16 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.User).WithOne(p => p.Receptionist)
                 .HasForeignKey<Receptionist>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Reception__UserI__47DBAE45");
+                .HasConstraintName("FK__Reception__UserI__34C8D9D1");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__8AFACE3AF66889BD");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__8AFACE3A04C7F36D");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.RoleName, "UQ__Role__8A2B616046DF9CFF").IsUnique();
+            entity.HasIndex(e => e.RoleName, "UQ__Role__8A2B61600272F33D").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.RoleName).HasMaxLength(30);
@@ -498,7 +528,7 @@ public partial class DiamondHealthContext : DbContext
 
         modelBuilder.Entity<Room>(entity =>
         {
-            entity.HasKey(e => e.RoomId).HasName("PK__Room__32863919FC59C898");
+            entity.HasKey(e => e.RoomId).HasName("PK__Room__32863919600D02D4");
 
             entity.ToTable("Room");
 
@@ -506,9 +536,27 @@ public partial class DiamondHealthContext : DbContext
             entity.Property(e => e.RoomName).HasMaxLength(50);
         });
 
+        modelBuilder.Entity<Service>(entity =>
+        {
+            entity.HasKey(e => e.ServiceId).HasName("PK__Service__C51BB0EABAB553DE");
+
+            entity.ToTable("Service");
+
+            entity.Property(e => e.ServiceId).HasColumnName("ServiceID");
+            entity.Property(e => e.Category).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Price).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.ServiceName).HasMaxLength(150);
+
+            entity.HasOne(d => d.TestType).WithMany(p => p.Services)
+                .HasForeignKey(d => d.TestTypeId)
+                .HasConstraintName("FK_Service_TestType");
+        });
+
         modelBuilder.Entity<Shift>(entity =>
         {
-            entity.HasKey(e => e.ShiftId).HasName("PK__Shift__C0A838E192117E13");
+            entity.HasKey(e => e.ShiftId).HasName("PK__Shift__C0A838E14C389248");
 
             entity.ToTable("Shift");
 
@@ -518,7 +566,7 @@ public partial class DiamondHealthContext : DbContext
 
         modelBuilder.Entity<TestResult>(entity =>
         {
-            entity.HasKey(e => e.TestResultId).HasName("PK__TestResu__E2463A67A2BD5B91");
+            entity.HasKey(e => e.TestResultId).HasName("PK__TestResu__E2463A67EC559AB9");
 
             entity.ToTable("TestResult");
 
@@ -536,17 +584,17 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Record).WithMany(p => p.TestResults)
                 .HasForeignKey(d => d.RecordId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TestResul__Recor__75A278F5");
+                .HasConstraintName("FK__TestResul__Recor__628FA481");
 
             entity.HasOne(d => d.TestType).WithMany(p => p.TestResults)
                 .HasForeignKey(d => d.TestTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TestResul__TestT__76969D2E");
+                .HasConstraintName("FK__TestResul__TestT__6383C8BA");
         });
 
         modelBuilder.Entity<TestType>(entity =>
         {
-            entity.HasKey(e => e.TestTypeId).HasName("PK__TestType__9BB876461DA3B1AC");
+            entity.HasKey(e => e.TestTypeId).HasName("PK__TestType__9BB876466CCD7960");
 
             entity.ToTable("TestType");
 
@@ -557,11 +605,11 @@ public partial class DiamondHealthContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__User__1788CCAC06204D3C");
+            entity.HasKey(e => e.UserId).HasName("PK__User__1788CCACB4200C13");
 
             entity.ToTable("User");
 
-            entity.HasIndex(e => e.Phone, "UQ__User__5C7E359ED917E834").IsUnique();
+            entity.HasIndex(e => e.Phone, "UQ__User__5C7E359E4CFFA43A").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Avatar).HasMaxLength(500);
@@ -577,7 +625,7 @@ public partial class DiamondHealthContext : DbContext
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__User__RoleID__3C69FB99");
+                .HasConstraintName("FK__User__RoleID__29572725");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -19,6 +19,8 @@ public partial class MedicalRecord
 
     public virtual InternalMedRecord? InternalMedRecord { get; set; }
 
+    public virtual ICollection<MedicalService> MedicalServices { get; set; } = new List<MedicalService>();
+
     public virtual ObstetricRecord? ObstetricRecord { get; set; }
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

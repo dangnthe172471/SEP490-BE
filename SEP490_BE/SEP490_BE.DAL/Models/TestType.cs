@@ -11,5 +11,7 @@ public partial class TestType
 
     public string? Description { get; set; }
 
+    public virtual ICollection<Service> Services { get; set; } = new List<Service>();
+
     public virtual ICollection<TestResult> TestResults { get; set; } = new List<TestResult>();
 }

@@ -1,4 +1,18 @@
-﻿CREATE DATABASE DiamondHealth;
+﻿USE [master]
+GO
+
+/*******************************************************************************
+   Drop database if it exists
+********************************************************************************/
+IF EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = N'DiamondHealth')
+BEGIN
+    ALTER DATABASE DiamondHealth SET OFFLINE WITH ROLLBACK IMMEDIATE;
+    ALTER DATABASE DiamondHealth SET ONLINE;
+    DROP DATABASE DiamondHealth;
+END
+GO
+
+CREATE DATABASE DiamondHealth;
 GO
 
 USE DiamondHealth;
@@ -274,6 +288,33 @@ CREATE TABLE [dbo].[NotificationReceiver] (
         REFERENCES [dbo].[User]([UserId]) ON DELETE CASCADE
 );
 GO
+CREATE TABLE Service (
+    ServiceID INT IDENTITY(1,1) PRIMARY KEY,
+    ServiceName NVARCHAR(150) NOT NULL,
+    Description NVARCHAR(500) NULL,
+    Price DECIMAL(18,2) NULL,
+    Category NVARCHAR(100) NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    --CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+);
+go 
+CREATE TABLE MedicalService (
+    MedicalServiceID INT IDENTITY(1,1) PRIMARY KEY,
+    RecordID INT NOT NULL,
+    ServiceID INT NOT NULL,
+    Quantity INT NOT NULL DEFAULT 1,
+    UnitPrice DECIMAL(18,2) NOT NULL,
+    TotalPrice AS (Quantity * UnitPrice) PERSISTED,
+    Notes NVARCHAR(500) NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT FK_MedicalService_Record 
+        FOREIGN KEY (RecordID) REFERENCES MedicalRecord(RecordID),
+
+    CONSTRAINT FK_MedicalService_Service 
+        FOREIGN KEY (ServiceID) REFERENCES Service(ServiceID)
+);
+
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Thêm các Role theo đúng thứ tự yêu cầu
@@ -465,3 +506,63 @@ INSERT INTO Payment (RecordID, Amount, Method, Status)
 VALUES
 (1, 350000.00, N'Tiền mặt', N'Paid');
 GO
+INSERT INTO Service (ServiceName, Description, Price, Category)
+VALUES
+-- DA LIỄU
+(N'Khám da liễu tổng quát',
+ N'Tư vấn & kiểm tra tình trạng da',
+ 200000, N'Da liễu'),
+
+(N'Điều trị mụn chuyên sâu',
+ N'Phác đồ theo từng loại da',
+ 350000, N'Da liễu'),
+
+(N'Liệu trình phục hồi da sau mụn',
+ N'5 buổi chăm sóc kết hợp ánh sáng sinh học',
+ 2000000, N'Da liễu'),
+
+(N'Điều trị nám, tàn nhang bằng laser',
+ N'Công nghệ Laser Q-switched',
+ 1500000, N'Da liễu'),
+
+-- NỘI TỔNG QUÁT
+(N'Khám sức khỏe tổng quát',
+ N'Khám toàn thân, xét nghiệm cơ bản',
+ 450000, N'Nội tổng quát'),
+
+(N'Gói kiểm tra tim mạch',
+ N'Siêu âm tim, ECG, xét nghiệm mỡ máu',
+ 700000, N'Nội tổng quát'),
+
+(N'Gói kiểm tra gan – thận',
+ N'Siêu âm + xét nghiệm chức năng gan thận',
+ 850000, N'Nội tổng quát'),
+
+(N'Gói khám định kỳ cho nhân viên',
+ N'Combo khám máu, huyết áp, mắt, răng, tai mũi họng',
+ NULL, N'Nội tổng quát'),
+
+-- NHI KHOA
+(N'Khám tổng quát cho bé',
+ N'Đánh giá tăng trưởng, dinh dưỡng',
+ 300000, N'Nhi khoa'),
+
+(N'Tư vấn dinh dưỡng trẻ em',
+ N'1 buổi gặp chuyên gia dinh dưỡng',
+ 200000, N'Nhi khoa'),
+
+(N'Tiêm chủng & kiểm tra sức khỏe định kỳ',
+ N'Theo phác đồ Bộ Y tế',
+ 350000, N'Nhi khoa'),
+
+(N'Gói khám hô hấp cho bé',
+ N'X-quang phổi + xét nghiệm máu',
+ 600000, N'Nhi khoa');
+INSERT INTO MedicalService (RecordID, ServiceID, Quantity, UnitPrice)
+VALUES
+(1, 5, 1, 450000),  
+(1, 6, 1, 700000),  
+(1, 7, 1, 850000),
+(1, 1, 1, 200000),  
+(1, 2, 1, 350000),  
+(1, 4, 1, 1500000);
