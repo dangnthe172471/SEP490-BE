@@ -294,8 +294,11 @@ CREATE TABLE Service (
     Description NVARCHAR(500) NULL,
     Price DECIMAL(18,2) NULL,
     Category NVARCHAR(100) NULL,
+	TestTypeId INT NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     --CreatedAt DATETIME NOT NULL DEFAULT GETDATE()
+	CONSTRAINT FK_Service_TestType FOREIGN KEY (TestTypeId)
+        REFERENCES TestType(TestTypeId)
 );
 go 
 CREATE TABLE MedicalService (
