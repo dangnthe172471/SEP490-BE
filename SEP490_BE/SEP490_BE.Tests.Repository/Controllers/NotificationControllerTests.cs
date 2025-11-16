@@ -1,19 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SEP490_BE.API.Controllers.NotificationControllers;
+using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IManagerService;
-using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
+using SEP490_BE.DAL.Helpers;
 
 namespace SEP490_BE.Tests.Controllers
 {
 	public class NotificationControllerTests
 	{
 		private readonly Mock<INotificationService> _svc = new(MockBehavior.Strict);
+        private readonly Mock<IAdministratorService> _adminSvc = new(MockBehavior.Strict);
 
-		private NotificationController NewController() => new NotificationController(_svc.Object);
+        private NotificationController NewController()
+        => new NotificationController(_svc.Object, _adminSvc.Object);
 
-		[Fact]
+        [Fact]
 		public async Task SendReminder_ReturnsOkWithMessage()
 		{
 			_svc.Setup(s => s.SendAppointmentReminderAsync(default)).Returns(Task.CompletedTask);

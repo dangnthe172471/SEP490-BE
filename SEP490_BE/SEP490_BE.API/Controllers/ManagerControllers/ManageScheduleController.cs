@@ -5,6 +5,7 @@ using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 using SEP490_BE.DAL.DTOs.MedicineDTO;

@@ -1,24 +1,32 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SEP490_BE.API.Controllers.ManagerControllers;
+using SEP490_BE.BLL.IServices.IDoctorServices;
+using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
+using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.Models;
-using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
-using SEP490_BE.DAL.DTOs;
 
 namespace SEP490_BE.Tests.Controllers
 {
 	public class ManageScheduleControllerTests
 	{
 		private readonly Mock<IScheduleService> _svc = new(MockBehavior.Strict);
+        private readonly Mock<INotificationService> _notificationSvc = new(MockBehavior.Strict);
+        private readonly Mock<IDoctorScheduleService> _doctorScheduleSvc = new(MockBehavior.Strict);
 
-		private ManageScheduleController NewController()
-		{
-			return new ManageScheduleController(_svc.Object);
-		}
+        private ManageScheduleController NewController()
+        {
+            return new ManageScheduleController(
+                _svc.Object,
+                _notificationSvc.Object,
+                _doctorScheduleSvc.Object
+            );
+        }
 
-		[Fact]
+        [Fact]
 		public async Task GetAllShifts_ReturnsOkWithData()
 		{
 			var shifts = new List<ShiftResponseDTO> { new ShiftResponseDTO { ShiftID = 1, ShiftType = "Morning" } };

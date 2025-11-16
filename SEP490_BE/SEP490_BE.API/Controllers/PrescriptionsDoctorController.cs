@@ -50,7 +50,6 @@ namespace SEP490_BE.API.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
 
-            // Giới hạn pageSize an toàn
             pageSize = pageSize <= 0 ? 20 : Math.Min(pageSize, 100);
 
             var result = await _service.GetRecordsForDoctorAsync(

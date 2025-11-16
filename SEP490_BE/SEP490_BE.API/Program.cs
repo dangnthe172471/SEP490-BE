@@ -93,7 +93,6 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailServiceApp, EmailServiceApp>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
-builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
 //builder.Services.AddScoped<IManagerRepository, ManagerRepository>();

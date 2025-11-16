@@ -39,7 +39,8 @@ namespace SEP490_BE.DAL.Repositories
                 ct);
 
             if (exists)
-                throw new InvalidOperationException($"Medicine '{medicine.MedicineName}' already exists for this provider.");
+                throw new InvalidOperationException(
+                    $"Medicine '{medicine.MedicineName}' already exists for this provider.");
 
             await _dbContext.Medicines.AddAsync(medicine, ct);
             await _dbContext.SaveChangesAsync(ct);
@@ -53,12 +54,15 @@ namespace SEP490_BE.DAL.Repositories
             if (existing == null)
                 throw new KeyNotFoundException($"Medicine with ID {medicine.MedicineId} not found.");
 
+            // Không cho đổi Provider
             if (existing.ProviderId != medicine.ProviderId)
                 throw new InvalidOperationException("Changing Provider is not allowed.");
 
+            // Xử lý đổi tên + check trùng
             var incomingName = medicine.MedicineName?.Trim();
             var isRename = incomingName != null &&
-                           !string.Equals(incomingName, existing.MedicineName, System.StringComparison.OrdinalIgnoreCase);
+                           !string.Equals(incomingName, existing.MedicineName,
+                               StringComparison.OrdinalIgnoreCase);
 
             if (isRename)
             {
@@ -70,13 +74,23 @@ namespace SEP490_BE.DAL.Repositories
                     ct);
 
                 if (duplicated)
-                    throw new InvalidOperationException($"Medicine '{incomingName}' already exists for this provider.");
+                    throw new InvalidOperationException(
+                        $"Medicine '{incomingName}' already exists for this provider.");
 
                 existing.MedicineName = incomingName; // đã trim
             }
 
-            existing.SideEffects = medicine.SideEffects;
+            // 🔥 BUG FIX: cập nhật đầy đủ các trường còn lại
             existing.Status = medicine.Status;
+            existing.ActiveIngredient = medicine.ActiveIngredient;
+            existing.Strength = medicine.Strength;
+            existing.DosageForm = medicine.DosageForm;
+            existing.Route = medicine.Route;
+            existing.PrescriptionUnit = medicine.PrescriptionUnit;
+            existing.TherapeuticClass = medicine.TherapeuticClass;
+            existing.PackSize = medicine.PackSize;
+            existing.CommonSideEffects = medicine.CommonSideEffects;
+            existing.NoteForDoctor = medicine.NoteForDoctor;
 
             await _dbContext.SaveChangesAsync(ct);
         }
@@ -90,7 +104,9 @@ namespace SEP490_BE.DAL.Repositories
         }
 
         public async Task<(List<Medicine> Items, int TotalCount)> GetByProviderIdPagedAsync(
-            int providerId, int pageNumber, int pageSize, string? status = null, string? sort = null, CancellationToken ct = default)
+            int providerId, int pageNumber, int pageSize,
+            string? status = null, string? sort = null,
+            CancellationToken ct = default)
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 10;
