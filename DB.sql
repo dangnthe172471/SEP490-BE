@@ -274,6 +274,13 @@ CREATE TABLE [dbo].[NotificationReceiver] (
         REFERENCES [dbo].[User]([UserId]) ON DELETE CASCADE
 );
 GO
+
+-- Xác thực Email
+ALTER TABLE [User]
+ADD EmailVerified BIT NOT NULL DEFAULT 0;
+GO
+UPDATE [User]
+SET EmailVerified = 1
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Thêm các Role theo đúng thứ tự yêu cầu

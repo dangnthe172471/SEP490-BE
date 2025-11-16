@@ -28,6 +28,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
+                EmailVerified = u.EmailVerified,
                 Avatar = u.Avatar
             });
         }
@@ -62,6 +63,7 @@ namespace SEP490_BE.BLL.Services
 				Gender = user.Gender,
 				Dob = user.Dob,
 				IsActive = user.IsActive,
+				EmailVerified = user.EmailVerified,
 				Avatar = user.Avatar
 			};
 		}
@@ -84,7 +86,8 @@ namespace SEP490_BE.BLL.Services
                 Dob = dob,
                 Gender = gender,
                 RoleId = roleId,
-                IsActive = true
+                IsActive = true,
+                EmailVerified = false // Email chưa được xác thực khi đăng ký
             };
 
             // Create Patient record if user is registering as a patient
@@ -120,6 +123,8 @@ namespace SEP490_BE.BLL.Services
                 Role = user.Role?.RoleName,
                 Gender = user.Gender,
                 Dob = user.Dob,
+                IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
                 Avatar = user.Avatar
             };
 
@@ -162,6 +167,8 @@ namespace SEP490_BE.BLL.Services
                 Role = user.Role?.RoleName,
                 Gender = user.Gender,
                 Dob = user.Dob,
+                IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
                 Avatar = user.Avatar,
                 Allergies = user.Patient?.Allergies,
                 MedicalHistory = user.Patient?.MedicalHistory
@@ -215,6 +222,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = user.Gender,
                 Dob = user.Dob,
                 IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
                 Avatar = user.Avatar,
                 Allergies = user.Patient?.Allergies,
                 MedicalHistory = user.Patient?.MedicalHistory
@@ -239,6 +247,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = user.Gender,
                 Dob = user.Dob,
                 IsActive = user.IsActive,
+                EmailVerified = user.EmailVerified,
                 Avatar = user.Avatar
             };
 
@@ -448,6 +457,7 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
+                EmailVerified = u.EmailVerified,
                 Avatar = u.Avatar,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
@@ -513,10 +523,24 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
+                EmailVerified = u.EmailVerified,
                 Avatar = u.Avatar,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
             });
+        }
+
+        public async Task<bool> VerifyEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByEmailAsync(email, cancellationToken);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.EmailVerified = true;
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            return true;
         }
     }
 }
