@@ -10,6 +10,7 @@ namespace SEP490_BE.DAL.DTOs
 		public string? Gender { get; set; }
 		public DateOnly? Dob { get; set; }
 		public bool IsActive { get; set; } = true;
+		public bool EmailVerified { get; set; } = false;
 		public string? Avatar { get; set; }
 		
 		// Patient specific fields
