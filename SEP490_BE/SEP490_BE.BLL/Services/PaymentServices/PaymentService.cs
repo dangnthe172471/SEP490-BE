@@ -40,19 +40,25 @@ namespace SEP490_BE.BLL.Services.PaymentServices
                 throw new Exception("Hồ sơ này đã được thanh toán.");
             }
 
-            // Pending dùng lại link cũ
-            if (lastPayment != null &&
-                lastPayment.Status == "Pending" &&
-                !string.IsNullOrEmpty(lastPayment.CheckoutUrl))
+            if (lastPayment != null && lastPayment.Status == "Pending")
             {
-                return new CreatePaymentResponseDTO
+                if (lastPayment.OrderCode != null)
                 {
-                    PaymentId = lastPayment.PaymentId,
-                    CheckoutUrl = lastPayment.CheckoutUrl
-                };
+                    bool isActive = await _payOsService.IsPaymentLinkActive(lastPayment.OrderCode.Value);
+
+                    if (isActive)
+                    {
+                        return new CreatePaymentResponseDTO
+                        {
+                            PaymentId = lastPayment.PaymentId,
+                            CheckoutUrl = lastPayment.CheckoutUrl
+                        };
+                    }
+                }
+               
             }
 
-            //  Nếu hủy thì tạo link mới
+
             var newPayment = new Payment
             {
                 RecordId = dto.MedicalRecordId,

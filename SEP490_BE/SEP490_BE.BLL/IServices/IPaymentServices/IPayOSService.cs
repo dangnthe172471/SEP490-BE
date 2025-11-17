@@ -12,6 +12,6 @@ namespace SEP490_BE.BLL.IServices.IPaymentServices
     {
         Task<string> CreatePaymentLinkAsync(long orderCode, CreatePaymentRequestDTO dto, List<ItemData> items);
         WebhookData VerifyWebhook(WebhookType webhook);
-
+        Task<bool> IsPaymentLinkActive(long orderCode);
     }
 }

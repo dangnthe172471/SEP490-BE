@@ -57,6 +57,20 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             return _payOS.verifyPaymentWebhookData(webhook);
         }
 
+        public async Task<bool> IsPaymentLinkActive(long orderCode)
+        {
+            try
+            {
+                var info = await _payOS.getPaymentLinkInformation(orderCode);
+
+                // INIT : link còn tồn tại và chưa thanh toán
+                return info.status == "INIT";
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
 
     }
 }
