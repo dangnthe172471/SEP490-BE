@@ -1,4 +1,5 @@
-﻿using SEP490_BE.DAL.DTOs.MedicineDTO;
+﻿using SEP490_BE.DAL.DTOs.Common;
+using SEP490_BE.DAL.DTOs.MedicineDTO;
 
 namespace SEP490_BE.BLL.IServices
 {
@@ -20,5 +21,11 @@ namespace SEP490_BE.BLL.IServices
             string? sort = null,
             CancellationToken ct = default);
 
+        Task<byte[]> GenerateExcelTemplateAsync(CancellationToken ct = default);
+
+        Task<BulkImportResultDto> ImportFromExcelAsync(
+            int userId,
+            Stream excelStream,
+            CancellationToken ct = default);
     }
 }

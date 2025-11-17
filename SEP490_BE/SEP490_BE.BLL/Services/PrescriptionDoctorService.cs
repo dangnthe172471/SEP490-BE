@@ -11,7 +11,10 @@ namespace SEP490_BE.BLL.Services
         private readonly IPrescriptionDoctorRepository _repo;
         public PrescriptionDoctorService(IPrescriptionDoctorRepository repo) => _repo = repo;
 
-        public async Task<PrescriptionSummaryDto> CreateAsync(int userIdFromToken, CreatePrescriptionRequest req, CancellationToken ct)
+        public async Task<PrescriptionSummaryDto> CreateAsync(
+            int userIdFromToken,
+            CreatePrescriptionRequest req,
+            CancellationToken ct)
         {
             var doctor = await _repo.GetDoctorByUserIdAsync(userIdFromToken, ct)
                          ?? throw new InvalidOperationException("Bác sĩ không tồn tại.");
@@ -25,43 +28,71 @@ namespace SEP490_BE.BLL.Services
             if (req.Items.Count == 0)
                 throw new InvalidOperationException("Đơn thuốc phải có ít nhất 1 dòng.");
 
-            var meds = await _repo.GetMedicinesByIdsAsync(req.Items.Select(i => i.MedicineId), ct);
-            if (meds.Count != req.Items.Select(i => i.MedicineId).Distinct().Count())
+            var medicineIds = req.Items.Select(i => i.MedicineId).Distinct().ToArray();
+
+            // Validate MedicineId
+            var meds = await _repo.GetMedicinesByIdsAsync(medicineIds, ct);
+            if (meds.Count != medicineIds.Length)
                 throw new InvalidOperationException("Một hoặc nhiều thuốc không hợp lệ.");
+
+            // Lấy snapshot version mới nhất
+            var latestVersions = await _repo.GetLatestMedicineVersionsByMedicineIdsAsync(medicineIds, ct);
 
             var header = new Prescription
             {
                 RecordId = record.RecordId,
                 DoctorId = doctor.DoctorId,
-                IssuedDate = req.IssuedDate ?? DateTime.UtcNow
+                IssuedDate = req.IssuedDate ?? DateTime.UtcNow,
+                // Notes = req.Notes
             };
 
-            var details = req.Items.Select(i => new PrescriptionDetail
+            var details = req.Items.Select(i =>
             {
-                MedicineId = i.MedicineId,
-                Dosage = i.Dosage,
-                Duration = i.Duration
-            }).ToList();
+                var v = latestVersions[i.MedicineId];
 
-            var created = await _repo.CreatePrescriptionAsync(header, details, ct);
-
-            var lines = details.Select(d =>
-            {
-                var med = meds[d.MedicineId];
-                return new PrescriptionLineDto
+                return new PrescriptionDetail
                 {
-                    PrescriptionDetailId = d.PrescriptionDetailId,
-                    MedicineId = med.MedicineId,
-                    MedicineName = med.MedicineName,
-                    Dosage = d.Dosage,
-                    Duration = d.Duration,
-                    ProviderId = med.ProviderId,
-                    ProviderName = med.Provider.User?.FullName ?? "Nhà cung cấp không xác định",
-                    ProviderContact = med.Provider.Contact
+                    MedicineId = i.MedicineId,
+                    MedicineVersionId = v.MedicineVersionId,
+                    Dosage = i.Dosage,
+                    Duration = i.Duration,
+                    Instruction = i.Instruction
                 };
             }).ToList();
 
+            var created = await _repo.CreatePrescriptionAsync(header, details, ct);
             var appt = record.Appointment;
+
+            var lines = details.Select(d =>
+            {
+                var v = latestVersions[d.MedicineId];
+
+                return new PrescriptionLineDto
+                {
+                    PrescriptionDetailId = d.PrescriptionDetailId,
+                    MedicineId = v.MedicineId,
+                    MedicineName = v.MedicineName,
+
+                    ActiveIngredient = v.ActiveIngredient,
+                    Strength = v.Strength,
+                    DosageForm = v.DosageForm,
+                    Route = v.Route,
+                    PrescriptionUnit = v.PrescriptionUnit,
+                    TherapeuticClass = v.TherapeuticClass,
+                    PackSize = v.PackSize,
+                    CommonSideEffects = v.CommonSideEffects,
+                    NoteForDoctor = v.NoteForDoctor,
+
+                    Dosage = d.Dosage,
+                    Duration = d.Duration,
+                    Instruction = d.Instruction,
+
+                    ProviderId = v.ProviderId,
+                    ProviderName = v.ProviderName,
+                    ProviderContact = v.ProviderContact
+                };
+            }).ToList();
+
             return new PrescriptionSummaryDto
             {
                 PrescriptionId = created.PrescriptionId,
@@ -82,11 +113,15 @@ namespace SEP490_BE.BLL.Services
                     Dob = appt.Patient.User?.Dob?.ToString("yyyy-MM-dd"),
                     Phone = appt.Patient.User?.Phone,
                 },
-                Items = lines
+                Items = lines,
+                Notes = req.Notes
             };
         }
 
-        public async Task<PrescriptionSummaryDto?> GetByIdAsync(int userIdFromToken, int prescriptionId, CancellationToken ct)
+        public async Task<PrescriptionSummaryDto?> GetByIdAsync(
+            int userIdFromToken,
+            int prescriptionId,
+            CancellationToken ct)
         {
             var pres = await _repo.GetPrescriptionGraphAsync(prescriptionId, ct);
             if (pres is null) return null;
@@ -113,17 +148,35 @@ namespace SEP490_BE.BLL.Services
                     Dob = appt.Patient.User?.Dob?.ToString("yyyy-MM-dd"),
                     Phone = appt.Patient.User?.Phone,
                 },
-                Items = pres.PrescriptionDetails.Select(d => new PrescriptionLineDto
+                Items = pres.PrescriptionDetails.Select(d =>
                 {
-                    PrescriptionDetailId = d.PrescriptionDetailId,
-                    MedicineId = d.MedicineId,
-                    MedicineName = d.Medicine.MedicineName,
-                    Dosage = d.Dosage,
-                    Duration = d.Duration,
-                    ProviderId = d.Medicine.ProviderId,
-                    ProviderName = d.Medicine.Provider.User?.FullName ?? "Nhà cung cấp không xác định",
-                    ProviderContact = d.Medicine.Provider.Contact
-                }).ToList()
+                    var v = d.MedicineVersion;
+
+                    return new PrescriptionLineDto
+                    {
+                        PrescriptionDetailId = d.PrescriptionDetailId,
+                        MedicineId = v.MedicineId,
+                        MedicineName = v.MedicineName,
+
+                        ActiveIngredient = v.ActiveIngredient,
+                        Strength = v.Strength,
+                        DosageForm = v.DosageForm,
+                        Route = v.Route,
+                        PrescriptionUnit = v.PrescriptionUnit,
+                        TherapeuticClass = v.TherapeuticClass,
+                        PackSize = v.PackSize,
+                        CommonSideEffects = v.CommonSideEffects,
+                        NoteForDoctor = v.NoteForDoctor,
+
+                        Dosage = d.Dosage,
+                        Duration = d.Duration,
+                        Instruction = d.Instruction,
+
+                        ProviderId = v.ProviderId,
+                        ProviderName = v.ProviderName,
+                        ProviderContact = v.ProviderContact
+                    };
+                }).ToList(),
             };
         }
 
@@ -147,3 +200,4 @@ namespace SEP490_BE.BLL.Services
             => _repo.GetRecordsForDoctorAsync(userIdFromToken, visitDateFrom, visitDateTo, patientNameSearch, pageNumber, pageSize, ct);
     }
 }
+

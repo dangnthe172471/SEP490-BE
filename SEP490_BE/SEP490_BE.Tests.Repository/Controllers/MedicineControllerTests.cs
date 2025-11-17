@@ -46,7 +46,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new CreateMedicineDto
             {
                 MedicineName = "Vitamin C 500mg",
-                SideEffects = "buồn nôn nhẹ",
+                CommonSideEffects = "buồn nôn nhẹ",
                 Status = "Providing"
             };
 
@@ -69,7 +69,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new CreateMedicineDto
             {
                 MedicineName = "Zinc 50mg",
-                SideEffects = "đau bụng thoáng qua",
+                CommonSideEffects = "đau bụng thoáng qua",
                 Status = null
             };
 
@@ -92,7 +92,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new CreateMedicineDto
             {
                 MedicineName = "",
-                SideEffects = "chóng mặt",
+                CommonSideEffects = "chóng mặt",
                 Status = "Providing"
             };
 
@@ -115,7 +115,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new CreateMedicineDto
             {
                 MedicineName = "Cefuroxime",
-                SideEffects = "tiêu chảy",
+                CommonSideEffects = "tiêu chảy",
                 Status = "Active"
             };
 
@@ -138,7 +138,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new CreateMedicineDto
             {
                 MedicineName = "Amlodipine 5mg",
-                SideEffects = "đau đầu",
+                CommonSideEffects = "đau đầu",
                 Status = "Providing"
             };
 
@@ -163,7 +163,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "Paracetamol 500mg",
-                SideEffects = "buồn ngủ, mệt nhẹ",
+                CommonSideEffects = "buồn ngủ, mệt nhẹ",
                 Status = "Stopped"
             };
 
@@ -184,7 +184,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "Amoxicillin 500mg",
-                SideEffects = "khó tiêu",
+                CommonSideEffects = "khó tiêu",
                 Status = "Providing"
             };
 
@@ -205,7 +205,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "Amlodipine 5mg",
-                SideEffects = "đầy bụng",
+                CommonSideEffects = "đầy bụng",
                 Status = "Providing"
             };
 
@@ -226,7 +226,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "NonExistingDrug",
-                SideEffects = "khó thở",
+                CommonSideEffects = "khó thở",
                 Status = "Providing"
             };
 
@@ -250,7 +250,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = name,
-                SideEffects = "đau bụng",
+                CommonSideEffects = "đau bụng",
                 Status = "Providing"
             };
 
@@ -271,7 +271,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "NewDrug",
-                SideEffects = "buồn nôn",
+                CommonSideEffects = "buồn nôn",
                 Status = "Available"
             };
 
@@ -292,7 +292,7 @@ namespace SEP490_BE.Tests.Controllers
             var dto = new UpdateMedicineDto
             {
                 MedicineName = "AMO",
-                SideEffects = "đau đầu",
+                CommonSideEffects = "đau đầu",
                 Status = "Providing"
             };
 

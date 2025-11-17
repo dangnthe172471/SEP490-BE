@@ -12,8 +12,10 @@ namespace SEP490_BE.DAL.Repositories
         public PrescriptionDoctorRepository(DiamondHealthContext db) => _db = db;
 
         public Task<Doctor?> GetDoctorByUserIdAsync(int userId, CancellationToken ct)
-            => _db.Doctors.Include(d => d.User)
-                          .FirstOrDefaultAsync(d => d.UserId == userId, ct);
+            => _db.Doctors
+                  .Include(d => d.User)
+                  .AsNoTracking()
+                  .FirstOrDefaultAsync(d => d.UserId == userId, ct);
 
         public Task<MedicalRecord?> GetRecordWithAppointmentAsync(int recordId, CancellationToken ct)
             => _db.MedicalRecords
@@ -25,21 +27,46 @@ namespace SEP490_BE.DAL.Repositories
                           .ThenInclude(d => d.User)
                   .FirstOrDefaultAsync(r => r.RecordId == recordId, ct);
 
-        public async Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(IEnumerable<int> ids, CancellationToken ct)
+        public async Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(
+            IEnumerable<int> ids,
+            CancellationToken ct)
         {
             var arr = ids.Distinct().ToArray();
+
             var meds = await _db.Medicines
                 .Include(m => m.Provider)
+                    .ThenInclude(p => p.User)
+                .AsNoTracking()
                 .Where(m => arr.Contains(m.MedicineId))
                 .ToListAsync(ct);
 
             return meds.ToDictionary(m => m.MedicineId, m => m);
         }
 
+        public async Task<Dictionary<int, MedicineVersion>> GetLatestMedicineVersionsByMedicineIdsAsync(
+            IEnumerable<int> ids,
+            CancellationToken ct)
+        {
+            var arr = ids.Distinct().ToArray();
+
+            // giả định MedicineVersionId tăng dần → lớn nhất là bản mới nhất
+            var latest = await _db.MedicineVersions
+                .Where(v => arr.Contains(v.MedicineId))
+                .GroupBy(v => v.MedicineId)
+                .Select(g => g.OrderByDescending(v => v.MedicineVersionId).First())
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            return latest.ToDictionary(v => v.MedicineId, v => v);
+        }
+
         public async Task<Prescription> CreatePrescriptionAsync(
-            Prescription header, IEnumerable<PrescriptionDetail> details, CancellationToken ct)
+            Prescription header,
+            IEnumerable<PrescriptionDetail> details,
+            CancellationToken ct)
         {
             await using var tx = await _db.Database.BeginTransactionAsync(ct);
+
             _db.Prescriptions.Add(header);
             await _db.SaveChangesAsync(ct);
 
@@ -48,6 +75,7 @@ namespace SEP490_BE.DAL.Repositories
 
             _db.PrescriptionDetails.AddRange(details);
             await _db.SaveChangesAsync(ct);
+
             await tx.CommitAsync(ct);
             return header;
         }
@@ -63,8 +91,7 @@ namespace SEP490_BE.DAL.Repositories
                           .ThenInclude(a => a.Doctor)
                               .ThenInclude(d => d.User)
                   .Include(p => p.PrescriptionDetails)
-                      .ThenInclude(d => d.Medicine)
-                          .ThenInclude(m => m.Provider)
+                      .ThenInclude(d => d.MedicineVersion)   // ❗ dùng snapshot
                   .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct);
 
         public async Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
@@ -106,7 +133,6 @@ namespace SEP490_BE.DAL.Repositories
             }
 
             var total = await q.CountAsync(ct);
-
             var presQ = _db.Prescriptions.AsQueryable();
 
             var items = await q

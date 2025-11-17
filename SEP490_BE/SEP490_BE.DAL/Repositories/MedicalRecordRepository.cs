@@ -23,7 +23,7 @@ namespace SEP490_BE.DAL.Repositories
             return await _context.MedicalRecords
                 .Include(m => m.Appointment)
                 .Include(m => m.InternalMedRecord)
-                .Include(m => m.ObstetricRecord)
+                .Include(m => m.DermatologyRecords)
                 .Include(m => m.PediatricRecord)
                 .Include(m => m.Payments)
                 .Include(m => m.Prescriptions)
@@ -39,7 +39,7 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(m => m.Appointment)
                     .ThenInclude(a => a.Doctor)
                 .Include(m => m.InternalMedRecord)
-                .Include(m => m.ObstetricRecord)
+                .Include(m => m.DermatologyRecords)
                 .Include(m => m.PediatricRecord)
                 .Include(m => m.Payments)
                 .Include(m => m.Prescriptions)
@@ -55,7 +55,7 @@ namespace SEP490_BE.DAL.Repositories
             return await _context.MedicalRecords
                 .Include(m => m.Appointment)
                 .Include(m => m.InternalMedRecord)
-                .Include(m => m.ObstetricRecord)
+                .Include(m => m.DermatologyRecords)
                 .Include(m => m.PediatricRecord)
                 .Include(m => m.Payments)
                 .Include(m => m.Prescriptions)
@@ -87,7 +87,7 @@ namespace SEP490_BE.DAL.Repositories
             return await _context.MedicalRecords
                 .Include(m => m.Appointment)
                 .Include(m => m.InternalMedRecord)
-                .Include(m => m.ObstetricRecord)
+                .Include(m => m.DermatologyRecords)
                 .Include(m => m.PediatricRecord)
                 .Include(m => m.Payments)
                 .Include(m => m.Prescriptions)

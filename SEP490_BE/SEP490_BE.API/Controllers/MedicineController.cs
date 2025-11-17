@@ -101,5 +101,51 @@ namespace SEP490_BE.API.Controllers
             catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
             catch (UnauthorizedAccessException) { return Forbid(); }
         }
+
+        [Authorize(Roles = ProviderRole)]
+        [HttpGet("excel-template")]
+        public async Task<IActionResult> DownloadTemplate(CancellationToken ct)
+        {
+            try
+            {
+                var bytes = await _medicineService.GenerateExcelTemplateAsync(ct);
+                return File(
+                    bytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "medicine_template.xlsx"
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = ProviderRole)]
+        [HttpPost("import-excel")]
+        public async Task<IActionResult> ImportExcel(IFormFile file, CancellationToken ct)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(new { message = "File Excel không hợp lệ." });
+
+            int userId;
+            try { userId = RequireUserId(User); }
+            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
+
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var result = await _medicineService.ImportFromExcelAsync(userId, stream, ct);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SEP490_BE.API.Controllers.ManagerControllers;
+using SEP490_BE.BLL.IServices.IDoctorServices;
+using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
@@ -17,12 +19,20 @@ namespace SEP490_BE.Tests.Controllers
     public class ManagerControllerTests
     {
         private readonly Mock<IScheduleService> _serviceMock;
+        private readonly Mock<INotificationService> _notificationServiceMock;
+        private readonly Mock<IDoctorScheduleService> _doctorScheduleServiceMock;
         private readonly ManageScheduleController _controller;
 
         public ManagerControllerTests()
         {
             _serviceMock = new Mock<IScheduleService>();
-            _controller = new ManageScheduleController(_serviceMock.Object);
+            _notificationServiceMock = new Mock<INotificationService>();
+            _doctorScheduleServiceMock = new Mock<IDoctorScheduleService>();
+            _controller = new ManageScheduleController(
+                _serviceMock.Object,
+                _notificationServiceMock.Object,
+                _doctorScheduleServiceMock.Object
+            );
         }
 
         [Fact]

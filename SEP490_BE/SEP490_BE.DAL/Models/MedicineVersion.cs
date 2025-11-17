@@ -3,15 +3,13 @@ using System.Collections.Generic;
 
 namespace SEP490_BE.DAL.Models;
 
-public partial class Medicine
+public partial class MedicineVersion
 {
+    public int MedicineVersionId { get; set; }
+
     public int MedicineId { get; set; }
 
-    public int ProviderId { get; set; }
-
     public string MedicineName { get; set; } = null!;
-
-    public string? Status { get; set; }
 
     public string? ActiveIngredient { get; set; }
 
@@ -31,9 +29,16 @@ public partial class Medicine
 
     public string? NoteForDoctor { get; set; }
 
-    public virtual ICollection<MedicineVersion> MedicineVersions { get; set; } = new List<MedicineVersion>();
+    public int ProviderId { get; set; }
 
-    public virtual ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
+    public string? ProviderName { get; set; }
 
-    public virtual PharmacyProvider Provider { get; set; } = null!;
+    public string? ProviderContact { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public virtual Medicine Medicine { get; set; } = null!;
+
+    public virtual ICollection<PrescriptionDetail> PrescriptionDetails { get; set; }
+        = new List<PrescriptionDetail>();
 }
