@@ -65,7 +65,8 @@ namespace SEP490_BE.API.Controllers
 					role = user.Role,
 					gender = user.Gender,
 					dob = user.Dob,
-					isActive = user.IsActive
+					isActive = user.IsActive,
+					emailVerified = user.EmailVerified
 				}
 			});
 		}
@@ -84,7 +85,39 @@ namespace SEP490_BE.API.Controllers
 				cancellationToken
 			);
 
-			return Ok(new { userId });
+			// Gửi email xác thực nếu có email
+			if (!string.IsNullOrEmpty(request.Email))
+			{
+				try
+				{
+					var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+					if (user != null)
+					{
+						// Sinh mã OTP
+						var otpCode = await _resetTokenService.GenerateOtpAsync(request.Email);
+
+						// Gửi email xác thực
+						string subject = "Xác thực email đăng ký tài khoản";
+						string body = $@"
+						<h3>Xin chào {user.FullName},</h3>
+						<p>Cảm ơn bạn đã đăng ký tài khoản tại Diamond Health!</p>
+						<p>Mã OTP để xác thực email của bạn là:</p>
+						<h2 style='color:#007bff; font-size: 24px;'>{otpCode}</h2>
+						<p>Mã này sẽ hết hạn sau 5 phút.</p>
+						<p>Vui lòng nhập mã này để xác thực email của bạn.</p>
+						<p>Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>";
+
+						await _emailService.SendEmailAsync(request.Email, subject, body, cancellationToken);
+					}
+				}
+				catch (Exception ex)
+				{
+					// Log lỗi nhưng không fail registration
+					Console.WriteLine($"Failed to send verification email: {ex.Message}");
+				}
+			}
+
+			return Ok(new { userId, email = request.Email, message = "Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản." });
 		}
 
 		[HttpGet("profile")]
@@ -113,7 +146,8 @@ namespace SEP490_BE.API.Controllers
 				dob = user.Dob,
 				allergies = user.Allergies,
 				medicalHistory = user.MedicalHistory,
-				avatar = user.Avatar
+				avatar = user.Avatar,
+				emailVerified = user.EmailVerified
 			});
 		}
 
@@ -298,6 +332,74 @@ namespace SEP490_BE.API.Controllers
 
             var resetToken = await _resetTokenService.GenerateAndStoreTokenAsync(request.Email);
             return Ok(new { message = "Xác thực thành công.", resetToken });
+        }
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.OtpCode))
+            {
+                return BadRequest(new { message = "Email và mã OTP là bắt buộc." });
+            }
+
+            // Validate OTP
+            var isValid = await _resetTokenService.ValidateOtpAsync(request.Email, request.OtpCode);
+            if (!isValid)
+            {
+                return BadRequest(new { message = "Mã OTP không hợp lệ hoặc đã hết hạn." });
+            }
+
+            // Verify email trong database
+            var success = await _userService.VerifyEmailAsync(request.Email, cancellationToken);
+            if (!success)
+            {
+                return BadRequest(new { message = "Không tìm thấy tài khoản với email này." });
+            }
+
+            return Ok(new { message = "Xác thực email thành công!" });
+        }
+
+        [HttpPost("resend-verification-email")]
+        public async Task<IActionResult> ResendVerificationEmail([FromBody] ResendVerificationEmailRequest request, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest(new { message = "Email là bắt buộc." });
+            }
+
+            var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+            if (user == null)
+            {
+                // Không tiết lộ email có tồn tại hay không vì lý do bảo mật
+                return Ok(new { message = "Nếu email tồn tại, mã xác thực đã được gửi." });
+            }
+
+            if (user.EmailVerified)
+            {
+                return BadRequest(new { message = "Email này đã được xác thực rồi." });
+            }
+
+            try
+            {
+                // Sinh mã OTP mới
+                var otpCode = await _resetTokenService.GenerateOtpAsync(request.Email);
+
+                // Gửi email xác thực
+                string subject = "Xác thực email đăng ký tài khoản";
+                string body = $@"
+                <h3>Xin chào {user.FullName},</h3>
+                <p>Mã OTP để xác thực email của bạn là:</p>
+                <h2 style='color:#007bff; font-size: 24px;'>{otpCode}</h2>
+                <p>Mã này sẽ hết hạn sau 5 phút.</p>
+                <p>Vui lòng nhập mã này để xác thực email của bạn.</p>";
+
+                await _emailService.SendEmailAsync(request.Email, subject, body, cancellationToken);
+                return Ok(new { message = "Mã xác thực đã được gửi đến email của bạn." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi gửi email.", error = ex.Message });
+            }
         }
 
         private string GenerateJwtToken(int userId, string subject, string role)

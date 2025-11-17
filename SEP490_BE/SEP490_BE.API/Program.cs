@@ -2,20 +2,24 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SEP490_BE.API.BackGrounds;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
+using SEP490_BE.BLL.IServices.IPaymentServices;
 using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services;
 using SEP490_BE.BLL.Services.Dashboard;
 using SEP490_BE.BLL.Services.DoctorServices;
 using SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.Services.ManagerServices;
+using SEP490_BE.BLL.Services.PaymentServices;
 using SEP490_BE.DAL.IRepositories;
+using SEP490_BE.DAL.IRepositories.Dashboard;
 using SEP490_BE.DAL.IRepositories.IManagerRepositories;
 using SEP490_BE.DAL.IRepositories.IManagerRepository;
-using SEP490_BE.DAL.IRepositories.Dashboard;
+using SEP490_BE.DAL.IRepositories.IPaymentRepositories;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.Repositories;
@@ -23,6 +27,7 @@ using SEP490_BE.DAL.Repositories.Dashboard;
 using SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Repositories.ManagerRepositories;
 using SEP490_BE.DAL.Repositories.ManagerRepository;
+using SEP490_BE.DAL.Repositories.PaymentRepositories;
 using System.Security.Claims;
 using System.Text;
 
@@ -80,6 +85,12 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("MyCnn"))
 );
 
+
+builder.Services.AddScoped<IPayOSService, PayOSService>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>(); 
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+// Tbao tu dong
+builder.Services.AddHostedService<ReminderBackgroundService>();
 
 //Administrator DI
 builder.Services.AddScoped<IAdministratorRepository, AdministratorRepository>();

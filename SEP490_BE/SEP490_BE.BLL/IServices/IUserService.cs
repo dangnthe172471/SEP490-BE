@@ -23,6 +23,7 @@ namespace SEP490_BE.BLL.IServices
         Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default);
 
         Task<bool> ResetPasswordAsync(string email, string newPassword, CancellationToken cancellationToken = default);
+        Task<bool> VerifyEmailAsync(string email, CancellationToken cancellationToken = default);
 
     }
 }

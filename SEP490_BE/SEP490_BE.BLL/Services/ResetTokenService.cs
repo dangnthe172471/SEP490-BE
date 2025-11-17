@@ -23,10 +23,10 @@ namespace SEP490_BE.BLL.Services
             return Task.CompletedTask;
         }
 
-        public async Task<string> GenerateOtpAsync(string email)
+        public async Task<string> GenerateOtpAsync(string email, int expiryMinutes = 5)
         {
             var otpCode = new Random().Next(100000, 999999).ToString();
-            var expiry = DateTime.UtcNow.AddMinutes(5);
+            var expiry = DateTime.UtcNow.AddMinutes(expiryMinutes);
 
             _otpStorage[email] = new OtpInfo
             {

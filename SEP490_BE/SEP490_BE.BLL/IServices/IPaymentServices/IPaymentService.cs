@@ -1,0 +1,17 @@
+﻿using SEP490_BE.DAL.DTOs.PaymentDTO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SEP490_BE.BLL.IServices.IPaymentServices
+{
+    public interface IPaymentService
+    {
+        Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto);
+        Task UpdatePaymentStatusAsync(PayOSCallbackDTO callback);
+        Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId);
+        Task<PaymentStatusDTO> GetPaymentStatusAsync(int recordId);
+    }
+}

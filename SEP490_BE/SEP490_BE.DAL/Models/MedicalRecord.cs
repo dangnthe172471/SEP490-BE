@@ -20,6 +20,7 @@ public partial class MedicalRecord
     public virtual ICollection<DermatologyRecord> DermatologyRecords { get; set; } = new List<DermatologyRecord>();
 
     public virtual InternalMedRecord? InternalMedRecord { get; set; }
+    public virtual ICollection<MedicalService> MedicalServices { get; set; } = new List<MedicalService>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
