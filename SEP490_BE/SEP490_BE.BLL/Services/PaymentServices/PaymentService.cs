@@ -83,14 +83,17 @@ namespace SEP490_BE.BLL.Services.PaymentServices
 
 
 
-        public async Task UpdatePaymentStatusAsync(PayOSCallbackDTO callback)
+        public async Task UpdatePaymentStatusAsync(long orderCode, string status)
         {
-            var payment = await _repo.GetByIdAsync(callback.OrderCode);
+            var payment = await _repo.GetByOrderCodeAsync(orderCode);
             if (payment == null) return;
 
-            payment.Status = callback.Status;
+            payment.Status = status;
+            payment.PaymentDate = DateTime.Now;
+
             await _repo.UpdateAsync(payment);
         }
+
         public async Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId)
         {
             var services = await _repo.GetByRecordIdAsync(recordId);

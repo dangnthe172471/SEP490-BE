@@ -17,5 +17,6 @@ namespace SEP490_BE.DAL.IRepositories.IPaymentRepositories
         Task<bool> ExistsMedicalRecord(int recordId);
         Task<Payment?> GetLastPaymentByRecordIdAsync(int recordId);
         Task<Payment?> GetPaidPaymentAsync(int recordId);
+        Task<Payment?> GetByOrderCodeAsync(long orderCode);
     }
 }

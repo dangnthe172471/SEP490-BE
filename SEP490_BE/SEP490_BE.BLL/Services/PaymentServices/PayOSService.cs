@@ -52,5 +52,11 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             input = input.Trim();
             return input.Length > 25 ? input.Substring(0, 25) : input;
         }
+        public WebhookData VerifyWebhook(WebhookType webhook)
+        {
+            return _payOS.verifyPaymentWebhookData(webhook);
+        }
+
+
     }
 }

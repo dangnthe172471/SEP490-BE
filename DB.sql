@@ -325,6 +325,12 @@ ADD EmailVerified BIT NOT NULL DEFAULT 0;
 GO
 UPDATE [User]
 SET EmailVerified = 1
+go
+ALTER TABLE Payment
+ADD OrderCode BIGINT NULL;
+
+ALTER TABLE Payment
+ADD CheckoutUrl NVARCHAR(500) NULL;
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Thêm các Role theo đúng thứ tự yêu cầu

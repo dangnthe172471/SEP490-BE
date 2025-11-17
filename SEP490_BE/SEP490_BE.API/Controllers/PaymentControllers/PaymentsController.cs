@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Net.payOS;
+using Net.payOS.Types;
 using SEP490_BE.BLL.IServices.IPaymentServices;
 using SEP490_BE.BLL.Services.PaymentServices;
 using SEP490_BE.DAL.DTOs.PaymentDTO;
@@ -12,6 +14,7 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
     {
         private readonly IPayOSService _payOSService;
         private readonly IPaymentService _paymentService;
+
         public PaymentsController(IPayOSService payOSService, IPaymentService paymentService)
         {
             _payOSService = payOSService;
@@ -48,12 +51,41 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
             }
         }
 
+        //[HttpPost("callback")]
+        //public async Task<IActionResult> Callback([FromBody] PayOSCallbackDTO callback)
+        //{
+        //    await _paymentService.UpdatePaymentStatusAsync(callback);
+        //    return Ok();
+        //}
         [HttpPost("callback")]
-        public async Task<IActionResult> Callback([FromBody] PayOSCallbackDTO callback)
+        public async Task<IActionResult> Callback([FromBody] WebhookType webhook)
         {
-            await _paymentService.UpdatePaymentStatusAsync(callback);
+            WebhookData result;
+
+            try
+            {
+                result = _payOSService.VerifyWebhook(webhook);
+            }
+            catch
+            {
+                return BadRequest("Invalid signature");
+            }
+
+            long orderCode = result.orderCode;
+
+            string status = result.code switch
+            {
+                "00" => "PAID",
+                "01" => "PENDING",
+                "09" => "FAILED",
+                _ => "UNKNOWN"
+            };
+
+            await _paymentService.UpdatePaymentStatusAsync(orderCode, status);
+
             return Ok();
         }
+
         [HttpGet("status/{recordId}")]
         public async Task<IActionResult> GetPaymentStatus(int recordId)
         {

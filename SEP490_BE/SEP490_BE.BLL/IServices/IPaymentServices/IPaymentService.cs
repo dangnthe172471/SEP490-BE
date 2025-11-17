@@ -10,7 +10,7 @@ namespace SEP490_BE.BLL.IServices.IPaymentServices
     public interface IPaymentService
     {
         Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto);
-        Task UpdatePaymentStatusAsync(PayOSCallbackDTO callback);
+        Task UpdatePaymentStatusAsync(long orderCode, string status);
         Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId);
         Task<PaymentStatusDTO> GetPaymentStatusAsync(int recordId);
     }

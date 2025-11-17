@@ -11,5 +11,7 @@ namespace SEP490_BE.BLL.IServices.IPaymentServices
     public interface IPayOSService
     {
         Task<string> CreatePaymentLinkAsync(long orderCode, CreatePaymentRequestDTO dto, List<ItemData> items);
+        WebhookData VerifyWebhook(WebhookType webhook);
+
     }
 }

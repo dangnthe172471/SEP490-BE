@@ -66,6 +66,11 @@ namespace SEP490_BE.DAL.Repositories.PaymentRepositories
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<Payment?> GetByOrderCodeAsync(long orderCode)
+        {
+            return await _db.Payments
+                .FirstOrDefaultAsync(x => x.OrderCode == orderCode);
+        }
 
 
     }
