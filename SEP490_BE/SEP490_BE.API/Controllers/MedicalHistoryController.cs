@@ -62,7 +62,7 @@ namespace SEP490_BE.API.Controllers
                             .ThenInclude(d => d.User)
                     .Include(mr => mr.Prescriptions)
                         .ThenInclude(p => p.PrescriptionDetails)
-                            .ThenInclude(pd => pd.Medicine)
+                            .ThenInclude(pd => pd.MedicineVersion)
                     .Include(mr => mr.TestResults)
                         .ThenInclude(tr => tr.TestType)
                     .Where(mr => mr.Appointment.PatientId == patientId)
@@ -92,8 +92,8 @@ namespace SEP490_BE.API.Controllers
                             {
                                 PrescriptionDetailId = pd.PrescriptionDetailId,
                                 PrescriptionId = pd.PrescriptionId,
-                                MedicineId = pd.MedicineId,
-                                MedicineName = pd.Medicine.MedicineName,
+                                MedicineId = pd.MedicineVersion.MedicineId,
+                                MedicineName = pd.MedicineVersion.MedicineName,
                                 Dosage = pd.Dosage,
                                 Duration = pd.Duration
                             }).ToList()

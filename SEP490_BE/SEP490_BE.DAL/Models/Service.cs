@@ -15,9 +15,9 @@ public partial class Service
 
     public string? Category { get; set; }
 
-    public bool IsActive { get; set; }
-
     public int? TestTypeId { get; set; }
+
+    public bool IsActive { get; set; }
 
     public virtual ICollection<MedicalService> MedicalServices { get; set; } = new List<MedicalService>();
 

@@ -33,7 +33,5 @@ public partial class Medicine
 
     public virtual ICollection<MedicineVersion> MedicineVersions { get; set; } = new List<MedicineVersion>();
 
-    public virtual ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
-
     public virtual PharmacyProvider Provider { get; set; } = null!;
 }

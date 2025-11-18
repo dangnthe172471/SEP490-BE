@@ -42,23 +42,30 @@ namespace SEP490_BE.DAL.Repositories
                 throw new InvalidOperationException(
                     $"Medicine '{medicine.MedicineName}' already exists for this provider.");
 
+            await using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
+
             await _dbContext.Medicines.AddAsync(medicine, ct);
             await _dbContext.SaveChangesAsync(ct);
+
+            await CreateMedicineVersionSnapshotAsync(medicine, ct);
+
+            await tx.CommitAsync(ct);
         }
 
         public async Task UpdateMedicineAsync(Medicine medicine, CancellationToken ct = default)
         {
+            await using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
+
             var existing = await _dbContext.Medicines
+                .Include(m => m.Provider).ThenInclude(p => p.User)
                 .FirstOrDefaultAsync(m => m.MedicineId == medicine.MedicineId, ct);
 
             if (existing == null)
                 throw new KeyNotFoundException($"Medicine with ID {medicine.MedicineId} not found.");
 
-            // Không cho đổi Provider
             if (existing.ProviderId != medicine.ProviderId)
                 throw new InvalidOperationException("Changing Provider is not allowed.");
 
-            // Xử lý đổi tên + check trùng
             var incomingName = medicine.MedicineName?.Trim();
             var isRename = incomingName != null &&
                            !string.Equals(incomingName, existing.MedicineName,
@@ -77,10 +84,9 @@ namespace SEP490_BE.DAL.Repositories
                     throw new InvalidOperationException(
                         $"Medicine '{incomingName}' already exists for this provider.");
 
-                existing.MedicineName = incomingName; // đã trim
+                existing.MedicineName = incomingName;
             }
 
-            // 🔥 BUG FIX: cập nhật đầy đủ các trường còn lại
             existing.Status = medicine.Status;
             existing.ActiveIngredient = medicine.ActiveIngredient;
             existing.Strength = medicine.Strength;
@@ -93,6 +99,10 @@ namespace SEP490_BE.DAL.Repositories
             existing.NoteForDoctor = medicine.NoteForDoctor;
 
             await _dbContext.SaveChangesAsync(ct);
+
+            await CreateMedicineVersionSnapshotAsync(existing, ct);
+
+            await tx.CommitAsync(ct);
         }
 
         public async Task<int?> GetProviderIdByUserIdAsync(int userId, CancellationToken ct = default)
@@ -137,5 +147,51 @@ namespace SEP490_BE.DAL.Repositories
 
             return (items, total);
         }
+
+        private async Task CreateMedicineVersionSnapshotAsync(Medicine source, CancellationToken ct = default)
+        {
+            var provider = await _dbContext.PharmacyProviders
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.ProviderId == source.ProviderId, ct);
+
+            string? contact = null;
+            if (provider != null)
+            {
+                var parts = new List<string>();
+
+                if (!string.IsNullOrWhiteSpace(provider.Contact))
+                    parts.Add(provider.Contact.Trim());
+
+                if (!string.IsNullOrWhiteSpace(provider.User?.Phone))
+                    parts.Add(provider.User.Phone.Trim());
+
+                contact = string.Join(" - ", parts);
+            }
+
+            var version = new MedicineVersion
+            {
+                MedicineId = source.MedicineId,
+                MedicineName = source.MedicineName,
+                ActiveIngredient = source.ActiveIngredient,
+                Strength = source.Strength,
+                DosageForm = source.DosageForm,
+                Route = source.Route,
+                PrescriptionUnit = source.PrescriptionUnit,
+                TherapeuticClass = source.TherapeuticClass,
+                PackSize = source.PackSize,
+                CommonSideEffects = source.CommonSideEffects,
+                NoteForDoctor = source.NoteForDoctor,
+
+                ProviderId = source.ProviderId,
+                ProviderName = provider?.User?.FullName,
+                ProviderContact = contact,
+
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _dbContext.MedicineVersions.AddAsync(version, ct);
+            await _dbContext.SaveChangesAsync(ct);
+        }
+
     }
 }

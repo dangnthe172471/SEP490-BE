@@ -9,8 +9,6 @@ public partial class PrescriptionDetail
 
     public int PrescriptionId { get; set; }
 
-    public int MedicineId { get; set; }
-
     public string Dosage { get; set; } = null!;
 
     public string Duration { get; set; } = null!;
@@ -18,8 +16,6 @@ public partial class PrescriptionDetail
     public string? Instruction { get; set; }
 
     public int MedicineVersionId { get; set; }
-
-    public virtual Medicine Medicine { get; set; } = null!;
 
     public virtual MedicineVersion MedicineVersion { get; set; } = null!;
 
