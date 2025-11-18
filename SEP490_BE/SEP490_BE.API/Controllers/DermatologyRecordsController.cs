@@ -1,35 +1,35 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
-using SEP490_BE.DAL.DTOs.PediatricRecordsDTO;
+using SEP490_BE.DAL.DTOs.DermatologyDTO;
 using System.Net;
 
 namespace SEP490_BE.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PediatricRecordsController : ControllerBase
+    public class DermatologyRecordsController : ControllerBase
     {
-        private readonly IPediatricRecordService _service;
+        private readonly IDermatologyRecordService _service;
 
-        public PediatricRecordsController(IPediatricRecordService service)
+        public DermatologyRecordsController(IDermatologyRecordService service)
         {
             _service = service;
         }
 
         [HttpGet("{recordId:int}")]
-        public async Task<ActionResult<ReadPediatricRecordDto>> Get(
+        public async Task<ActionResult<ReadDermatologyRecordDto>> Get(
             [FromRoute] int recordId,
             CancellationToken ct = default)
         {
             var item = await _service.GetByRecordIdAsync(recordId, ct);
-            if (item == null) return NotFound(new { message = $"PediatricRecord cho RecordId {recordId} không tồn tại" });
+            if (item == null) return NotFound(new { message = $"DermatologyRecord cho RecordId {recordId} không tồn tại" });
             return Ok(item);
         }
 
         [HttpPost]
-        public async Task<ActionResult<ReadPediatricRecordDto>> Create(
-            [FromBody] CreatePediatricRecordDto dto,
+        public async Task<ActionResult<ReadDermatologyRecordDto>> Create(
+            [FromBody] CreateDermatologyRecordDto dto,
             CancellationToken ct = default)
         {
             try
@@ -49,14 +49,14 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi tạo PediatricRecord", detail = ex.Message });
+                    new { message = "Lỗi khi tạo DermatologyRecord", detail = ex.Message });
             }
         }
 
         [HttpPut("{recordId:int}")]
-        public async Task<ActionResult<ReadPediatricRecordDto>> Update(
+        public async Task<ActionResult<ReadDermatologyRecordDto>> Update(
             [FromRoute] int recordId,
-            [FromBody] UpdatePediatricRecordDto dto,
+            [FromBody] UpdateDermatologyRecordDto dto,
             CancellationToken ct = default)
         {
             try
@@ -72,7 +72,7 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi cập nhật PediatricRecord", detail = ex.Message });
+                    new { message = "Lỗi khi cập nhật DermatologyRecord", detail = ex.Message });
             }
         }
 
@@ -90,7 +90,7 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi xóa PediatricRecord", detail = ex.Message });
+                    new { message = "Lỗi khi xóa DermatologyRecord", detail = ex.Message });
             }
         }
     }

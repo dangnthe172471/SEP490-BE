@@ -6,40 +6,48 @@ namespace SEP490_BE.DAL.Repositories
 {
     public class PediatricRecordRepository : IPediatricRecordRepository
     {
-        private readonly DiamondHealthContext _db;
-        public PediatricRecordRepository(DiamondHealthContext db) => _db = db;
+        private readonly DiamondHealthContext _context;
 
-        public Task<bool> MedicalRecordExistsAsync(int recordId, CancellationToken ct = default)
-            => _db.MedicalRecords.AnyAsync(r => r.RecordId == recordId, ct);
+        public PediatricRecordRepository(DiamondHealthContext context)
+        {
+            _context = context;
+        }
 
         public Task<PediatricRecord?> GetByRecordIdAsync(int recordId, CancellationToken ct = default)
-            => _db.PediatricRecords.FirstOrDefaultAsync(x => x.RecordId == recordId, ct);
+        {
+            return _context.PediatricRecords
+                .FirstOrDefaultAsync(x => x.RecordId == recordId, ct);
+        }
 
         public Task<bool> HasPediatricAsync(int recordId, CancellationToken ct = default)
-            => _db.PediatricRecords.AnyAsync(x => x.RecordId == recordId, ct);
-
-        public Task<bool> HasInternalMedAsync(int recordId, CancellationToken ct = default)
-            => _db.InternalMedRecords.AnyAsync(x => x.RecordId == recordId, ct);
+        {
+            return _context.PediatricRecords
+                .AnyAsync(x => x.RecordId == recordId, ct);
+        }
 
         public async Task<PediatricRecord> CreateAsync(PediatricRecord entity, CancellationToken ct = default)
         {
-            _db.PediatricRecords.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            _context.PediatricRecords.Add(entity);
+            await _context.SaveChangesAsync(ct);
             return entity;
         }
 
         public async Task UpdateAsync(PediatricRecord entity, CancellationToken ct = default)
         {
-            _db.PediatricRecords.Update(entity);
-            await _db.SaveChangesAsync(ct);
+            _context.PediatricRecords.Update(entity);
+            await _context.SaveChangesAsync(ct);
         }
 
         public async Task DeleteAsync(int recordId, CancellationToken ct = default)
         {
-            var entity = await _db.PediatricRecords.FirstOrDefaultAsync(x => x.RecordId == recordId, ct)
-                ?? throw new KeyNotFoundException($"PediatricRecord for RecordId {recordId} not found");
-            _db.PediatricRecords.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            var entity = await _context.PediatricRecords
+                .FirstOrDefaultAsync(x => x.RecordId == recordId, ct);
+
+            if (entity != null)
+            {
+                _context.PediatricRecords.Remove(entity);
+                await _context.SaveChangesAsync(ct);
+            }
         }
     }
 }
