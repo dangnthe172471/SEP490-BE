@@ -25,7 +25,7 @@ namespace SEP490_BE.BLL.Services
             var entity = new TestResult
             {
                 RecordId = dto.RecordId,
-                TestTypeId = dto.TestTypeId,
+                ServiceId = dto.TestTypeId,
                 ResultValue = dto.ResultValue.Trim(),
                 Unit = dto.Unit?.Trim(),
                 Attachment = dto.Attachment?.Trim(),
@@ -85,10 +85,5 @@ namespace SEP490_BE.BLL.Services
         }
 
 
-        public async Task<List<(int TestTypeId, string TestName)>> GetTestTypesAsync(CancellationToken ct = default)
-        {
-            var list = await _repo.GetAllTestTypesAsync(ct);
-            return list.Select(t => (t.TestTypeId, t.TestName)).ToList();
-        }
     }
 }

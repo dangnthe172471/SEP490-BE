@@ -106,15 +106,14 @@ builder.Services.AddScoped<IEmailServiceApp, EmailServiceApp>();
 builder.Services.AddScoped<IResetTokenService, ResetTokenService>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
-//builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
-//builder.Services.AddScoped<IManagerService, ManagerService>();
+
 builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
 builder.Services.AddScoped<IDoctorShiftRepository, DoctorShiftRepository>();
 builder.Services.AddScoped<IMedicalRecordRepository, MedicalRecordRepository>();
 builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
-builder.Services.AddScoped<ITestTypeRepository, TestTypeRepository>();
-builder.Services.AddScoped<ITestTypeService, TestTypeService>();
+
+
 builder.Services.AddScoped<IDoctorScheduleService, DoctorScheduleService>();
 
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();

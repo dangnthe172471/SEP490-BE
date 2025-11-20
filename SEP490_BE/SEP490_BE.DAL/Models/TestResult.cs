@@ -9,7 +9,7 @@ public partial class TestResult
 
     public int RecordId { get; set; }
 
-    public int TestTypeId { get; set; }
+    public int ServiceId { get; set; }
 
     public string ResultValue { get; set; } = null!;
 
@@ -23,5 +23,5 @@ public partial class TestResult
 
     public virtual MedicalRecord Record { get; set; } = null!;
 
-    public virtual TestType TestType { get; set; } = null!;
+    public virtual Service Service { get; set; } = null!;
 }

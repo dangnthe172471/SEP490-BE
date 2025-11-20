@@ -11,6 +11,5 @@ namespace SEP490_BE.BLL.IServices
         Task<List<ReadTestResultDto>> GetByRecordIdAsync(int recordId, CancellationToken ct = default);
         Task<ReadTestResultDto?> GetByIdAsync(int id, CancellationToken ct = default);
         Task<PagedResult<TestWorklistItemDto>> GetWorklistAsync(TestWorklistQueryDto query, CancellationToken ct = default);
-        Task<List<(int TestTypeId, string TestName)>> GetTestTypesAsync(CancellationToken ct = default);
     }
 }

@@ -85,11 +85,11 @@ namespace SEP490_BE.API.Controllers
             return NoContent();
         }
 
-        [HttpGet("types")]
-        public async Task<ActionResult<List<object>>> GetTypes(CancellationToken ct)
-        {
-            var types = await _service.GetTestTypesAsync(ct);
-            return Ok(types.Select(t => new { t.TestTypeId, t.TestName }));
-        }
+        //[HttpGet("types")]
+        //public async Task<ActionResult<List<object>>> GetTypes(CancellationToken ct)
+        //{
+        //    var types = await _service.GetTestTypesAsync(ct);
+        //    return Ok(types.Select(t => new { t.TestTypeId, t.TestName }));
+        //}
     }
 }

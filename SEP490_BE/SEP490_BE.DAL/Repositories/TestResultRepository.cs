@@ -15,14 +15,14 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _db.TestResults
                 .AsNoTracking()
-                .Include(tr => tr.TestType)
+                .Include(tr => tr.Service)
                 .Where(tr => tr.TestResultId == id)
                 .Select(tr => new ReadTestResultDto
                 {
                     TestResultId = tr.TestResultId,
                     RecordId = tr.RecordId,
-                    TestTypeId = tr.TestTypeId,
-                    TestName = tr.TestType.TestName,
+                    TestTypeId = tr.ServiceId,
+                    TestName = tr.Service.ServiceName,
                     ResultValue = tr.ResultValue,
                     Unit = tr.Unit,
                     Attachment = tr.Attachment,
@@ -36,15 +36,15 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _db.TestResults
                 .AsNoTracking()
-                .Include(tr => tr.TestType)
+                .Include(tr => tr.Service)
                 .Where(tr => tr.RecordId == recordId)
-                .OrderBy(tr => tr.TestTypeId)
+                .OrderBy(tr => tr.ServiceId)
                 .Select(tr => new ReadTestResultDto
                 {
                     TestResultId = tr.TestResultId,
                     RecordId = tr.RecordId,
-                    TestTypeId = tr.TestTypeId,
-                    TestName = tr.TestType.TestName,
+                    TestTypeId = tr.ServiceId,
+                    TestName = tr.Service.ServiceName,
                     ResultValue = tr.ResultValue,
                     Unit = tr.Unit,
                     Attachment = tr.Attachment,
@@ -79,7 +79,7 @@ namespace SEP490_BE.DAL.Repositories
             => _db.MedicalRecords.AnyAsync(r => r.RecordId == recordId, ct);
 
         public Task<bool> TestTypeExistsAsync(int testTypeId, CancellationToken ct = default)
-            => _db.TestTypes.AnyAsync(t => t.TestTypeId == testTypeId, ct);
+            => _db.Services.AnyAsync(t => t.ServiceId == testTypeId, ct);
 
         public Task<TestResult?> GetEntityByIdAsync(int id, CancellationToken ct = default)
             => _db.TestResults.FirstOrDefaultAsync(x => x.TestResultId == id, ct);
@@ -93,9 +93,9 @@ namespace SEP490_BE.DAL.Repositories
             CancellationToken ct = default)
         {
             // Lấy tất cả TestType
-            var requiredTestTypeIds = await _db.TestTypes
+            var requiredTestTypeIds = await _db.Services
                 .AsNoTracking()
-                .Select(t => t.TestTypeId)
+                .Select(t => t.ServiceId)
                 .ToListAsync(ct);
 
             if (requiredTestTypeIds.Count == 0)
@@ -104,7 +104,7 @@ namespace SEP490_BE.DAL.Repositories
             var q = _db.MedicalRecords
                 .AsNoTracking()
                 .Include(r => r.Appointment)!.ThenInclude(a => a.Patient)!.ThenInclude(p => p.User)
-                .Include(r => r.TestResults)!.ThenInclude(tr => tr.TestType)
+                .Include(r => r.TestResults)!.ThenInclude(tr => tr.Service)
                 .AsQueryable();
 
             // ⬅ CHỈ lọc ngày khi có visitDate
@@ -130,12 +130,12 @@ namespace SEP490_BE.DAL.Repositories
                 if (requiredState == RequiredState.Missing)
                 {
                     q = q.Where(r => !requiredTestTypeIds
-                        .All(reqId => r.TestResults.Any(tr => tr.TestTypeId == reqId)));
+                        .All(reqId => r.TestResults.Any(tr => tr.ServiceId == reqId)));
                 }
                 else // Complete
                 {
                     q = q.Where(r => requiredTestTypeIds
-                        .All(reqId => r.TestResults.Any(tr => tr.TestTypeId == reqId)));
+                        .All(reqId => r.TestResults.Any(tr => tr.ServiceId == reqId)));
                 }
             }
 
@@ -153,13 +153,13 @@ namespace SEP490_BE.DAL.Repositories
                     PatientId = r.Appointment.Patient.PatientId,
                     PatientName = r.Appointment.Patient.User.FullName,
                     HasAllRequiredResults = requiredTestTypeIds
-                        .All(reqId => r.TestResults.Any(tr => tr.TestTypeId == reqId)),
+                        .All(reqId => r.TestResults.Any(tr => tr.ServiceId == reqId)),
                     Results = r.TestResults.Select(tr => new ReadTestResultDto
                     {
                         TestResultId = tr.TestResultId,
                         RecordId = tr.RecordId,
-                        TestTypeId = tr.TestTypeId,
-                        TestName = tr.TestType.TestName,
+                        TestTypeId = tr.ServiceId,
+                        TestName = tr.Service.ServiceName,
                         ResultValue = tr.ResultValue,
                         Unit = tr.Unit,
                         Attachment = tr.Attachment,
@@ -178,8 +178,7 @@ namespace SEP490_BE.DAL.Repositories
             };
         }
 
-        public Task<List<TestType>> GetAllTestTypesAsync(CancellationToken ct = default)
-            => _db.TestTypes.AsNoTracking().OrderBy(t => t.TestName).ToListAsync(ct);
+     
     }
 }
 

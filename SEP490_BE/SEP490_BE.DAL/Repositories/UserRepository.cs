@@ -120,10 +120,9 @@ namespace SEP490_BE.DAL.Repositories
                 {
                     var hasPatientAppointments = await _dbContext.Appointments
                         .AnyAsync(a => a.PatientId == user.Patient.PatientId, cancellationToken);
-                    var hasPatientChats = await _dbContext.ChatLogs
-                        .AnyAsync(c => c.PatientId == user.Patient.PatientId, cancellationToken);
+      
 
-                    if (hasPatientAppointments || hasPatientChats)
+                    if (hasPatientAppointments )
                     {
                         throw new InvalidOperationException("Không thể xóa vì bệnh nhân còn dữ liệu liên quan (lịch hẹn hoặc chat).");
                     }
@@ -152,10 +151,9 @@ namespace SEP490_BE.DAL.Repositories
                 {
                     var hasReceptionAppointments = await _dbContext.Appointments
                         .AnyAsync(a => a.ReceptionistId == user.Receptionist.ReceptionistId, cancellationToken);
-                    var hasReceptionChats = await _dbContext.ChatLogs
-                        .AnyAsync(c => c.ReceptionistId == user.Receptionist.ReceptionistId, cancellationToken);
+               
 
-                    if (hasReceptionAppointments || hasReceptionChats)
+                    if (hasReceptionAppointments )
                     {
                         throw new InvalidOperationException("Không thể xóa vì lễ tân còn dữ liệu liên quan (lịch hẹn hoặc chat).");
                     }

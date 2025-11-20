@@ -11,7 +11,5 @@ public partial class Receptionist
 
     public virtual ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
-    public virtual ICollection<ChatLog> ChatLogs { get; set; } = new List<ChatLog>();
-
     public virtual User User { get; set; } = null!;
 }

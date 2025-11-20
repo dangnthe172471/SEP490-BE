@@ -20,7 +20,6 @@ namespace SEP490_BE.DAL.IRepositories
             int pageSize,
             RequiredState requiredState,
             CancellationToken ct = default);
-        Task<List<TestType>> GetAllTestTypesAsync(CancellationToken ct = default);
         Task<TestResult?> GetEntityByIdAsync(int id, CancellationToken ct = default);
     }
 }

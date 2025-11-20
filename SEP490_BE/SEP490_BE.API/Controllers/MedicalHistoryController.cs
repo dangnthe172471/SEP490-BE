@@ -64,7 +64,7 @@ namespace SEP490_BE.API.Controllers
                         .ThenInclude(p => p.PrescriptionDetails)
                             .ThenInclude(pd => pd.MedicineVersion)
                     .Include(mr => mr.TestResults)
-                        .ThenInclude(tr => tr.TestType)
+                        .ThenInclude(tr => tr.Service)
                     .Where(mr => mr.Appointment.PatientId == patientId)
                     .OrderByDescending(mr => mr.Appointment.AppointmentDate)
                     .Select(mr => new MedicalHistoryDTO
@@ -102,8 +102,8 @@ namespace SEP490_BE.API.Controllers
                         {
                             TestResultId = tr.TestResultId,
                             RecordId = tr.RecordId,
-                            TestTypeId = tr.TestTypeId,
-                            TestTypeName = tr.TestType.TestName,
+                            TestTypeId = tr.ServiceId,
+                            TestTypeName = tr.Service.ServiceName,
                             ResultValue = tr.ResultValue,
                             Unit = tr.Unit,
                             Attachment = tr.Attachment,
