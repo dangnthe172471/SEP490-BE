@@ -157,6 +157,10 @@ builder.Services.AddScoped<IInternalMedRecordService, InternalMedRecordService>(
 builder.Services.AddScoped<IDoctorStatisticsRepository, DoctorStatisticsRepository>();
 builder.Services.AddScoped<IDoctorStatisticsService, DoctorStatisticsService>();
 
+builder.Services.AddScoped<IDermatologyRecordRepository, DermatologyRecordRepository>();
+builder.Services.AddScoped<IDermatologyRecordService, DermatologyRecordService>();
+builder.Services.AddScoped<IMedicalServiceRepository, MedicalServiceRepository>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;

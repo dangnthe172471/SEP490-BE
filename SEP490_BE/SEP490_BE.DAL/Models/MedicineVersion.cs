@@ -11,8 +11,6 @@ public partial class MedicineVersion
 
     public string MedicineName { get; set; } = null!;
 
-    public string? ActiveIngredient { get; set; }
-
     public string? Strength { get; set; }
 
     public string? DosageForm { get; set; }
@@ -23,22 +21,23 @@ public partial class MedicineVersion
 
     public string? TherapeuticClass { get; set; }
 
+    public int ProviderId { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public string? ActiveIngredient { get; set; }
+
     public string? PackSize { get; set; }
 
     public string? CommonSideEffects { get; set; }
 
     public string? NoteForDoctor { get; set; }
 
-    public int ProviderId { get; set; }
-
     public string? ProviderName { get; set; }
 
     public string? ProviderContact { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
     public virtual Medicine Medicine { get; set; } = null!;
 
-    public virtual ICollection<PrescriptionDetail> PrescriptionDetails { get; set; }
-        = new List<PrescriptionDetail>();
+    public virtual ICollection<PrescriptionDetail> PrescriptionDetails { get; set; } = new List<PrescriptionDetail>();
 }

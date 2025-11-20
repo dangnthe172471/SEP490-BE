@@ -8,6 +8,6 @@ namespace SEP490_BE.BLL.IServices
         Task<ReadInternalMedRecordDto> CreateAsync(CreateInternalMedRecordDto dto, CancellationToken ct = default);
         Task<ReadInternalMedRecordDto> UpdateAsync(int recordId, UpdateInternalMedRecordDto dto, CancellationToken ct = default);
         Task DeleteAsync(int recordId, CancellationToken ct = default);
-        Task<(bool HasPediatric, bool HasInternalMed)> CheckSpecialtiesAsync(int recordId, CancellationToken ct = default);
+        Task<(bool HasPediatric, bool HasInternalMed, bool HasDermatology)> CheckSpecialtiesAsync(int recordId, CancellationToken ct = default);
     }
 }

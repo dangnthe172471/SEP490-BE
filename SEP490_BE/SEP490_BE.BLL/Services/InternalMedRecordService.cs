@@ -1,4 +1,5 @@
 ﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.InternalMedRecordsDTO;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -7,63 +8,87 @@ namespace SEP490_BE.BLL.Services
 {
     public class InternalMedRecordService : IInternalMedRecordService
     {
-        private readonly IInternalMedRecordRepository _repo;
-        public InternalMedRecordService(IInternalMedRecordRepository repo) => _repo = repo;
+        private readonly IInternalMedRecordRepository _internalRepo;
+        private readonly IPediatricRecordRepository _pediatricRepo;
+        private readonly IDermatologyRecordRepository _dermRepo;
+        private readonly IMedicalRecordRepository _medicalRecordRepo;
+        private readonly IMedicalServiceRepository _medicalServiceRepo;
+
+        public InternalMedRecordService(
+            IInternalMedRecordRepository internalRepo,
+            IPediatricRecordRepository pediatricRepo,
+            IDermatologyRecordRepository dermRepo,
+            IMedicalRecordRepository medicalRecordRepo,
+            IMedicalServiceRepository medicalServiceRepo)
+        {
+            _internalRepo = internalRepo;
+            _pediatricRepo = pediatricRepo;
+            _dermRepo = dermRepo;  
+            _medicalRecordRepo = medicalRecordRepo;
+            _medicalServiceRepo = medicalServiceRepo;
+        }
 
         public async Task<ReadInternalMedRecordDto?> GetByRecordIdAsync(int recordId, CancellationToken ct = default)
         {
-            var entity = await _repo.GetByRecordIdAsync(recordId, ct);
+            var entity = await _internalRepo.GetByRecordIdAsync(recordId, ct);
             return entity == null ? null : Map(entity);
         }
 
         public async Task<ReadInternalMedRecordDto> CreateAsync(CreateInternalMedRecordDto dto, CancellationToken ct = default)
         {
-            if (!await _repo.MedicalRecordExistsAsync(dto.RecordId, ct))
+            var record = await _medicalRecordRepo.GetByIdAsync(dto.RecordId, ct);
+            if (record == null)
                 throw new KeyNotFoundException($"MedicalRecord {dto.RecordId} không tồn tại");
 
-            // CHỈ chặn trùng InternalMed cho cùng RecordId
-            if (await _repo.HasInternalMedAsync(dto.RecordId, ct))
+            if (await _internalRepo.HasInternalMedAsync(dto.RecordId, ct))
                 throw new InvalidOperationException("InternalMedRecord đã tồn tại cho MedicalRecord này.");
 
-            var entity = new InternalMedRecord
+            var created = await _internalRepo.CreateAsync(new InternalMedRecord
             {
                 RecordId = dto.RecordId,
                 BloodPressure = dto.BloodPressure,
                 HeartRate = dto.HeartRate,
                 BloodSugar = dto.BloodSugar,
                 Notes = dto.Notes?.Trim()
-            };
+            }, ct);
 
-            var created = await _repo.CreateAsync(entity, ct);
+            await AddMedicalServiceAsync(dto.RecordId, ServiceCategories.InternalMed, ct);
+
             return Map(created);
         }
 
         public async Task<ReadInternalMedRecordDto> UpdateAsync(int recordId, UpdateInternalMedRecordDto dto, CancellationToken ct = default)
         {
-            var entity = await _repo.GetByRecordIdAsync(recordId, ct)
-                ?? throw new KeyNotFoundException($"InternalMedRecord for RecordId {recordId} không tồn tại");
+            var entity = await _internalRepo.GetByRecordIdAsync(recordId, ct)
+                ?? throw new KeyNotFoundException($"InternalMedRecord cho RecordId {recordId} không tồn tại");
 
             if (dto.BloodPressure.HasValue) entity.BloodPressure = dto.BloodPressure;
             if (dto.HeartRate.HasValue) entity.HeartRate = dto.HeartRate;
             if (dto.BloodSugar.HasValue) entity.BloodSugar = dto.BloodSugar;
             if (dto.Notes != null) entity.Notes = dto.Notes.Trim();
 
-            await _repo.UpdateAsync(entity, ct);
+            await _internalRepo.UpdateAsync(entity, ct);
             return Map(entity);
         }
 
         public Task DeleteAsync(int recordId, CancellationToken ct = default)
-            => _repo.DeleteAsync(recordId, ct);
+            => _internalRepo.DeleteAsync(recordId, ct);
 
-        // NEW: trả về trạng thái hiện có của 2 chuyên khoa
-        public async Task<(bool HasPediatric, bool HasInternalMed)> CheckSpecialtiesAsync(int recordId, CancellationToken ct = default)
+        private async Task AddMedicalServiceAsync(int recordId, string category, CancellationToken ct)
         {
-            if (!await _repo.MedicalRecordExistsAsync(recordId, ct))
-                throw new KeyNotFoundException($"MedicalRecord {recordId} không tồn tại");
+            var service = await _medicalServiceRepo.GetServiceByCategoryAsync(category, ct)
+                ?? throw new InvalidOperationException($"Chưa cấu hình Service cho Category '{category}'");
 
-            var hasPedia = await _repo.HasPediatricAsync(recordId, ct);
-            var hasInternal = await _repo.HasInternalMedAsync(recordId, ct);
-            return (hasPedia, hasInternal);
+            bool exists = await _medicalServiceRepo.MedicalServiceExistsAsync(recordId, service.ServiceId, ct);
+            if (exists) return;
+
+            await _medicalServiceRepo.CreateMedicalServiceAsync(
+                recordId,
+                service.ServiceId,
+                service.Price ?? 0m,
+                $"Khám {category}",
+                ct
+            );
         }
 
         private static ReadInternalMedRecordDto Map(InternalMedRecord e) => new()
@@ -75,5 +100,17 @@ namespace SEP490_BE.BLL.Services
             Notes = e.Notes
         };
 
+        public async Task<(bool HasPediatric, bool HasInternalMed, bool HasDermatology)> CheckSpecialtiesAsync(int recordId, CancellationToken ct = default)
+        {
+            var record = await _medicalRecordRepo.GetByIdAsync(recordId, ct);
+            if (record == null)
+                throw new KeyNotFoundException($"MedicalRecord {recordId} không tồn tại");
+
+            var hasPedia = await _pediatricRepo.HasPediatricAsync(recordId, ct);
+            var hasInternal = await _internalRepo.HasInternalMedAsync(recordId, ct);
+            var hasDerm = await _dermRepo.HasDermatologyAsync(recordId, ct);
+
+            return (hasPedia, hasInternal, hasDerm);
+        }
     }
 }

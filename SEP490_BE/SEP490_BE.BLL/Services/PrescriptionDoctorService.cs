@@ -30,12 +30,24 @@ namespace SEP490_BE.BLL.Services
 
             var medicineIds = req.Items.Select(i => i.MedicineId).Distinct().ToArray();
 
-            // Validate MedicineId
+            // Validate MedicineId tồn tại
             var meds = await _repo.GetMedicinesByIdsAsync(medicineIds, ct);
             if (meds.Count != medicineIds.Length)
                 throw new InvalidOperationException("Một hoặc nhiều thuốc không hợp lệ.");
 
-            // Lấy snapshot version mới nhất
+            // ✅ Chỉ cho kê thuốc đang cung cấp (Status = Providing). Các status khác coi như Stopped.
+            var invalidStopped = meds.Values
+                .Where(m => !string.Equals(m.Status?.Trim(), "Providing", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (invalidStopped.Any())
+            {
+                var names = string.Join(", ", invalidStopped.Select(m => m.MedicineName));
+                throw new InvalidOperationException(
+                    $"Không thể kê đơn với các thuốc đã ngừng cung cấp: {names}.");
+            }
+
+            // Lấy snapshot version mới nhất cho từng MedicineId
             var latestVersions = await _repo.GetLatestMedicineVersionsByMedicineIdsAsync(medicineIds, ct);
 
             var header = new Prescription
@@ -43,16 +55,16 @@ namespace SEP490_BE.BLL.Services
                 RecordId = record.RecordId,
                 DoctorId = doctor.DoctorId,
                 IssuedDate = req.IssuedDate ?? DateTime.UtcNow,
-                // Notes = req.Notes
             };
 
+            // Tạo PrescriptionDetail: KHÔNG còn MedicineId, chỉ cần MedicineVersionId
             var details = req.Items.Select(i =>
             {
-                var v = latestVersions[i.MedicineId];
+                if (!latestVersions.TryGetValue(i.MedicineId, out var v))
+                    throw new InvalidOperationException($"Thuốc ID {i.MedicineId} chưa có phiên bản để kê đơn.");
 
                 return new PrescriptionDetail
                 {
-                    MedicineId = i.MedicineId,
                     MedicineVersionId = v.MedicineVersionId,
                     Dosage = i.Dosage,
                     Duration = i.Duration,
@@ -63,9 +75,13 @@ namespace SEP490_BE.BLL.Services
             var created = await _repo.CreatePrescriptionAsync(header, details, ct);
             var appt = record.Appointment;
 
+            // Map lại theo VersionId vì PrescriptionDetail không còn MedicineId
+            var latestByVersionId = latestVersions.Values
+                .ToDictionary(v => v.MedicineVersionId, v => v);
+
             var lines = details.Select(d =>
             {
-                var v = latestVersions[d.MedicineId];
+                var v = latestByVersionId[d.MedicineVersionId];
 
                 return new PrescriptionLineDto
                 {

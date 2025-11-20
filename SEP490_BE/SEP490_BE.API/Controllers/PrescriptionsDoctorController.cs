@@ -17,13 +17,28 @@ namespace SEP490_BE.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Doctor")]
-        public async Task<ActionResult<PrescriptionSummaryDto>> Create([FromBody] CreatePrescriptionRequest req, CancellationToken ct)
+        public async Task<ActionResult<PrescriptionSummaryDto>> Create(
+            [FromBody] CreatePrescriptionRequest req,
+            CancellationToken ct)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
 
-            var result = await _service.CreateAsync(userId, req, ct);
-            return CreatedAtAction(nameof(GetById), new { id = result.PrescriptionId }, result);
+            try
+            {
+                var result = await _service.CreateAsync(userId, req, ct);
+                return CreatedAtAction(nameof(GetById), new { id = result.PrescriptionId }, result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Ví dụ: Bác sĩ không phụ trách hồ sơ này
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Bao gồm: đơn không có dòng, thuốc không hợp lệ, thuốc Stopped, ...
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id:int}")]

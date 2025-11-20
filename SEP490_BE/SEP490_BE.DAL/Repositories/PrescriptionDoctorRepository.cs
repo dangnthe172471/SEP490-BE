@@ -34,8 +34,7 @@ namespace SEP490_BE.DAL.Repositories
             var arr = ids.Distinct().ToArray();
 
             var meds = await _db.Medicines
-                .Include(m => m.Provider)
-                    .ThenInclude(p => p.User)
+                .Include(m => m.Provider).ThenInclude(p => p.User)
                 .AsNoTracking()
                 .Where(m => arr.Contains(m.MedicineId))
                 .ToListAsync(ct);
@@ -49,7 +48,6 @@ namespace SEP490_BE.DAL.Repositories
         {
             var arr = ids.Distinct().ToArray();
 
-            // giả định MedicineVersionId tăng dần → lớn nhất là bản mới nhất
             var latest = await _db.MedicineVersions
                 .Where(v => arr.Contains(v.MedicineId))
                 .GroupBy(v => v.MedicineId)
@@ -91,7 +89,7 @@ namespace SEP490_BE.DAL.Repositories
                           .ThenInclude(a => a.Doctor)
                               .ThenInclude(d => d.User)
                   .Include(p => p.PrescriptionDetails)
-                      .ThenInclude(d => d.MedicineVersion)   // ❗ dùng snapshot
+                      .ThenInclude(d => d.MedicineVersion)
                   .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct);
 
         public async Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
