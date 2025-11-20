@@ -33,5 +33,8 @@ namespace SEP490_BE.BLL.IServices.IManagerServices
         //Task RefreshShiftStatusAsync();
         Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date);
         Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to);
+
+        Task<List<DoctorDTO>> GetDoctorsWithoutScheduleAsync(DateOnly startDate, DateOnly endDate);
+
     }
 }

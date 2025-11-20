@@ -611,6 +611,38 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepositories
             return count < 2;
         }
 
+        public async Task<List<DoctorDTO>> GetDoctorsWithoutScheduleAsync(DateOnly startDate, DateOnly endDate)
+        {
+            var allDoctors = await _context.Doctors
+                .Include(d => d.User)
+                .Where(d => d.User.IsActive == true)  
+                .ToListAsync();
+
+         
+            var doctorWithSchedule = await _context.DoctorShifts
+                .Where(ds =>
+                    ds.Status == "Active" &&
+                    ds.EffectiveFrom <= endDate &&
+                    (ds.EffectiveTo == null || ds.EffectiveTo >= startDate)
+                )
+                .Select(ds => ds.DoctorId)
+                .Distinct()
+                .ToListAsync();
+
+            //chọn bác sĩ ko có lịch
+            var result = allDoctors
+                .Where(d => !doctorWithSchedule.Contains(d.DoctorId))
+                .Select(d => new DoctorDTO
+                {
+                    DoctorID = d.DoctorId,
+                    FullName = d.User.FullName,
+                    Specialty = d.Specialty ?? "",
+                    Email = d.User.Email
+                })
+                .ToList();
+
+            return result;
+        }
 
 
     }

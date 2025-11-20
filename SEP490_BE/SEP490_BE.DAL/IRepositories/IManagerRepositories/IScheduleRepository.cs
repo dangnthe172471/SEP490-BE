@@ -1,4 +1,5 @@
-﻿using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
+﻿using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.MedicineDTO;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.Models;
@@ -31,6 +32,7 @@ namespace SEP490_BE.DAL.IRepositories.IManagerRepositories
         Task<bool> CheckDoctorShiftLimitAsync(int doctorId, DateOnly date);
         Task<bool> CheckDoctorShiftLimitRangeAsync(int doctorId, DateOnly from, DateOnly to);
         #endregion
+        Task<List<DoctorDTO>> GetDoctorsWithoutScheduleAsync(DateOnly startDate, DateOnly endDate);
 
     }
 }

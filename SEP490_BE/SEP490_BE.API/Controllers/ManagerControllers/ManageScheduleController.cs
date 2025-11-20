@@ -5,6 +5,7 @@ using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.BLL.Services;
+using SEP490_BE.BLL.Services.ManagerServices;
 using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
@@ -14,7 +15,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Clinic Manager")]
+    [Authorize(Roles = "Clinic Manager")]
     public class ManageScheduleController : ControllerBase
     {
         private readonly IScheduleService _service;
@@ -28,6 +29,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
 
         // Lấy danh sách ca làm việc
         [HttpGet("shifts")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllShifts()
         {
             var data = await _service.GetAllShiftsAsync();
@@ -35,6 +37,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
         }
         // All bsi
         [HttpGet("doctors")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllDoctors([FromQuery] string? keyword)
         {
           
@@ -45,6 +48,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
 
         // Tìm bác sĩ theo tên
         [HttpGet("doctors/search")]
+        [AllowAnonymous]
         public async Task<IActionResult> SearchDoctors([FromQuery] string? keyword)
         {
             if(string.IsNullOrWhiteSpace(keyword))
@@ -90,7 +94,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
                 CreatedBy = null,
             };
             await _notificationService.SendNotificationAsync(dtoNotify);
-            return Ok(new { message = $"Tạo thành công {created} lịch làm việc." });
+            return Ok(new { message = $"Tạo lịch làm việc thành công." });
         }
 
         // Xem lịch làm việc --
@@ -235,6 +239,15 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpGet("doctors-without-schedule")]
+        public async Task<IActionResult> GetDoctorsWithoutSchedule(
+    [FromQuery] DateOnly startDate,
+    [FromQuery] DateOnly endDate)
+        {
+            var result = await _service.GetDoctorsWithoutScheduleAsync(startDate, endDate);
+            return Ok(result);
         }
 
     }

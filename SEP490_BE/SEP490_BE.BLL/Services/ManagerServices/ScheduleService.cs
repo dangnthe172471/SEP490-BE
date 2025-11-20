@@ -302,26 +302,10 @@ namespace SEP490_BE.BLL.Services.ManagerServices
         {
             return await _managerRepo.CheckDoctorShiftLimitRangeAsync(doctorId, from, to);
         }
-        //       public async Task RefreshShiftStatusAsync()
-        //       {
-        //           var today = DateTime.Today;
+        public async Task<List<DoctorDTO>> GetDoctorsWithoutScheduleAsync(DateOnly startDate, DateOnly endDate)
+        {
+            return await _managerRepo.GetDoctorsWithoutScheduleAsync(startDate, endDate);
+        }
 
-
-        //           var expiredShifts = await _managerRepo.GetAllAsync(
-        //    ds => ds.Status == "Active" &&
-        //          ds.EffectiveTo != null &&
-        //          ds.EffectiveTo.Value.ToDateTime(TimeOnly.MinValue) < today
-        //);
-
-        //           if (!expiredShifts.Any()) return;
-
-        //           foreach (var shift in expiredShifts)
-        //           {
-        //               shift.Status = "Inactive";
-        //               await _managerRepo.UpdateAsync(shift);
-        //           }
-
-        //           await _managerRepo.SaveChangesAsync();
-        //       }
     }
 }
