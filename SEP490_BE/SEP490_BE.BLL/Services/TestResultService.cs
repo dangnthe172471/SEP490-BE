@@ -10,7 +10,11 @@ namespace SEP490_BE.BLL.Services
     public class TestResultService : ITestResultService
     {
         private readonly ITestResultRepository _repo;
-        public TestResultService(ITestResultRepository repo) => _repo = repo;
+
+        public TestResultService(ITestResultRepository repo)
+        {
+            _repo = repo;
+        }
 
         public async Task<ReadTestResultDto> CreateAsync(CreateTestResultDto dto, CancellationToken ct = default)
         {
@@ -19,8 +23,9 @@ namespace SEP490_BE.BLL.Services
 
             if (!await _repo.RecordExistsAsync(dto.RecordId, ct))
                 throw new KeyNotFoundException($"MedicalRecord {dto.RecordId} không tồn tại");
+
             if (!await _repo.TestTypeExistsAsync(dto.TestTypeId, ct))
-                throw new KeyNotFoundException($"TestType {dto.TestTypeId} không tồn tại");
+                throw new KeyNotFoundException($"TestType {dto.TestTypeId} không tồn tại hoặc không phải loại xét nghiệm");
 
             var entity = new TestResult
             {
@@ -34,6 +39,10 @@ namespace SEP490_BE.BLL.Services
             };
 
             var created = await _repo.CreateAsync(entity, ct);
+
+            // Giao cho repository xử lý tạo MedicalService
+            await _repo.EnsureMedicalServiceForTestAsync(dto.RecordId, dto.TestTypeId, ct);
+
             var read = await _repo.GetByIdAsync(created.TestResultId, ct)
                 ?? throw new InvalidOperationException("Không đọc được kết quả vừa tạo");
             return read;
@@ -84,6 +93,8 @@ namespace SEP490_BE.BLL.Services
                 ct);
         }
 
+        public Task<List<TestTypeLite>> GetTestTypesAsync(CancellationToken ct = default)
+            => _repo.GetTestTypesAsync(ct);
 
     }
 }
