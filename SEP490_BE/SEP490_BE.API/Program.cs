@@ -164,6 +164,9 @@ builder.Services.AddScoped<IMedicalServiceRepository, MedicalServiceRepository>(
 builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 
+// Reappointment Request DI
+builder.Services.AddScoped<IReappointmentRequestService, ReappointmentRequestService>();
+
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"] ?? string.Empty;
