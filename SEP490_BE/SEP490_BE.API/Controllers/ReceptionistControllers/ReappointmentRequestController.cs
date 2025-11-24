@@ -19,8 +19,13 @@ namespace SEP490_BE.API.Controllers.ReceptionistControllers
         }
 
         [HttpGet("pending")]
-        public async Task<ActionResult<List<ReappointmentRequestDto>>> GetPendingReappointmentRequests(
-            CancellationToken cancellationToken)
+        public async Task<ActionResult<PagedResponse<ReappointmentRequestDto>>> GetPendingReappointmentRequests(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] string sortBy = "createdDate",
+            [FromQuery] string sortDirection = "desc",
+            CancellationToken cancellationToken = default)
         {
             try
             {
@@ -30,7 +35,14 @@ namespace SEP490_BE.API.Controllers.ReceptionistControllers
                     return Unauthorized(new { message = "Không tìm thấy thông tin người dùng." });
                 }
 
-                var requests = await _reappointmentRequestService.GetPendingReappointmentRequestsAsync(userId, cancellationToken);
+                var requests = await _reappointmentRequestService.GetPendingReappointmentRequestsAsync(
+                    userId,
+                    pageNumber,
+                    pageSize,
+                    searchTerm,
+                    sortBy,
+                    sortDirection,
+                    cancellationToken);
                 return Ok(requests);
             }
             catch (ArgumentException ex)

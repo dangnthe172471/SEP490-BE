@@ -20,5 +20,7 @@ namespace SEP490_BE.DAL.IRepositories.IManagerRepository
 
         Task MarkAllAsReadAsync(int userId);
 
+        Task UpdateNotificationContentAsync(int notificationId, string content);
+
     }
 }

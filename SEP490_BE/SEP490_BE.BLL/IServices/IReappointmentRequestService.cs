@@ -12,8 +12,15 @@ namespace SEP490_BE.BLL.IServices
         // Doctor: Tạo yêu cầu tái khám
         Task<int> CreateReappointmentRequestAsync(CreateReappointmentRequestDto request, int doctorUserId, CancellationToken cancellationToken = default);
 
-        // Receptionist: Lấy danh sách yêu cầu tái khám
-        Task<List<ReappointmentRequestDto>> GetPendingReappointmentRequestsAsync(int receptionistUserId, CancellationToken cancellationToken = default);
+        // Receptionist: Lấy danh sách yêu cầu tái khám (hỗ trợ search/pagination/sort)
+        Task<PagedResponse<ReappointmentRequestDto>> GetPendingReappointmentRequestsAsync(
+            int receptionistUserId,
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string sortBy = "createdDate",
+            string sortDirection = "desc",
+            CancellationToken cancellationToken = default);
 
         // Receptionist: Lấy chi tiết yêu cầu tái khám
         Task<ReappointmentRequestDto?> GetReappointmentRequestByIdAsync(int notificationId, int receptionistUserId, CancellationToken cancellationToken = default);

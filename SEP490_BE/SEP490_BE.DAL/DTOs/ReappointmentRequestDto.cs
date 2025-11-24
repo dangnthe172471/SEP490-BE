@@ -54,6 +54,7 @@ namespace SEP490_BE.DAL.DTOs
         public string DoctorSpecialty { get; set; } = string.Empty;
         public DateTime? PreferredDate { get; set; }
         public string? Notes { get; set; }
+        public bool IsCompleted { get; set; }
     }
 
     // Helper class để parse JSON từ Content
@@ -64,6 +65,7 @@ namespace SEP490_BE.DAL.DTOs
         public int DoctorId { get; set; }
         public DateTime? PreferredDate { get; set; }
         public string? Notes { get; set; }
+        public bool IsCompleted { get; set; }
     }
 
     #endregion

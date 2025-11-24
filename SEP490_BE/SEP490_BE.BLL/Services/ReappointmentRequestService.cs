@@ -67,7 +67,8 @@ namespace SEP490_BE.BLL.Services
                 PatientId = appointment.PatientId,
                 DoctorId = appointment.DoctorId,
                 PreferredDate = request.PreferredDate,
-                Notes = request.Notes
+                Notes = request.Notes,
+                IsCompleted = false
             };
 
             var jsonContent = JsonSerializer.Serialize(requestData);
@@ -102,7 +103,14 @@ namespace SEP490_BE.BLL.Services
             return notificationId;
         }
 
-        public async Task<List<ReappointmentRequestDto>> GetPendingReappointmentRequestsAsync(int receptionistUserId, CancellationToken cancellationToken = default)
+        public async Task<PagedResponse<ReappointmentRequestDto>> GetPendingReappointmentRequestsAsync(
+            int receptionistUserId,
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? searchTerm = null,
+            string sortBy = "createdDate",
+            string sortDirection = "desc",
+            CancellationToken cancellationToken = default)
         {
             // Lấy tất cả notifications của receptionist có Type = "ReappointmentRequest"
             var user = await _userRepository.GetByIdAsync(receptionistUserId, cancellationToken);
@@ -117,12 +125,13 @@ namespace SEP490_BE.BLL.Services
             // Filter và parse
             var requests = new List<ReappointmentRequestDto>();
             
-            foreach (var notif in notifications.Items.Where(n => n.Type == "ReappointmentRequest" && !n.IsRead))
+            foreach (var notif in notifications.Items.Where(n => n.Type == "ReappointmentRequest"))
             {
                 try
                 {
                     var requestData = JsonSerializer.Deserialize<ReappointmentRequestData>(notif.Content);
                     if (requestData == null) continue;
+                    if (requestData.IsCompleted) continue;
 
                     // Lấy thông tin bệnh nhân và bác sĩ
                     var patient = await _appointmentRepository.GetPatientByIdAsync(requestData.PatientId, cancellationToken);
@@ -145,7 +154,8 @@ namespace SEP490_BE.BLL.Services
                         DoctorName = doctor?.User?.FullName ?? "N/A",
                         DoctorSpecialty = doctor?.Specialty ?? "N/A",
                         PreferredDate = requestData.PreferredDate,
-                        Notes = requestData.Notes
+                        Notes = requestData.Notes,
+                        IsCompleted = requestData.IsCompleted
                     });
                 }
                 catch (JsonException)
@@ -155,7 +165,48 @@ namespace SEP490_BE.BLL.Services
                 }
             }
 
-            return requests.OrderByDescending(r => r.CreatedDate).ToList();
+            // Lọc theo searchTerm
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var keyword = searchTerm.Trim().ToLower();
+                requests = requests.Where(r =>
+                    (!string.IsNullOrEmpty(r.PatientName) && r.PatientName.ToLower().Contains(keyword)) ||
+                    (!string.IsNullOrEmpty(r.DoctorName) && r.DoctorName.ToLower().Contains(keyword)) ||
+                    (!string.IsNullOrEmpty(r.PatientPhone) && r.PatientPhone.ToLower().Contains(keyword)) ||
+                    (r.Notes != null && r.Notes.ToLower().Contains(keyword))
+                ).ToList();
+            }
+
+            // Sắp xếp
+            IEnumerable<ReappointmentRequestDto> ordered = sortBy.ToLower() switch
+            {
+                "patientname" => sortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase)
+                    ? requests.OrderBy(r => r.PatientName)
+                    : requests.OrderByDescending(r => r.PatientName),
+                "preferreddate" => sortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase)
+                    ? requests.OrderBy(r => r.PreferredDate)
+                    : requests.OrderByDescending(r => r.PreferredDate),
+                "doctorname" => sortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase)
+                    ? requests.OrderBy(r => r.DoctorName)
+                    : requests.OrderByDescending(r => r.DoctorName),
+                _ => sortDirection.Equals("asc", StringComparison.OrdinalIgnoreCase)
+                    ? requests.OrderBy(r => r.CreatedDate)
+                    : requests.OrderByDescending(r => r.CreatedDate)
+            };
+
+            // Phân trang
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            var totalCount = ordered.Count();
+            var items = ordered.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+            return new PagedResponse<ReappointmentRequestDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         public async Task<ReappointmentRequestDto?> GetReappointmentRequestByIdAsync(int notificationId, int receptionistUserId, CancellationToken cancellationToken = default)
@@ -194,7 +245,8 @@ namespace SEP490_BE.BLL.Services
                     DoctorName = doctor?.User?.FullName ?? "N/A",
                     DoctorSpecialty = doctor?.Specialty ?? "N/A",
                     PreferredDate = requestData.PreferredDate,
-                    Notes = requestData.Notes
+                    Notes = requestData.Notes,
+                    IsCompleted = requestData.IsCompleted
                 };
             }
             catch (JsonException)
@@ -250,6 +302,11 @@ namespace SEP490_BE.BLL.Services
             // Đánh dấu notification là đã đọc
             await _notificationService.MarkAsReadAsync(receptionistUserId, request.NotificationId);
 
+            // Cập nhật trạng thái hoàn thành trong nội dung thông báo
+            requestData.IsCompleted = true;
+            var updatedContent = JsonSerializer.Serialize(requestData);
+            await _notificationRepository.UpdateNotificationContentAsync(request.NotificationId, updatedContent);
+
             return appointmentId;
         }
 
@@ -299,7 +356,8 @@ namespace SEP490_BE.BLL.Services
                         DoctorName = doctor.User?.FullName ?? "N/A",
                         DoctorSpecialty = doctor.Specialty ?? "N/A",
                         PreferredDate = requestData.PreferredDate,
-                        Notes = requestData.Notes
+                        Notes = requestData.Notes,
+                        IsCompleted = requestData.IsCompleted
                     });
                 }
                 catch (JsonException)
