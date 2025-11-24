@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace SEP490_BE.API.Controllers.DoctorControllers
 {
-    [Route("api/[controller]")]
+    [Route("api/DoctorReappointmentRequests")]
     [ApiController]
     [Authorize(Roles = "Doctor")]
     public class ReappointmentRequestController : ControllerBase

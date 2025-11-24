@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace SEP490_BE.API.Controllers.ReceptionistControllers
 {
-    [Route("api/[controller]")]
+    [Route("api/ReceptionistReappointmentRequests")]
     [ApiController]
     [Authorize(Roles = "Receptionist")]
     public class ReappointmentRequestController : ControllerBase
