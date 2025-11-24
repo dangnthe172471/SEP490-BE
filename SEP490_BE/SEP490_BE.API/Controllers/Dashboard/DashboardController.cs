@@ -43,6 +43,27 @@ namespace SEP490_BE.API.Controllers.Dashboard
             var result = await _dashboardService.GetPatientStatisticsAsync(fromDate, toDate, cancellationToken);
             return Ok(result);
         }
+
+        [HttpGet("test-diagnostic-stats")]
+        [Authorize(Roles = "Clinic Manager,Administrator")]
+        public async Task<ActionResult<TestDiagnosticStatsDto>> GetTestDiagnosticStats(
+            [FromQuery] DateOnly? from,
+            [FromQuery] DateOnly? to,
+            [FromQuery] string? groupBy,
+            CancellationToken cancellationToken)
+        {
+            var toDate = to ?? DateOnly.FromDateTime(DateTime.Today);
+            var fromDate = from ?? toDate.AddDays(-29);
+
+            if (fromDate > toDate)
+            {
+                return BadRequest(new { message = "'from' phải nhỏ hơn hoặc bằng 'to'." });
+            }
+
+            var normalizedGroupBy = string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase) ? "month" : "day";
+            var result = await _dashboardService.GetTestDiagnosticStatsAsync(fromDate, toDate, normalizedGroupBy, cancellationToken);
+            return Ok(result);
+        }
     }
 }
 

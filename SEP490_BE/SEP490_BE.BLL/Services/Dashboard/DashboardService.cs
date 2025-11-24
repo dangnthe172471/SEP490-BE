@@ -21,6 +21,13 @@ namespace SEP490_BE.BLL.Services.Dashboard
 
         public Task<PatientStatisticsDto> GetPatientStatisticsAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
             => _repo.GetPatientStatisticsAsync(from, to, cancellationToken);
+
+        public Task<TestDiagnosticStatsDto> GetTestDiagnosticStatsAsync(
+            DateOnly from,
+            DateOnly to,
+            string groupBy,
+            CancellationToken cancellationToken = default)
+            => _repo.GetTestDiagnosticStatsAsync(from, to, groupBy, cancellationToken);
     }
 }
 
