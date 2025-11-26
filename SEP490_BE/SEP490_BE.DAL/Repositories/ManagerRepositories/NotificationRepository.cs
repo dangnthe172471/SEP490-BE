@@ -56,7 +56,7 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepository
                 .Select(u => u.UserId)
                 .ToListAsync();
         }
-        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetListNotificationsAsync( int pageNumber, int pageSize)
+        public async Task<PaginationHelper.PagedResult<NotificationDTO>> GetListNotificationsAsync(int pageNumber, int pageSize)
         {
             var query = _context.Notifications
                 .Select(n => new NotificationDTO
@@ -84,7 +84,7 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepository
                     (n, nr) => new { n, nr }
                 )
                 .Where(x => x.nr.ReceiverId == userId)
-                
+
                 .OrderBy(x => x.nr.IsRead)
                 .ThenByDescending(x => x.n.CreatedDate)
                 .Select(x => new NotificationDTO
@@ -134,6 +134,17 @@ namespace SEP490_BE.DAL.Repositories.ManagerRepository
 
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task UpdateNotificationContentAsync(int notificationId, string content)
+        {
+            var notification = await _context.Notifications
+                .FirstOrDefaultAsync(n => n.NotificationId == notificationId);
+
+            if (notification == null) return;
+
+            notification.Content = content;
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -78,11 +78,60 @@ namespace SEP490_BE.DAL.Repositories
         public Task<bool> RecordExistsAsync(int recordId, CancellationToken ct = default)
             => _db.MedicalRecords.AnyAsync(r => r.RecordId == recordId, ct);
 
+        // CHỈ chấp nhận Service là loại xét nghiệm (Category = "Test")
         public Task<bool> TestTypeExistsAsync(int testTypeId, CancellationToken ct = default)
-            => _db.Services.AnyAsync(t => t.ServiceId == testTypeId, ct);
+            => _db.Services.AnyAsync(
+                t => t.ServiceId == testTypeId && t.Category == "Test" && t.IsActive,
+                ct);
 
         public Task<TestResult?> GetEntityByIdAsync(int id, CancellationToken ct = default)
             => _db.TestResults.FirstOrDefaultAsync(x => x.TestResultId == id, ct);
+
+        // Lấy danh sách loại xét nghiệm từ bảng Service
+        public async Task<List<TestTypeLite>> GetTestTypesAsync(CancellationToken ct = default)
+        {
+            return await _db.Services
+                .AsNoTracking()
+                .Where(s => s.IsActive && s.Category == "Test")
+                .OrderBy(s => s.ServiceName)
+                .Select(s => new TestTypeLite
+                {
+                    TestTypeId = s.ServiceId,
+                    TestName = s.ServiceName,
+                    Price = s.Price
+                })
+                .ToListAsync(ct);
+        }
+
+        // Tạo MedicalService (nếu chưa có) cho Record + Service
+        public async Task EnsureMedicalServiceForTestAsync(int recordId, int serviceId, CancellationToken ct = default)
+        {
+            var existed = await _db.MedicalServices
+                .AnyAsync(ms => ms.RecordId == recordId && ms.ServiceId == serviceId, ct);
+
+            if (existed) return;
+
+            var service = await _db.Services
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.ServiceId == serviceId, ct)
+                ?? throw new KeyNotFoundException($"Service {serviceId} không tồn tại");
+
+            var unitPrice = service.Price ?? 0m;
+
+            var medService = new MedicalService
+            {
+                RecordId = recordId,
+                ServiceId = serviceId,
+                Quantity = 1,
+                UnitPrice = unitPrice,
+                TotalPrice = unitPrice,
+                Notes = "Dịch vụ xét nghiệm",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.MedicalServices.Add(medService);
+            await _db.SaveChangesAsync(ct);
+        }
 
         public async Task<PagedResult<TestWorklistItemDto>> GetWorklistAsync(
             DateOnly? visitDate,
@@ -92,14 +141,15 @@ namespace SEP490_BE.DAL.Repositories
             RequiredState requiredState,
             CancellationToken ct = default)
         {
-            // Lấy tất cả TestType
+            // Chỉ các Service là loại xét nghiệm
             var requiredTestTypeIds = await _db.Services
                 .AsNoTracking()
+                .Where(s => s.IsActive && s.Category == "Test")
                 .Select(t => t.ServiceId)
                 .ToListAsync(ct);
 
             if (requiredTestTypeIds.Count == 0)
-                throw new InvalidOperationException("Không tìm thấy TestType nào trong DB. Hãy seed dữ liệu TestType.");
+                throw new InvalidOperationException("Không tìm thấy loại xét nghiệm nào trong DB. Hãy seed dữ liệu Service(Category='Test').");
 
             var q = _db.MedicalRecords
                 .AsNoTracking()
@@ -107,7 +157,6 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(r => r.TestResults)!.ThenInclude(tr => tr.Service)
                 .AsQueryable();
 
-            // ⬅ CHỈ lọc ngày khi có visitDate
             if (visitDate.HasValue)
             {
                 var start = visitDate.Value.ToDateTime(TimeOnly.MinValue);
@@ -116,7 +165,6 @@ namespace SEP490_BE.DAL.Repositories
                                  r.Appointment.AppointmentDate < next);
             }
 
-            // lọc tên (bỏ qua placeholder)
             if (!string.IsNullOrWhiteSpace(patientName) &&
                 !string.Equals(patientName, "patientName", StringComparison.OrdinalIgnoreCase))
             {
@@ -124,7 +172,6 @@ namespace SEP490_BE.DAL.Repositories
                 q = q.Where(r => EF.Functions.Like(r.Appointment.Patient.User.FullName, like));
             }
 
-            // lọc trạng thái
             if (requiredState != RequiredState.All)
             {
                 if (requiredState == RequiredState.Missing)
@@ -177,8 +224,6 @@ namespace SEP490_BE.DAL.Repositories
                 Items = items
             };
         }
-
-     
     }
 }
 

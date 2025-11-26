@@ -16,7 +16,7 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<ShiftSwapRequestResponseDTO> CreateShiftSwapRequestAsync(CreateShiftSwapRequestDTO request)
         {
-            // Validate request
+            // Kiểm tra yêu cầu
             if (!await ValidateShiftSwapRequestAsync(request))
             {
                 throw new ArgumentException("Invalid shift swap request");
@@ -52,13 +52,13 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<bool> ReviewShiftSwapRequestAsync(ReviewShiftSwapRequestDTO review)
         {
-            // Validate status
+            // Kiểm tra trạng thái
             if (review.Status != "Approved" && review.Status != "Rejected")
             {
                 throw new ArgumentException("Status must be 'Approved' or 'Rejected'");
             }
 
-            // Check if request exists and is pending
+            // Kiểm tra yêu cầu có tồn tại và đang chờ duyệt
             var request = await _repository.GetRequestByIdAsync(review.ExchangeId);
             if (request == null)
             {
@@ -100,40 +100,58 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<bool> ValidateShiftSwapRequestAsync(CreateShiftSwapRequestDTO request)
         {
-            // Check if doctors are the same
+            // Kiểm tra xem hai bác sĩ có trùng nhau không
             if (request.Doctor1Id == request.Doctor2Id)
             {
                 return false;
             }
 
-            // Check if doctors have the same specialty
+            // Kiểm tra xem hai bác sĩ có cùng chuyên khoa không
             if (!await _repository.IsSameSpecialtyAsync(request.Doctor1Id, request.Doctor2Id))
             {
                 return false;
             }
 
-            // Check if there's already a pending request for the same doctors and date
+            // Kiểm tra xem đã có yêu cầu đang chờ duyệt cho cùng hai bác sĩ và ngày này chưa
             if (await _repository.HasPendingRequestAsync(request.Doctor1Id, request.Doctor2Id, request.ExchangeDate))
             {
                 return false;
             }
 
-            // Check if both doctors have the shifts they want to swap
+            // Kiểm tra ca của bác sĩ 1 phải thuộc về bác sĩ 1
+            var doctor1Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor1ShiftRefId);
+            if (doctor1Shift == null || doctor1Shift.DoctorId != request.Doctor1Id)
+            {
+                return false;
+            }
+
+            // Kiểm tra ca của bác sĩ 2 phải thuộc về bác sĩ 2
+            var doctor2Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor2ShiftRefId);
+            if (doctor2Shift == null || doctor2Shift.DoctorId != request.Doctor2Id)
+            {
+                return false;
+            }
+
+            // Kiểm tra hai ca phải khác nhau (không thể đổi ca giống nhau)
+            if (doctor1Shift.ShiftId == doctor2Shift.ShiftId)
+            {
+                return false;
+            }
+
+            // Kiểm tra xem cả hai bác sĩ có ca làm việc mà họ muốn đổi không
             if (request.SwapType?.ToLower() == "permanent")
             {
                 // Permanent: Chỉ cho phép đổi ca của tháng sau
                 var nextMonthStart = DateOnly.FromDateTime(new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1));
                 
-                // Check Doctor1ShiftRefId có EffectiveFrom >= đầu tháng sau
-                var doctor1Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor1ShiftRefId);
-                if (doctor1Shift == null || doctor1Shift.EffectiveFrom < nextMonthStart)
+                // Kiểm tra Doctor1ShiftRefId có EffectiveFrom >= đầu tháng sau
+                if (doctor1Shift.EffectiveFrom < nextMonthStart)
                 {
                     return false;
                 }
                 
-                // Check Doctor2ShiftRefId có EffectiveFrom >= đầu tháng sau
-                var doctor2Shift = await _repository.GetDoctorShiftByIdAsync(request.Doctor2ShiftRefId);
-                if (doctor2Shift == null || doctor2Shift.EffectiveFrom < nextMonthStart)
+                // Kiểm tra Doctor2ShiftRefId có EffectiveFrom >= đầu tháng sau
+                if (doctor2Shift.EffectiveFrom < nextMonthStart)
                 {
                     return false;
                 }

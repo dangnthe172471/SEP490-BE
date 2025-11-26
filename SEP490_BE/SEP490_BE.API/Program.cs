@@ -87,7 +87,7 @@ builder.Services.AddDbContext<DiamondHealthContext>(options =>
 
 
 builder.Services.AddScoped<IPayOSService, PayOSService>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>(); 
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 // Tbao tu dong
 builder.Services.AddHostedService<ReminderBackgroundService>();
@@ -159,6 +159,13 @@ builder.Services.AddScoped<IDoctorStatisticsService, DoctorStatisticsService>();
 builder.Services.AddScoped<IDermatologyRecordRepository, DermatologyRecordRepository>();
 builder.Services.AddScoped<IDermatologyRecordService, DermatologyRecordService>();
 builder.Services.AddScoped<IMedicalServiceRepository, MedicalServiceRepository>();
+
+// Service DI
+builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IServiceService, ServiceService>();
+
+// Reappointment Request DI
+builder.Services.AddScoped<IReappointmentRequestService, ReappointmentRequestService>();
 
 // JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");

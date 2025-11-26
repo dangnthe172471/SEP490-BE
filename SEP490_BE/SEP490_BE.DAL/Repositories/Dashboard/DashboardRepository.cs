@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,11 +117,167 @@ namespace SEP490_BE.DAL.Repositories.Dashboard
             };
         }
 
+        public async Task<TestDiagnosticStatsDto> GetTestDiagnosticStatsAsync(
+            DateOnly from,
+            DateOnly to,
+            string groupBy,
+            CancellationToken cancellationToken = default)
+        {
+            var start = from.ToDateTime(TimeOnly.MinValue);
+            var end = to.ToDateTime(new TimeOnly(23, 59, 59));
+            var normalizedGroupBy = string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase) ? "month" : "day";
+
+            var visitQuery = _db.MedicalServices
+                .AsNoTracking()
+                .Where(ms => ms.Record.Appointment.AppointmentDate >= start &&
+                             ms.Record.Appointment.AppointmentDate <= end);
+
+            var visitServices = visitQuery.Where(ms => ms.Service.Category != null && ms.Service.Category != "Test");
+
+            var visitTypeCounts = await visitServices
+                .GroupBy(ms => ms.Service.Category ?? "Khác")
+                .Select(g => new CategoryCountDto
+                {
+                    Label = g.Key,
+                    Count = g.Sum(ms => ms.Quantity)
+                })
+                .OrderByDescending(x => x.Count)
+                .ToListAsync(cancellationToken);
+
+            var topVisitServices = await visitServices
+                .GroupBy(ms => ms.Service.ServiceName)
+                .Select(g => new CategoryCountDto
+                {
+                    Label = g.Key,
+                    Count = g.Sum(ms => ms.Quantity),
+                    Revenue = g.Sum(ms => ms.TotalPrice ?? (ms.Quantity * ms.UnitPrice))
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(5)
+                .ToListAsync(cancellationToken);
+
+            var visitSeries = normalizedGroupBy == "month"
+                ? await visitServices
+                    .Select(ms => new { ms.Record.Appointment.AppointmentDate, ms.Quantity })
+                    .GroupBy(x => new { x.AppointmentDate.Year, x.AppointmentDate.Month })
+                    .Select(g => new
+                    {
+                        Period = $"{g.Key.Year:D4}-{g.Key.Month:D2}",
+                        Count = g.Sum(x => x.Quantity)
+                    })
+                    .ToListAsync(cancellationToken)
+                : await visitServices
+                    .Select(ms => new { Date = ms.Record.Appointment.AppointmentDate.Date, ms.Quantity })
+                    .GroupBy(x => x.Date)
+                    .Select(g => new
+                    {
+                        Period = g.Key.ToString("yyyy-MM-dd"),
+                        Count = g.Sum(x => x.Quantity)
+                    })
+                    .ToListAsync(cancellationToken);
+
+            var visitTotal = await visitServices.SumAsync(ms => (int?)ms.Quantity ?? 0, cancellationToken);
+
+            var testQuery = _db.TestResults
+                .AsNoTracking()
+                .Where(tr => tr.Record.Appointment.AppointmentDate >= start &&
+                             tr.Record.Appointment.AppointmentDate <= end);
+
+            var testTypeCounts = await testQuery
+                .GroupBy(tr => tr.Service.ServiceName)
+                .Select(g => new CategoryCountDto
+                {
+                    Label = g.Key,
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .ToListAsync(cancellationToken);
+
+            var testCategoryCounts = await testQuery
+                .GroupBy(tr => tr.Service.Category ?? "Khác")
+                .Select(g => new CategoryCountDto
+                {
+                    Label = g.Key,
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Count)
+                .ToListAsync(cancellationToken);
+
+            var topTestServices = testTypeCounts.Take(5).ToList();
+
+            var testSeries = normalizedGroupBy == "month"
+                ? await testQuery
+                    .Select(tr => tr.Record.Appointment.AppointmentDate)
+                    .GroupBy(date => new { date.Year, date.Month })
+                    .Select(g => new
+                    {
+                        Period = $"{g.Key.Year:D4}-{g.Key.Month:D2}",
+                        Count = g.Count()
+                    })
+                    .ToListAsync(cancellationToken)
+                : await testQuery
+                    .Select(tr => tr.Record.Appointment.AppointmentDate.Date)
+                    .GroupBy(date => date)
+                    .Select(g => new
+                    {
+                        Period = g.Key.ToString("yyyy-MM-dd"),
+                        Count = g.Count()
+                    })
+                    .ToListAsync(cancellationToken);
+
+            var testTotal = await testQuery.CountAsync(cancellationToken);
+
+            var trendMap = new Dictionary<string, DiagnosticTrendPointDto>(StringComparer.Ordinal);
+            foreach (var item in visitSeries)
+            {
+                if (!trendMap.TryGetValue(item.Period, out var point))
+                {
+                    point = new DiagnosticTrendPointDto { Period = item.Period };
+                    trendMap[item.Period] = point;
+                }
+                point.VisitCount = item.Count;
+            }
+
+            foreach (var item in testSeries)
+            {
+                if (!trendMap.TryGetValue(item.Period, out var point))
+                {
+                    point = new DiagnosticTrendPointDto { Period = item.Period };
+                    trendMap[item.Period] = point;
+                }
+                point.TestCount = item.Count;
+            }
+
+            var orderedTrends = trendMap.Values
+                .OrderBy(p => ParsePeriod(p.Period, normalizedGroupBy))
+                .ToList();
+
+            return new TestDiagnosticStatsDto
+            {
+                TotalVisits = visitTotal,
+                TotalTests = testTotal,
+                VisitTypeCounts = visitTypeCounts,
+                TestTypeCounts = testCategoryCounts,
+                TopVisitServices = topVisitServices,
+                TopTestServices = topTestServices,
+                Trends = orderedTrends
+            };
+        }
+
         private static int GetAge(DateOnly dob, DateOnly today)
         {
             int age = today.Year - dob.Year;
             if (today < dob.AddYears(age)) age--;
             return age;
+        }
+
+        private static DateTime ParsePeriod(string period, string groupBy)
+        {
+            if (string.Equals(groupBy, "month", StringComparison.OrdinalIgnoreCase))
+            {
+                return DateTime.ParseExact($"{period}-01", "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            return DateTime.ParseExact(period, "yyyy-MM-dd", CultureInfo.InvariantCulture);
         }
     }
 }

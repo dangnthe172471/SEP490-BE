@@ -494,7 +494,7 @@ public class AdministratorRepositoryTests
             RoomChat = "room-123",
             CreatedAt = DateTime.UtcNow
         };
-        ctx.ChatLogs.Add(chatLog);
+        //ctx.ChatLogs.Add(chatLog);
         await ctx.SaveChangesAsync();
 
         var repo = new AdministratorRepository(ctx);

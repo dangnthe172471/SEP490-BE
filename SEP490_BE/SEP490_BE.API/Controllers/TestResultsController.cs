@@ -13,7 +13,7 @@ namespace SEP490_BE.API.Controllers
         public TestResultsController(ITestResultService service) => _service = service;
 
         [HttpGet("worklist")]
-                public async Task<ActionResult<PagedResult<TestWorklistItemDto>>> GetWorklist(
+        public async Task<ActionResult<PagedResult<TestWorklistItemDto>>> GetWorklist(
             [FromQuery] string? date,
             [FromQuery] string? patientName,
             [FromQuery] string requiredState = "All",
@@ -36,7 +36,7 @@ namespace SEP490_BE.API.Controllers
 
             var q = new TestWorklistQueryDto
             {
-                VisitDate = visitDate,   // ⬅ GIỮ NULL nếu không nhập ngày
+                VisitDate = visitDate,
                 PatientName = patientName,
                 RequiredState = state,
                 PageNumber = pageNumber,
@@ -46,8 +46,6 @@ namespace SEP490_BE.API.Controllers
             var result = await _service.GetWorklistAsync(q, ct);
             return Ok(result);
         }
-
-
 
         [HttpGet("record/{recordId:int}")]
         public async Task<ActionResult<List<ReadTestResultDto>>> GetByRecordId([FromRoute] int recordId, CancellationToken ct)
@@ -85,11 +83,12 @@ namespace SEP490_BE.API.Controllers
             return NoContent();
         }
 
-        //[HttpGet("types")]
-        //public async Task<ActionResult<List<object>>> GetTypes(CancellationToken ct)
-        //{
-        //    var types = await _service.GetTestTypesAsync(ct);
-        //    return Ok(types.Select(t => new { t.TestTypeId, t.TestName }));
-        //}
+        // API lấy danh sách loại xét nghiệm (Service.Category = "Test")
+        [HttpGet("types")]
+        public async Task<ActionResult<List<TestTypeLite>>> GetTypes(CancellationToken ct)
+        {
+            var types = await _service.GetTestTypesAsync(ct);
+            return Ok(types);
+        }
     }
 }
