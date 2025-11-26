@@ -18,5 +18,6 @@ namespace SEP490_BE.DAL.IRepositories.IPaymentRepositories
         Task<Payment?> GetLastPaymentByRecordIdAsync(int recordId);
         Task<Payment?> GetPaidPaymentAsync(int recordId);
         Task<Payment?> GetByOrderCodeAsync(long orderCode);
+        Task<List<Payment>> GetPaymentsByRangeAsync(DateTime start, DateTime end);
     }
 }

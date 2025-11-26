@@ -5,6 +5,7 @@ using Net.payOS.Types;
 using SEP490_BE.BLL.IServices.IPaymentServices;
 using SEP490_BE.BLL.Services.PaymentServices;
 using SEP490_BE.DAL.DTOs.PaymentDTO;
+using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.API.Controllers.PaymentControllers
 {
@@ -91,6 +92,13 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
         {
             var result = await _paymentService.GetPaymentStatusAsync(recordId);
             return Ok(result);
+        }
+
+        [HttpGet("payments-chart")]
+        public async Task<IActionResult> GetPayments([FromQuery] DateTime start, [FromQuery] DateTime end)
+        {
+            var data = await _paymentService.GetPaymentsForChartAsync(start, end);
+            return Ok(data);
         }
 
     }

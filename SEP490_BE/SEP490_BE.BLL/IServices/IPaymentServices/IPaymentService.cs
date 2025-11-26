@@ -13,5 +13,6 @@ namespace SEP490_BE.BLL.IServices.IPaymentServices
         Task UpdatePaymentStatusAsync(long orderCode, string status);
         Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId);
         Task<PaymentStatusDTO> GetPaymentStatusAsync(int recordId);
+        Task<List<PaymentChartDto>> GetPaymentsForChartAsync(DateTime start, DateTime end);
     }
 }

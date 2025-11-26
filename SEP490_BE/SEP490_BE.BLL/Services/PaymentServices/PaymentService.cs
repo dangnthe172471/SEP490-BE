@@ -148,6 +148,15 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             };
         }
 
+        public async Task<List<PaymentChartDto>> GetPaymentsForChartAsync(DateTime start, DateTime end)
+        {
+            var payments = await _repo.GetPaymentsByRangeAsync(start, end);
 
+            return payments.Select(p => new PaymentChartDto
+            {
+                PaymentDate = (DateTime)p.PaymentDate,
+                Amount = p.Amount
+            }).ToList();
+        }
     }
 }

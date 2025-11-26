@@ -54,6 +54,10 @@ namespace SEP490_BE.DAL.DTOs.PaymentDTO
         public string Status { get; set; } = "";
         public string? CheckoutUrl { get; set; }
     }
-
+    public class PaymentChartDto
+    {
+        public DateTime PaymentDate { get; set; }
+        public decimal Amount { get; set; }
+    }
 
 }

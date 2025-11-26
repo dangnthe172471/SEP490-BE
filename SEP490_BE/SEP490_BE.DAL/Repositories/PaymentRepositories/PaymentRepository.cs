@@ -72,6 +72,13 @@ namespace SEP490_BE.DAL.Repositories.PaymentRepositories
                 .FirstOrDefaultAsync(x => x.OrderCode == orderCode);
         }
 
+        public async Task<List<Payment>> GetPaymentsByRangeAsync(DateTime start, DateTime end)
+        {
+            return await _db.Payments
+                .Where(p => p.PaymentDate >= start && p.PaymentDate <= end && p.Status.Equals("PAID"))
+                .OrderBy(p => p.PaymentDate)
+                .ToListAsync();
+        }
 
     }
 }
