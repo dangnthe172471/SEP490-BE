@@ -45,6 +45,15 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
                 return Ok(allDoctors);
           
         }
+        [HttpGet("doctors2")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllDoctors2([FromQuery] string? keyword)
+        {
+
+            var allDoctors = await _service.GetAllDoctors2Async();
+            return Ok(allDoctors);
+
+        }
 
         // Tìm bác sĩ theo tên
         [HttpGet("doctors/search")]
@@ -204,14 +213,52 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
             try
             {
                 await _service.UpdateDoctorShiftsInRangeAsync(request);
-                return Ok(new { message = " Cập nhật lịch làm việc thành công." });
+
+                var addIds = request.AddDoctorIds ?? new List<int>();
+                var removeIds = request.RemoveDoctorIds ?? new List<int>();
+
+                if (addIds.Any())
+                {
+                    var receiversAdd = await _doctorService.GetUserIdsByDoctorIdsAsync(addIds);
+
+                    if (receiversAdd.Any())
+                    {
+                        var notifyAdd = new CreateNotificationDTO
+                        {
+                            Title = "Lịch làm việc mới",
+                            Content = $"Lịch làm việc của bạn từ {request.FromDate:dd/MM/yyyy} đến {request.ToDate:dd/MM/yyyy} đã được tạo. Vui lòng kiểm tra.",
+                            ReceiverIds = receiversAdd,
+                            Type = "schedule",
+                            CreatedBy = null
+                        };
+
+                        await _notificationService.SendNotificationAsync(notifyAdd);
+                    }
+                }
+
+                if (removeIds.Any())
+                {
+                    var receiversRemove = await _doctorService.GetUserIdsByDoctorIdsAsync(removeIds);
+
+                    if (receiversRemove.Any())
+                    {
+                        var notifyRemove = new CreateNotificationDTO
+                        {
+                            Title = "Lịch làm việc thay đổi",
+                            Content = $"Lịch làm việc của bạn từ {request.FromDate:dd/MM/yyyy} đến {request.ToDate:dd/MM/yyyy} đã thay đổi. Vui lòng kiểm tra.",
+                            ReceiverIds = receiversRemove,
+                            Type = "schedule",
+                            CreatedBy = null
+                        };
+
+                        await _notificationService.SendNotificationAsync(notifyRemove);
+                    }
+                }
+
+                return Ok(new { message = "Cập nhật lịch làm việc thành công." });
             }
             catch (Exception ex)
             {
-                // Ghi log (nếu có ILogger)
-                Console.WriteLine($"[ERROR] UpdateDoctorShiftsInRangeAsync: {ex.Message}");
-
-                // Trả thông tin lỗi cho FE
                 return BadRequest(new
                 {
                     error = ex.Message,
@@ -219,6 +266,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
                 });
             }
         }
+
 
         [HttpGet("check-limit")]
         public async Task<bool> CheckDoctorShiftLimit([FromQuery] int doctorId, [FromQuery] DateOnly date)

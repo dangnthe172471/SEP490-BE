@@ -56,7 +56,20 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                 DoctorID = d.DoctorId,
                 FullName = d.User.FullName,
                 Specialty = d.Specialty,
-                Email = d.User.Email
+                Email = d.User.Email,
+            }).ToList();
+        }
+        public async Task<List<DoctorHomeDTO>> GetAllDoctors2Async()
+        {
+            var doctors = await _doctorRepo.GetAllDoctorsAsync();
+            return doctors.Select(d => new DoctorHomeDTO
+            {
+                DoctorID = d.DoctorId,
+                FullName = d.User.FullName,
+                Specialty = d.Specialty,
+                Experience = d.ExperienceYears.ToString(),
+                Email = d.User.Email,
+                AvatarUrl = d.User.Avatar
             }).ToList();
         }
         // Tìm bsi theo tên
