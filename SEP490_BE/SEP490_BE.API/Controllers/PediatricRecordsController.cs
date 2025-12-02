@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.PediatricRecordsDTO;
@@ -17,16 +18,25 @@ namespace SEP490_BE.API.Controllers
             _service = service;
         }
 
+        [Authorize(Roles = "Patient,Nurse,Doctor")]
         [HttpGet("{recordId:int}")]
         public async Task<ActionResult<ReadPediatricRecordDto>> Get(
             [FromRoute] int recordId,
             CancellationToken ct = default)
         {
             var item = await _service.GetByRecordIdAsync(recordId, ct);
-            if (item == null) return NotFound(new { message = $"PediatricRecord cho RecordId {recordId} không tồn tại" });
+            if (item == null)
+            {
+                return NotFound(new
+                {
+                    message = $"PediatricRecord cho RecordId {recordId} không tồn tại"
+                });
+            }
+
             return Ok(item);
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPost]
         public async Task<ActionResult<ReadPediatricRecordDto>> Create(
             [FromBody] CreatePediatricRecordDto dto,
@@ -49,10 +59,15 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi tạo PediatricRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi tạo PediatricRecord",
+                        detail = ex.Message
+                    });
             }
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPut("{recordId:int}")]
         public async Task<ActionResult<ReadPediatricRecordDto>> Update(
             [FromRoute] int recordId,
@@ -72,10 +87,15 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi cập nhật PediatricRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi cập nhật PediatricRecord",
+                        detail = ex.Message
+                    });
             }
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpDelete("{recordId:int}")]
         public async Task<IActionResult> Delete(
             [FromRoute] int recordId,
@@ -90,7 +110,11 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi xóa PediatricRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi xóa PediatricRecord",
+                        detail = ex.Message
+                    });
             }
         }
     }

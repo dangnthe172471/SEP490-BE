@@ -61,7 +61,8 @@ namespace SEP490_BE.BLL.Services
                 DoctorSpecialty = a.Doctor.Specialty,
                 PatientId = a.PatientId,
                 PatientName = a.Patient.User.FullName,
-                PatientPhone = a.Patient.User.Phone
+                PatientPhone = a.Patient.User.Phone,
+                VisitReason = a.ReasonForVisit
             };
         }
 
