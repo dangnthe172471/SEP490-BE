@@ -19,5 +19,7 @@
         public int PatientId { get; set; }
         public string PatientName { get; set; } = default!;
         public string? PatientPhone { get; set; }
+
+        public string? ReasonForVisit { get; set; }
     }
 }
