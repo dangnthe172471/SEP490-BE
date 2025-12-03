@@ -1,4 +1,5 @@
-﻿using SEP490_BE.DAL.DTOs.PaymentDTO;
+﻿using Microsoft.Extensions.Configuration;
+using SEP490_BE.DAL.DTOs.PaymentDTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,5 +15,6 @@ namespace SEP490_BE.BLL.IServices.IPaymentServices
         Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId);
         Task<PaymentStatusDTO> GetPaymentStatusAsync(int recordId);
         Task<List<PaymentChartDto>> GetPaymentsForChartAsync(DateTime start, DateTime end);
+        QrResultDto GenerateQrLink(GenerateQrDto dto, IConfiguration config);
     }
 }

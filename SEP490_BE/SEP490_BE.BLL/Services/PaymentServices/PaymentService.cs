@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Web;
 namespace SEP490_BE.BLL.Services.PaymentServices
 {
     public class PaymentService : IPaymentService   
@@ -18,11 +18,13 @@ namespace SEP490_BE.BLL.Services.PaymentServices
         private readonly IPaymentRepository _repo;
         private readonly IPayOSService _payOsService;
         private readonly IConfiguration _config;
+        private readonly BankInfoDto _bankInfo;
         public PaymentService(IPaymentRepository repo, IPayOSService payOsService, IConfiguration configuration)
         {
             _repo = repo;
             _payOsService = payOsService;
             _config = configuration;
+            
         }
         public async Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto)
         {
@@ -158,5 +160,27 @@ namespace SEP490_BE.BLL.Services.PaymentServices
                 Amount = p.Amount
             }).ToList();
         }
+        public QrResultDto GenerateQrLink(GenerateQrDto dto, IConfiguration config)
+        {
+            if (dto.Amount <= 0)
+                throw new ArgumentException("Số tiền không hợp lệ");
+
+            // Lấy thông tin ngân hàng trực tiếp từ config
+            var bankInfo = new BankInfoDto
+            {
+                BankId = config["BankInfo:BankId"],
+                AccountNo = config["BankInfo:AccountNo"],
+                AccountName = config["BankInfo:AccountName"],
+                Template = config["BankInfo:Template"]
+            };
+
+            string addInfoEncoded = HttpUtility.UrlEncode((dto.AddInfo ?? "").ToUpper());
+            string accountNameEncoded = HttpUtility.UrlEncode(bankInfo.AccountName.ToUpper());
+
+            string qrUrl = $"https://img.vietqr.io/image/{bankInfo.BankId}-{bankInfo.AccountNo}-{bankInfo.Template}.png?amount={dto.Amount}&addInfo={addInfoEncoded}&accountName={accountNameEncoded}";
+
+            return new QrResultDto { QrUrl = qrUrl };
+        }
+
     }
 }

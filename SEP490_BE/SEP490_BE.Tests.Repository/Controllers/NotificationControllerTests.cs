@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using SEP490_BE.API.Controllers.NotificationControllers;
@@ -58,9 +59,29 @@ namespace SEP490_BE.Tests.Controllers
             Assert.Contains("successfully", ok.Value!.ToString());
             _svc.VerifyAll();
         }
-
         [Fact]
-        public async Task SendNotification_ServiceThrows_ReturnsBadRequest()
+        public async Task SendNotification_InvalidDto_ReturnsBadRequest()
+        {
+        
+            var dto = new CreateNotificationDTO
+            {
+                Title = "", 
+                Content = "Content here",
+                Type = "System",
+                CreatedBy = 1
+            };
+
+            var ctrl = NewController();
+            var result = await ctrl.SendNotification(dto);
+
+      
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Title and content are required", bad.Value!.ToString());
+
+            _svc.Verify(s => s.SendNotificationAsync(It.IsAny<CreateNotificationDTO>()), Times.Never);
+        }
+        [Fact]
+        public async Task SendNotification_ServiceThrows_Returns500()
         {
             // Arrange
             var dto = new CreateNotificationDTO
@@ -73,38 +94,143 @@ namespace SEP490_BE.Tests.Controllers
 
             _svc.Setup(s => s.SendNotificationAsync(dto))
                 .ThrowsAsync(new Exception("Database failure"));
+
             var ctrl = NewController();
 
             // Act
-            IActionResult result;
-            try
-            {
-                result = await ctrl.SendNotification(dto);
-            }
-            catch (Exception ex)
-            {
-                Assert.Contains("Database failure", ex.Message);
-                return;
-            }
+            var result = await ctrl.SendNotification(dto);
 
-            // Assert (if controller has try-catch)
-            var bad = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Database failure", bad.Value!.ToString());
+            // Assert
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+            Assert.Contains("An error occurred while sending notification", obj.Value!.ToString());
             _svc.VerifyAll();
         }
 
         #endregion
+
+        #region GetUserNotifications
+
         [Fact]
-		public async Task GetUserNotifications_ReturnsOkWithPaged()
-		{
-			var paged = new PaginationHelper.PagedResult<NotificationDTO> { Items = new List<NotificationDTO>(), PageNumber = 1, PageSize = 10, TotalCount = 0 };
-			_svc.Setup(s => s.GetNotificationsByUserAsync(5, 1, 10)).ReturnsAsync(paged);
-			var ctrl = NewController();
-			var result = await ctrl.GetUserNotifications(5, 1, 10);
-			var ok = Assert.IsType<OkObjectResult>(result);
-			Assert.Same(paged, ok.Value);
-			_svc.VerifyAll();
-		}
+        public async Task GetUserNotifications_Success_ReturnsOkWithPagedResult()
+        {
+            // Arrange
+            int userId = 7;
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            var items = new List<NotificationDTO>
+    {
+        new NotificationDTO
+        {
+            NotificationId = 1,
+            Title = "N1",
+            Content = "C1",
+            Type = "System",
+            CreatedDate = DateTime.UtcNow,
+            IsRead = false
+        },
+        new NotificationDTO
+        {
+            NotificationId = 2,
+            Title = "N2",
+            Content = "C2",
+            Type = "Reminder",
+            CreatedDate = DateTime.UtcNow,
+            IsRead = true
+        }
+    };
+
+            var paged = new PaginationHelper.PagedResult<NotificationDTO>
+            {
+                Items = items,
+                TotalCount = 2,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            _svc.Setup(s => s.GetNotificationsByUserAsync(userId, pageNumber, pageSize))
+                .ReturnsAsync(paged);
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetUserNotifications(userId, pageNumber, pageSize);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var value = Assert.IsType<PaginationHelper.PagedResult<NotificationDTO>>(ok.Value);
+
+            Assert.Equal(2, value.TotalCount);
+            Assert.Equal(2, value.Items.Count);
+            Assert.Equal("N1", value.Items[0].Title);
+
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task GetUserNotifications_InvalidInput_ReturnsBadRequest()
+        {
+           
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetUserNotifications(0, 1, 10);
+
+            // Assert
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("phải lớn hơn 0", bad.Value!.ToString());
+
+            _svc.Verify(s => s.GetNotificationsByUserAsync(
+                            It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()),
+                        Times.Never);
+        }
+        [Fact]
+        public async Task GetUserNotifications_UserNotFound_ReturnsNotFound()
+        {
+            // Arrange
+            int userId = 99;
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            _svc.Setup(s => s.GetNotificationsByUserAsync(userId, pageNumber, pageSize))
+                .ThrowsAsync(new KeyNotFoundException("User not found"));
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetUserNotifications(userId, pageNumber, pageSize);
+
+            // Assert
+            var notFound = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Contains("Không tìm thấy user", notFound.Value!.ToString());
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task GetUserNotifications_ServiceThrows_Returns500()
+        {
+            // Arrange
+            int userId = 7;
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            _svc.Setup(s => s.GetNotificationsByUserAsync(userId, pageNumber, pageSize))
+                .ThrowsAsync(new Exception("Database failure"));
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetUserNotifications(userId, pageNumber, pageSize);
+
+            // Assert
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+            Assert.Contains("Có lỗi xảy ra khi lấy danh sách thông báo của user",
+                            obj.Value!.ToString());
+            _svc.VerifyAll();
+        }
+
+        #endregion
+
         #region MarkAsRead 
         [Fact]
 		public async Task MarkAsRead_NotFound_WhenFalse()
@@ -127,81 +253,272 @@ namespace SEP490_BE.Tests.Controllers
 			Assert.Contains("đã đọc", ok.Value!.ToString());
 			_svc.VerifyAll();
 		}
-        #endregion
-        #region GetUnreadCount 
         [Fact]
-		public async Task GetUnreadCount_ReturnsOk()
-		{
-			_svc.Setup(s => s.CountUnreadAsync(8)).ReturnsAsync(42);
-			var ctrl = NewController();
-			var result = await ctrl.GetUnreadCount(8);
-			var ok = Assert.IsType<OkObjectResult>(result);
-			Assert.Equal(12, ok.Value);
-			_svc.VerifyAll();
-		}
-
-     
-        [Fact]
-        public async Task GetUnreadCount_WhenServiceThrows_ReturnsBadRequest()
+        public async Task MarkAsRead_BadRequest_WhenIdsInvalid()
         {
-            // Arrange
-            int userId = 99;
-            _svc.Setup(s => s.CountUnreadAsync(userId))
-                        .ThrowsAsync(new Exception("Database connection failed"));
+            var ctrl = NewController();
+
+            var result = await ctrl.MarkAsRead(0, -1);
+
+            var badReq = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("phải > 0", badReq.Value!.ToString());
+
+            
+            _svc.Verify(s => s.MarkAsReadAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
+        [Fact]
+        public async Task MarkAsRead_Returns500_WhenServiceThrows()
+        {
+            _svc.Setup(s => s.MarkAsReadAsync(7, 5))
+                .ThrowsAsync(new Exception("DB error"));
 
             var ctrl = NewController();
 
-            // Act
-            IActionResult result;
-            try
-            {
-                result = await ctrl.GetUnreadCount(userId);
-            }
-            catch (Exception ex)
-            {
-                // Nếu controller chưa có try-catch, test này sẽ fail ở đây → bạn có thể handle trong controller
-                Assert.Contains("Database connection failed", ex.Message);
-                return;
-            }
+            var result = await ctrl.MarkAsRead(7, 5);
 
-            // Nếu controller có try-catch, ta test BadRequest:
-            var bad = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Database connection failed", bad.Value!.ToString());
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+        }
+
+        [Fact]
+        public async Task MarkAsRead_Ok_WhenIdsAtLowerBoundary()
+        {
+           
+            _svc.Setup(s => s.MarkAsReadAsync(1, 1)).ReturnsAsync(true);
+            var ctrl = NewController();
+
+            var result = await ctrl.MarkAsRead(1, 1);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Contains("đánh dấu thông báo là đã đọc", ok.Value!.ToString(), StringComparison.OrdinalIgnoreCase);
+            _svc.VerifyAll();
+        }
+
+        #endregion
+        #region GetUnreadCount 
+        [Fact]
+        public async Task GetUnreadCount_ReturnsOk_WhenUserExists()
+        {
+   
+            _svc.Setup(s => s.CountUnreadAsync(8)).ReturnsAsync(42);
+            var ctrl = NewController();
+
+           
+            var result = await ctrl.GetUnreadCount(8);
+
+        
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(42, ok.Value);   
             _svc.VerifyAll();
         }
         [Fact]
         public async Task GetUnreadCount_WithInvalidUserId_ReturnsBadRequest()
         {
-            _svc.Setup(s => s.CountUnreadAsync(0))
-                .ThrowsAsync(new ArgumentException("Invalid userId"));
+            var ctrl = NewController();
+
+            var result = await ctrl.GetUnreadCount(0);
+
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("userId phải lớn hơn 0", bad.Value!.ToString());
+
+            // Service KHÔNG được gọi
+            _svc.Verify(s => s.CountUnreadAsync(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task GetUnreadCount_ReturnsNotFound_WhenUserDoesNotExist()
+        {
+          
+            int userId = 99;
+            _svc.Setup(s => s.CountUnreadAsync(userId))
+                .ThrowsAsync(new KeyNotFoundException("User not found"));
+
+            var ctrl = NewController();
+            var result = await ctrl.GetUnreadCount(userId);
+
+      
+            var notFound = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Contains("Không tìm thấy user", notFound.Value!.ToString());
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task GetUnreadCount_Returns500_WhenServiceThrows()
+        {
+            _svc.Setup(s => s.CountUnreadAsync(8))
+                .ThrowsAsync(new Exception("Database connection failed"));
 
             var ctrl = NewController();
 
-            await Assert.ThrowsAsync<ArgumentException>(() => ctrl.GetUnreadCount(0));
+            var result = await ctrl.GetUnreadCount(8);
+
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+            Assert.Contains("Có lỗi xảy ra khi lấy số lượng thông báo chưa đọc", obj.Value!.ToString());
+            _svc.VerifyAll();
+        }
+
+
+
+        #endregion
+        #region MarkAllAsRead
+
+        [Fact]
+        public async Task MarkAllAsRead_Success_ReturnsNoContent()
+        {
+            _svc.Setup(s => s.MarkAllAsReadAsync(7))
+                .Returns(Task.CompletedTask);
+
+            var ctrl = NewController();
+
+            
+            var result = await ctrl.MarkAllAsRead(7);
+
+            Assert.IsType<NoContentResult>(result);
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task MarkAllAsRead_InvalidUserId_ReturnsBadRequest()
+        {
+            
+            var ctrl = NewController();
+
+            var result = await ctrl.MarkAllAsRead(0);
+
+            
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("userId must be greater than 0", bad.Value!.ToString());
+
+           
+            _svc.Verify(s => s.MarkAllAsReadAsync(It.IsAny<int>()), Times.Never);
+        }
+        [Fact]
+        public async Task MarkAllAsRead_UserNotFound_ReturnsNotFound()
+        {
+           
+            _svc.Setup(s => s.MarkAllAsReadAsync(99))
+                .ThrowsAsync(new KeyNotFoundException("User not found"));
+
+            var ctrl = NewController();
+
+           
+            var result = await ctrl.MarkAllAsRead(99);
+
+          
+            var notFound = Assert.IsType<NotFoundObjectResult>(result);
+            Assert.Contains("Không tìm thấy user", notFound.Value!.ToString());
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task MarkAllAsRead_ServiceThrows_Returns500()
+        {
+            
+            _svc.Setup(s => s.MarkAllAsReadAsync(7))
+                .ThrowsAsync(new Exception("Database failure"));
+
+            var ctrl = NewController();
+
+          
+            var result = await ctrl.MarkAllAsRead(7);
+
+            
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+            Assert.Contains("Có lỗi xảy ra khi cập nhật trạng thái thông báo", obj.Value!.ToString());
             _svc.VerifyAll();
         }
 
         #endregion
-        [Fact]
-		public async Task MarkAllAsRead_NoContent()
-		{
-			_svc.Setup(s => s.MarkAllAsReadAsync(9)).Returns(Task.CompletedTask);
-			var ctrl = NewController();
-			var result = await ctrl.MarkAllAsRead(9);
-			Assert.IsType<NoContentResult>(result);
-			_svc.VerifyAll();
-		}
 
-		[Fact]
-		public async Task GetAllNotifications_ReturnsOkWithPaged()
-		{
-			var paged = new PaginationHelper.PagedResult<NotificationDTO> { Items = new List<NotificationDTO>(), PageNumber = 3, PageSize = 15, TotalCount = 0 };
-			_svc.Setup(s => s.GetListNotificationsAsync(3, 15)).ReturnsAsync(paged);
-			var ctrl = NewController();
-			var result = await ctrl.GetAllNotifications(3, 15);
-			var ok = Assert.IsType<OkObjectResult>(result);
-			Assert.Same(paged, ok.Value);
-			_svc.VerifyAll();
-		}
-	}
+        #region GetAllNotifications
+        [Fact]
+        public async Task GetAllNotifications_Success_ReturnsOkWithPagedResult()
+        {
+            // Arrange
+            int pageNumber = 1;
+            int pageSize = 10;
+
+            var items = new List<NotificationDTO>
+    {
+        new NotificationDTO
+        {
+            NotificationId = 1,
+            Title = "N1",
+            Content = "Content 1",
+            Type = "System",
+            CreatedDate = DateTime.UtcNow,
+            IsRead = false
+        },
+        new NotificationDTO
+        {
+            NotificationId = 2,
+            Title = "N2",
+            Content = "Content 2",
+            Type = "Reminder",
+            CreatedDate = DateTime.UtcNow,
+            IsRead = true
+        }
+    };
+
+            var paged = new PaginationHelper.PagedResult<NotificationDTO>
+            {
+                Items = items,
+                TotalCount = 2,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            _svc.Setup(s => s.GetListNotificationsAsync(pageNumber, pageSize))
+                .ReturnsAsync(paged);
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetAllNotifications(pageNumber, pageSize);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var value = Assert.IsType<PaginationHelper.PagedResult<NotificationDTO>>(ok.Value);
+
+            Assert.Equal(2, value.TotalCount);
+            Assert.Equal(pageNumber, value.PageNumber);
+            Assert.Equal(pageSize, value.PageSize);
+            Assert.Equal(2, value.Items.Count);
+            Assert.Equal("N1", value.Items[0].Title);
+
+            _svc.VerifyAll();
+        }
+        [Fact]
+        public async Task GetAllNotifications_InvalidPaging_ReturnsBadRequest()
+        {
+            var ctrl = NewController();
+
+            // pageNumber <= 0
+            var result = await ctrl.GetAllNotifications(0, 10);
+
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("pageNumber và pageSize phải lớn hơn 0", bad.Value!.ToString());
+
+            _svc.Verify(s => s.GetListNotificationsAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        }
+        [Fact]
+        public async Task GetAllNotifications_ServiceThrows_Returns500()
+        {
+            _svc.Setup(s => s.GetListNotificationsAsync(1, 10))
+                .ThrowsAsync(new Exception("Database failure"));
+
+            var ctrl = NewController();
+
+            var result = await ctrl.GetAllNotifications(1, 10);
+
+            var obj = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status500InternalServerError, obj.StatusCode);
+            Assert.Contains("Có lỗi xảy ra khi lấy danh sách thông báo", obj.Value!.ToString());
+
+            _svc.VerifyAll();
+        }
+
+
+
+        #endregion
+    }
 }

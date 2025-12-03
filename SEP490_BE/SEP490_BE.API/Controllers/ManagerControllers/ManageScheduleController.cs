@@ -32,18 +32,33 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
         [AllowAnonymous]
         public async Task<IActionResult> GetAllShifts()
         {
-            var data = await _service.GetAllShiftsAsync();
+            try
+            {
+                var data = await _service.GetAllShiftsAsync();
             return Ok(data);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách ca làm việc." });
+            }
         }
         // All bsi
         [HttpGet("doctors")]
         [AllowAnonymous]
         public async Task<IActionResult> GetAllDoctors([FromQuery] string? keyword)
         {
-          
+            try
+            {
+
                 var allDoctors = await _service.GetAllDoctorsAsync();
                 return Ok(allDoctors);
-          
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách bác sĩ." });
+            }
         }
         [HttpGet("doctors2")]
         [AllowAnonymous]
@@ -73,70 +88,85 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
         [HttpGet("check-conflict")]
         public async Task<IActionResult> CheckDoctorAvailability(int doctorId, int shiftId, DateOnly from, DateOnly to)
         {
-            bool conflict = await _service.CheckDoctorConflictAsync(doctorId, shiftId, from, to);
+            if (doctorId <= 0 || shiftId <= 0)
+            {
+                return BadRequest(new { message = "doctorId và shiftId phải lớn hơn 0." });
+            }
+
+            if (from > to)
+            {
+                return BadRequest(new { message = "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc." });
+            }
+
+            try
+            {
+                bool conflict = await _service.CheckDoctorConflictAsync(doctorId, shiftId, from, to);
             return Ok(new
             {
                 isAvailable = !conflict,
                 message = conflict ? "Bác sĩ đã có lịch trùng." : "Bác sĩ rảnh trong thời gian này."
             });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi kiểm tra lịch làm việc của bác sĩ." });
+            }
         }
 
         //  Tạo lịch làm việc + gui thong bao tu dong
         [HttpPost("create-schedule")]
         public async Task<IActionResult> CreateSchedule([FromBody] CreateScheduleRequestDTO dto)
         {
-         
-      
-            var created = await _service.CreateScheduleAsync(dto);
+            if (dto == null)
+            {
+                return BadRequest(new { message = "Dữ liệu lịch làm việc là bắt buộc." });
+            }
+
+            if (dto.EffectiveFrom > dto.EffectiveTo)
+            {
+                return BadRequest(new { message = "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc." });
+            }
+
+            try
+            {
+
+                var created = await _service.CreateScheduleAsync(dto);
             var listDoctorIds = dto.Shifts
        .SelectMany(s => s.DoctorIds ?? new List<int>()) 
        .Distinct()
        .ToList();
-           var listReceive =  await _doctorService.GetUserIdsByDoctorIdsAsync(listDoctorIds);
+                if (listDoctorIds.Any())
+                {
+                    var listReceive = await _doctorService.GetUserIdsByDoctorIdsAsync(listDoctorIds);
 
-            CreateNotificationDTO dtoNotify = new CreateNotificationDTO
-            {
-               Title = "Lịch làm việc mới",
-                Content = $"Lịch làm việc của bạn từ {dto.EffectiveFrom} đến {dto.EffectiveTo} đã được tạo. Vui lòng kiểm tra lịch làm việc của bạn.",
-                ReceiverIds = listReceive,
-                Type = "Schedule",
-                CreatedBy = null,
-            };
-            await _notificationService.SendNotificationAsync(dtoNotify);
+                    CreateNotificationDTO dtoNotify = new CreateNotificationDTO
+                    {
+                        Title = "Lịch làm việc mới",
+                        Content = $"Lịch làm việc của bạn từ {dto.EffectiveFrom} đến {dto.EffectiveTo} đã được tạo. Vui lòng kiểm tra lịch làm việc của bạn.",
+                        ReceiverIds = listReceive,
+                        Type = "Schedule",
+                        CreatedBy = null,
+                    };
+                    await _notificationService.SendNotificationAsync(dtoNotify);
+                }
             return Ok(new { message = $"Tạo lịch làm việc thành công." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi tạo lịch làm việc." });
+            }
         }
 
-        // Xem lịch làm việc --
-        [HttpGet("schedules")]
-        public async Task<IActionResult> GetSchedules(DateOnly from, DateOnly to)
-        {
-            var list = await _service.GetSchedulesAsync(from, to);
-            var result = list.Select(x => new
-            {
-                x.DoctorShiftId,
-                Doctor = x.Doctor.User.FullName,
-                Shift = x.Shift.ShiftType,
-                Time = $"{x.Shift.StartTime:HH:mm} - {x.Shift.EndTime:HH:mm}",
-                Date = x.EffectiveFrom.ToString("yyyy-MM-dd"),
-                x.Status
-            });
-            return Ok(result);
-        }
+  
         [HttpGet("get-all-doctor-schedule")]
         public async Task<IActionResult> GetAll([FromQuery] DateOnly startDate, [FromQuery] DateOnly endDate)
         {
             var result = await _doctorService.GetAllDoctorSchedulesByRangeAsync(startDate, endDate);
             return Ok(result);
         }
-        //--
-        [HttpGet("allSchedules")]
-        public async Task<ActionResult<PagedResult<WorkScheduleDto>>> GetAllSchedule(
-         [FromQuery] int pageNumber = 1,
-         [FromQuery] int pageSize = 10)
-        {
-            var result = await _service.GetAllSchedulesAsync(pageNumber, pageSize);
-            return Ok(result);
-        }
+       
 
         // xem lịch  theo range
         [HttpGet("getScheduleByRange")]
@@ -174,28 +204,7 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
             }
         }
 
-        //  Thêm / xóa bác sĩ  của lịch theo ngày --
-        [HttpPut("updateScheduleByDate")]
-        public async Task<IActionResult> UpdateByDate([FromBody] UpdateWorkScheduleByDateRequest request)
-        {
-            try
-            {
-                await _service.UpdateWorkScheduleByDateAsync(request);
-                return Ok(new { message = "Cập nhật lịch theo ngày thành công!" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        // Cập nhật lịch theo ID lịch (DoctorShiftId) --
-        [HttpPut("updateScheduleByScheduleId")]
-        public async Task<IActionResult> UpdateById([FromBody] UpdateWorkScheduleByIdRequest request)
-        {
-            await _service.UpdateWorkScheduleByIdAsync(request);
-            return Ok(new { message = "Cập nhật lịch thành công!" });
-        }
+  
 
         //   Danh sach lịch  groupby EffectiveFrom, EffectiveTo, Shift
         [HttpGet("listGroupSchedule")]
@@ -203,8 +212,21 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
       [FromQuery] int pageNumber = 1,
       [FromQuery] int pageSize = 10)
         {
-            var data = await _service.GetGroupedWorkScheduleListAsync(pageNumber, pageSize);
+            if (pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest(new { message = "pageNumber và pageSize phải lớn hơn 0." });
+            }
+
+            try
+            {
+                var data = await _service.GetGroupedWorkScheduleListAsync(pageNumber, pageSize);
             return Ok(data);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách lịch làm việc nhóm." });
+            }
         }
 
         [HttpPut("update-doctor-shifts-range")]
@@ -294,8 +316,21 @@ namespace SEP490_BE.API.Controllers.ManagerControllers
     [FromQuery] DateOnly startDate,
     [FromQuery] DateOnly endDate)
         {
-            var result = await _service.GetDoctorsWithoutScheduleAsync(startDate, endDate);
+            if (startDate > endDate)
+            {
+                return BadRequest(new { message = "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc." });
+            }
+
+            try
+            {
+                var result = await _service.GetDoctorsWithoutScheduleAsync(startDate, endDate);
             return Ok(result);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách bác sĩ chưa có lịch làm việc." });
+            }
         }
 
     }

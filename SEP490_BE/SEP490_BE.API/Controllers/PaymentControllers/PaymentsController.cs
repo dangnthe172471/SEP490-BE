@@ -27,7 +27,15 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
         [HttpGet("record/{recordId}")]
         public async Task<IActionResult> GetPaymentDetails(int recordId)
         {
+            if (recordId <= 0)
+            {
+                return BadRequest("recordId must be greater than 0");
+            }
             var items = await _paymentService.GetServicesForRecordAsync(recordId);
+            if (items == null || !items.Any())
+            {
+                return NotFound($"No services found for record {recordId}");
+            }
             var total = items.Sum(x => x.Total);
 
             return Ok(new { recordId, totalAmount = total, items });
@@ -36,10 +44,28 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
         [HttpPost("create")]
         public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequestDTO dto)
         {
+            if (dto == null)
+            {
+                return BadRequest(new { message = "Dữ liệu thanh toán là bắt buộc." });
+            }
+
+            if (dto.MedicalRecordId <= 0)
+            {
+                return BadRequest(new { message = "Mã hồ sơ y tế không hợp lệ." });
+            }
+
+            if (dto.Amount <= 0)
+            {
+                return BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0." });
+            }
             try
             {
                 var result = await _paymentService.CreatePaymentAsync(dto);
-
+                if (result == null)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new { message = "Không tạo được giao dịch thanh toán." });
+                }
                 return Ok(new
                 {
                     paymentId = result.PaymentId,
@@ -55,7 +81,7 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
         //[HttpPost("callback")]
         //public async Task<IActionResult> Callback([FromBody] PayOSCallbackDTO callback)
         //{
-        //    await _paymentService.UpdatePaymentStatusAsync(callback);
+        //    await _paymentService.UpdatePaymentStatusAsync(callback);             
         //    return Ok();
         //}
         [HttpPost("callback")]
@@ -87,18 +113,54 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
             return Ok();
         }
 
-        [HttpGet("status/{recordId}")]
+        [HttpGet("status/{recordId}")]          
         public async Task<IActionResult> GetPaymentStatus(int recordId)
         {
-            var result = await _paymentService.GetPaymentStatusAsync(recordId);
-            return Ok(result);
+            if (recordId <= 0)
+            {
+                return BadRequest(new { message = "RecordId must be greater than 0." });
+            }
+
+            try
+            {
+                var result = await _paymentService.GetPaymentStatusAsync(recordId);
+                if (result == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy thông tin thanh toán cho hồ sơ này." });
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Có lỗi xảy ra khi lấy trạng thái thanh toán.",
+                    detail = ex.Message
+                });
+            }
         }
 
         [HttpGet("payments-chart")]
         public async Task<IActionResult> GetPayments([FromQuery] DateTime start, [FromQuery] DateTime end)
         {
-            var data = await _paymentService.GetPaymentsForChartAsync(start, end);
+            if (start > end)
+            {
+                return BadRequest(new { message = "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc." });
+            }
+
+            try
+            {
+                var data = await _paymentService.GetPaymentsForChartAsync(start, end);
             return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Có lỗi xảy ra khi lấy dữ liệu thanh toán cho biểu đồ.",
+                    detail = ex.Message
+                });
+            }
         }
 
     }
