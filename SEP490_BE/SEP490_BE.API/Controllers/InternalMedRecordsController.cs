@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
-using SEP490_BE.BLL.Services;
 using SEP490_BE.DAL.DTOs.InternalMedRecordsDTO;
 using System.Net;
 
@@ -18,16 +18,25 @@ namespace SEP490_BE.API.Controllers
             _service = service;
         }
 
+        [Authorize(Roles = "Patient,Nurse,Doctor")]
         [HttpGet("{recordId:int}")]
         public async Task<ActionResult<ReadInternalMedRecordDto>> Get(
             [FromRoute] int recordId,
             CancellationToken ct = default)
         {
             var item = await _service.GetByRecordIdAsync(recordId, ct);
-            if (item == null) return NotFound(new { message = $"InternalMedRecord cho RecordId {recordId} không tồn tại" });
+            if (item == null)
+            {
+                return NotFound(new
+                {
+                    message = $"InternalMedRecord cho RecordId {recordId} không tồn tại"
+                });
+            }
+
             return Ok(item);
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPost]
         public async Task<ActionResult<ReadInternalMedRecordDto>> Create(
             [FromBody] CreateInternalMedRecordDto dto,
@@ -50,10 +59,15 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi tạo InternalMedRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi tạo InternalMedRecord",
+                        detail = ex.Message
+                    });
             }
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPut("{recordId:int}")]
         public async Task<ActionResult<ReadInternalMedRecordDto>> Update(
             [FromRoute] int recordId,
@@ -73,10 +87,15 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi cập nhật InternalMedRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi cập nhật InternalMedRecord",
+                        detail = ex.Message
+                    });
             }
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpDelete("{recordId:int}")]
         public async Task<IActionResult> Delete(
             [FromRoute] int recordId,
@@ -91,12 +110,19 @@ namespace SEP490_BE.API.Controllers
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
-                    new { message = "Lỗi khi xóa InternalMedRecord", detail = ex.Message });
+                    new
+                    {
+                        message = "Lỗi khi xóa InternalMedRecord",
+                        detail = ex.Message
+                    });
             }
         }
 
+        [Authorize(Roles = "Patient,Nurse,Doctor")]
         [HttpGet("status/{recordId:int}")]
-        public async Task<ActionResult<object>> GetSpecialtyStatus([FromRoute] int recordId, CancellationToken ct = default)
+        public async Task<ActionResult<object>> GetSpecialtyStatus(
+            [FromRoute] int recordId,
+            CancellationToken ct = default)
         {
             try
             {
@@ -116,7 +142,5 @@ namespace SEP490_BE.API.Controllers
                 return NotFound(new { message = ex.Message });
             }
         }
-
-
     }
 }

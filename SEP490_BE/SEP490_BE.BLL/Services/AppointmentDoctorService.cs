@@ -32,7 +32,8 @@ namespace SEP490_BE.BLL.Services
                 Status = a.Status,
                 PatientId = a.PatientId,
                 PatientName = a.Patient.User.FullName,
-                PatientPhone = a.Patient.User.Phone
+                PatientPhone = a.Patient.User.Phone,
+                ReasonForVisit = a.ReasonForVisit,
             }).ToList();
         }
 
@@ -61,7 +62,8 @@ namespace SEP490_BE.BLL.Services
                 DoctorSpecialty = a.Doctor.Specialty,
                 PatientId = a.PatientId,
                 PatientName = a.Patient.User.FullName,
-                PatientPhone = a.Patient.User.Phone
+                PatientPhone = a.Patient.User.Phone,
+                VisitReason = a.ReasonForVisit
             };
         }
 

@@ -13,16 +13,23 @@ namespace SEP490_BE.API.Controllers
     public class PrescriptionsDoctorController : ControllerBase
     {
         private readonly IPrescriptionDoctorService _service;
-        public PrescriptionsDoctorController(IPrescriptionDoctorService service) => _service = service;
 
-        [HttpPost]
+        public PrescriptionsDoctorController(IPrescriptionDoctorService service)
+        {
+            _service = service;
+        }
+
         [Authorize(Roles = "Doctor")]
+        [HttpPost]
         public async Task<ActionResult<PrescriptionSummaryDto>> Create(
             [FromBody] CreatePrescriptionRequest req,
-            CancellationToken ct)
+            CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized();
+            }
 
             try
             {
@@ -31,19 +38,19 @@ namespace SEP490_BE.API.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                // Ví dụ: Bác sĩ không phụ trách hồ sơ này
                 return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                // Bao gồm: đơn không có dòng, thuốc không hợp lệ, thuốc Stopped, ...
                 return BadRequest(new { message = ex.Message });
             }
         }
 
+        [Authorize(Roles = "Doctor,Patient")]
         [HttpGet("{id:int}")]
-        [Authorize(Roles = "Doctor,Patient,Receptionist,Pharmacy Provider")]
-        public async Task<ActionResult<PrescriptionSummaryDto>> GetById(int id, CancellationToken ct)
+        public async Task<ActionResult<PrescriptionSummaryDto>> GetById(
+            int id,
+            CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             _ = int.TryParse(userIdStr, out var userId);
@@ -52,8 +59,8 @@ namespace SEP490_BE.API.Controllers
             return result is null ? NotFound() : Ok(result);
         }
 
-        [HttpGet("records")]
         [Authorize(Roles = "Doctor")]
+        [HttpGet("records")]
         public async Task<ActionResult<PagedResult<RecordListItemDto>>> GetRecordsForDoctor(
             [FromQuery] DateOnly? from,
             [FromQuery] DateOnly? to,
@@ -63,7 +70,10 @@ namespace SEP490_BE.API.Controllers
             CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized();
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized();
+            }
 
             pageSize = pageSize <= 0 ? 20 : Math.Min(pageSize, 100);
 

@@ -40,7 +40,6 @@ namespace SEP490_BE.BLL.Services
 
             var created = await _repo.CreateAsync(entity, ct);
 
-            // Giao cho repository xử lý tạo MedicalService
             await _repo.EnsureMedicalServiceForTestAsync(dto.RecordId, dto.TestTypeId, ct);
 
             var read = await _repo.GetByIdAsync(created.TestResultId, ct)
@@ -95,6 +94,5 @@ namespace SEP490_BE.BLL.Services
 
         public Task<List<TestTypeLite>> GetTestTypesAsync(CancellationToken ct = default)
             => _repo.GetTestTypesAsync(ct);
-
     }
 }

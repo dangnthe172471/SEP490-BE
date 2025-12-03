@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.TestReDTO;
@@ -12,6 +13,7 @@ namespace SEP490_BE.API.Controllers
         private readonly ITestResultService _service;
         public TestResultsController(ITestResultService service) => _service = service;
 
+        [Authorize(Roles = "Nurse")]
         [HttpGet("worklist")]
         public async Task<ActionResult<PagedResult<TestWorklistItemDto>>> GetWorklist(
             [FromQuery] string? date,
@@ -32,7 +34,9 @@ namespace SEP490_BE.API.Controllers
 
             DateOnly? visitDate = null;
             if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
+            {
                 visitDate = d;
+            }
 
             var q = new TestWorklistQueryDto
             {
@@ -47,45 +51,61 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = "Doctor,Patient,Nurse")]
         [HttpGet("record/{recordId:int}")]
-        public async Task<ActionResult<List<ReadTestResultDto>>> GetByRecordId([FromRoute] int recordId, CancellationToken ct)
+        public async Task<ActionResult<List<ReadTestResultDto>>> GetByRecordId(
+            [FromRoute] int recordId,
+            CancellationToken ct = default)
         {
             var items = await _service.GetByRecordIdAsync(recordId, ct);
             return Ok(items);
         }
 
+        [Authorize(Roles = "Doctor,Patient,Nurse")]
         [HttpGet("{id:int}")]
-        public async Task<ActionResult<ReadTestResultDto>> GetById([FromRoute] int id, CancellationToken ct)
+        public async Task<ActionResult<ReadTestResultDto>> GetById(
+            [FromRoute] int id,
+            CancellationToken ct = default)
         {
             var item = await _service.GetByIdAsync(id, ct);
             if (item == null) return NotFound();
             return Ok(item);
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPost]
-        public async Task<ActionResult<ReadTestResultDto>> Create([FromBody] CreateTestResultDto dto, CancellationToken ct)
+        public async Task<ActionResult<ReadTestResultDto>> Create(
+            [FromBody] CreateTestResultDto dto,
+            CancellationToken ct = default)
         {
             var created = await _service.CreateAsync(dto, ct);
             return CreatedAtAction(nameof(GetById), new { id = created.TestResultId }, created);
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<ReadTestResultDto>> Update([FromRoute] int id, [FromBody] UpdateTestResultDto dto, CancellationToken ct)
+        public async Task<ActionResult<ReadTestResultDto>> Update(
+            [FromRoute] int id,
+            [FromBody] UpdateTestResultDto dto,
+            CancellationToken ct = default)
         {
             var updated = await _service.UpdateAsync(id, dto, ct);
             return Ok(updated);
         }
 
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
+        public async Task<IActionResult> Delete(
+            [FromRoute] int id,
+            CancellationToken ct = default)
         {
             await _service.DeleteAsync(id, ct);
             return NoContent();
         }
 
-        // API lấy danh sách loại xét nghiệm (Service.Category = "Test")
+        [Authorize(Roles = "Doctor,Nurse")]
         [HttpGet("types")]
-        public async Task<ActionResult<List<TestTypeLite>>> GetTypes(CancellationToken ct)
+        public async Task<ActionResult<List<TestTypeLite>>> GetTypes(CancellationToken ct = default)
         {
             var types = await _service.GetTestTypesAsync(ct);
             return Ok(types);

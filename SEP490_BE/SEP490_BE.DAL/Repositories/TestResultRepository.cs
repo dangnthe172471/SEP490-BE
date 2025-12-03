@@ -78,7 +78,6 @@ namespace SEP490_BE.DAL.Repositories
         public Task<bool> RecordExistsAsync(int recordId, CancellationToken ct = default)
             => _db.MedicalRecords.AnyAsync(r => r.RecordId == recordId, ct);
 
-        // CHỈ chấp nhận Service là loại xét nghiệm (Category = "Test")
         public Task<bool> TestTypeExistsAsync(int testTypeId, CancellationToken ct = default)
             => _db.Services.AnyAsync(
                 t => t.ServiceId == testTypeId && t.Category == "Test" && t.IsActive,
@@ -87,7 +86,6 @@ namespace SEP490_BE.DAL.Repositories
         public Task<TestResult?> GetEntityByIdAsync(int id, CancellationToken ct = default)
             => _db.TestResults.FirstOrDefaultAsync(x => x.TestResultId == id, ct);
 
-        // Lấy danh sách loại xét nghiệm từ bảng Service
         public async Task<List<TestTypeLite>> GetTestTypesAsync(CancellationToken ct = default)
         {
             return await _db.Services
@@ -103,7 +101,6 @@ namespace SEP490_BE.DAL.Repositories
                 .ToListAsync(ct);
         }
 
-        // Tạo MedicalService (nếu chưa có) cho Record + Service
         public async Task EnsureMedicalServiceForTestAsync(int recordId, int serviceId, CancellationToken ct = default)
         {
             var existed = await _db.MedicalServices
@@ -141,7 +138,6 @@ namespace SEP490_BE.DAL.Repositories
             RequiredState requiredState,
             CancellationToken ct = default)
         {
-            // Chỉ các Service là loại xét nghiệm
             var requiredTestTypeIds = await _db.Services
                 .AsNoTracking()
                 .Where(s => s.IsActive && s.Category == "Test")
@@ -179,7 +175,7 @@ namespace SEP490_BE.DAL.Repositories
                     q = q.Where(r => !requiredTestTypeIds
                         .All(reqId => r.TestResults.Any(tr => tr.ServiceId == reqId)));
                 }
-                else // Complete
+                else
                 {
                     q = q.Where(r => requiredTestTypeIds
                         .All(reqId => r.TestResults.Any(tr => tr.ServiceId == reqId)));
@@ -189,7 +185,8 @@ namespace SEP490_BE.DAL.Repositories
             var total = await q.CountAsync(ct);
 
             var items = await q
-                .OrderBy(r => r.Appointment.AppointmentDate)
+                .OrderByDescending(r => r.Appointment.AppointmentDate)
+                .ThenByDescending(r => r.RecordId)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(r => new TestWorklistItemDto
@@ -226,6 +223,3 @@ namespace SEP490_BE.DAL.Repositories
         }
     }
 }
-
-
-

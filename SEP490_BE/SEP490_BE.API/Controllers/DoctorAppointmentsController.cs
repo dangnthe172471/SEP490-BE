@@ -17,7 +17,7 @@ namespace SEP490_BE.API.Controllers
             _service = service;
         }
 
-        //[Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "Doctor")]
         [HttpGet("appointments")]
         public async Task<IActionResult> GetMyAppointments(CancellationToken ct = default)
         {
@@ -30,7 +30,7 @@ namespace SEP490_BE.API.Controllers
             return Ok(result);
         }
 
-        //[Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "Doctor")]
         [HttpGet("appointments/{appointmentId:int}")]
         public async Task<IActionResult> GetMyAppointmentDetail(
             int appointmentId,
