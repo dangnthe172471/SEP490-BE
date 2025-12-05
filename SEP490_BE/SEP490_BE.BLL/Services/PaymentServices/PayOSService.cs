@@ -43,6 +43,22 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             var result = await _payOS.createPaymentLink(paymentData);
             return result.checkoutUrl;
         }
+        public async Task<string> CreatePaymentReceptionistAsync(long orderCode, CreatePaymentRequestDTO dto, List<ItemData> items)
+        {
+            dto.Description = Shorten(dto.Description);
+
+            var paymentData = new PaymentData(
+                orderCode,
+                dto.Amount,
+                dto.Description,
+                items,
+                _config["PayOS:CancelReceptionistUrl"],
+                _config["PayOS:ReturnReceptionistUrl"]
+            );
+
+            var result = await _payOS.createPaymentLink(paymentData);
+            return result.checkoutUrl;
+        }
 
         private string Shorten(string input)
         {

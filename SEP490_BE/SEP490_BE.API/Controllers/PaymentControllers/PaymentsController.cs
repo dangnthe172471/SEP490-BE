@@ -60,7 +60,43 @@ namespace SEP490_BE.API.Controllers.PaymentControllers
             }
             try
             {
-                var result = await _paymentService.CreatePaymentAsync(dto);
+                var result = await _paymentService.CreatePaymentAsync(dto, true);
+                if (result == null)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new { message = "Không tạo được giao dịch thanh toán." });
+                }
+                return Ok(new
+                {
+                    paymentId = result.PaymentId,
+                    checkoutUrl = result.CheckoutUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpPost("createReceptionPayment")]
+        public async Task<IActionResult> CreatePaymentReception([FromBody] CreatePaymentRequestDTO dto)
+        {
+            if (dto == null)
+            {
+                return BadRequest(new { message = "Dữ liệu thanh toán là bắt buộc." });
+            }
+
+            if (dto.MedicalRecordId <= 0)
+            {
+                return BadRequest(new { message = "Mã hồ sơ y tế không hợp lệ." });
+            }
+
+            if (dto.Amount <= 0)
+            {
+                return BadRequest(new { message = "Số tiền thanh toán phải lớn hơn 0." });
+            }
+            try
+            {
+                var result = await _paymentService.CreatePaymentAsync(dto, false);
                 if (result == null)
                 {
                     return StatusCode(StatusCodes.Status500InternalServerError,

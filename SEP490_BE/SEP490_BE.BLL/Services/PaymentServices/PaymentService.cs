@@ -26,7 +26,7 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             _config = configuration;
             
         }
-        public async Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto)
+        public async Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto, bool role)
         {
             
             var exists = await _repo.ExistsMedicalRecord(dto.MedicalRecordId);
@@ -75,7 +75,7 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             var items = dto.Items.Select(i => new ItemData(i.Name, i.Quantity, i.Price)).ToList();
 
             // Tạo link PayOS
-            string checkoutUrl = await _payOsService.CreatePaymentLinkAsync(paymentId, dto, items);
+            string checkoutUrl = role? await _payOsService.CreatePaymentLinkAsync(paymentId, dto, items) : await _payOsService.CreatePaymentReceptionistAsync(paymentId, dto, items);
 
           
             newPayment.OrderCode = paymentId;

@@ -108,7 +108,7 @@ namespace SEP490_BE.Tests.Controllers
             bad.Value!.ToString().Should().Contain("Dữ liệu thanh toán là bắt buộc");
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>()),
+                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>(),true),
                 Times.Never);
         }
         [Fact]
@@ -131,7 +131,7 @@ namespace SEP490_BE.Tests.Controllers
             bad.Value!.ToString().Should().Contain("Mã hồ sơ y tế không hợp lệ");
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>()),
+                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>(), true),
                 Times.Never);
         }
         [Fact]
@@ -154,7 +154,7 @@ namespace SEP490_BE.Tests.Controllers
             bad.Value!.ToString().Should().Contain("Số tiền thanh toán phải lớn hơn 0");
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>()),
+                s => s.CreatePaymentAsync(It.IsAny<CreatePaymentRequestDTO>(), true),
                 Times.Never);
         }
         [Fact]
@@ -179,7 +179,7 @@ namespace SEP490_BE.Tests.Controllers
             };
 
             _paymentServiceMock
-                .Setup(s => s.CreatePaymentAsync(dto))
+                .Setup(s => s.CreatePaymentAsync(dto, true))
                 .ReturnsAsync(serviceResult);
 
             // Act
@@ -195,7 +195,7 @@ namespace SEP490_BE.Tests.Controllers
             });
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(dto),
+                s => s.CreatePaymentAsync(dto, true),
                 Times.Once);
         }
         [Fact]
@@ -211,7 +211,7 @@ namespace SEP490_BE.Tests.Controllers
             };
 
             _paymentServiceMock
-                .Setup(s => s.CreatePaymentAsync(dto))
+                .Setup(s => s.CreatePaymentAsync(dto, true))
                 .ReturnsAsync((CreatePaymentResponseDTO?)null);
 
             // Act
@@ -223,7 +223,7 @@ namespace SEP490_BE.Tests.Controllers
             obj.Value!.ToString().Should().Contain("Không tạo được giao dịch thanh toán");
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(dto),
+                s => s.CreatePaymentAsync(dto, true),
                 Times.Once);
         }
         [Fact]
@@ -239,7 +239,7 @@ namespace SEP490_BE.Tests.Controllers
             };
 
             _paymentServiceMock
-                .Setup(s => s.CreatePaymentAsync(dto))
+                .Setup(s => s.CreatePaymentAsync(dto, true))
                 .ThrowsAsync(new Exception("Payment creation failed"));
 
             // Act
@@ -250,7 +250,7 @@ namespace SEP490_BE.Tests.Controllers
             bad.Value!.ToString().Should().Contain("Payment creation failed");
 
             _paymentServiceMock.Verify(
-                s => s.CreatePaymentAsync(dto),
+                s => s.CreatePaymentAsync(dto, true),
                 Times.Once);
         }
 
