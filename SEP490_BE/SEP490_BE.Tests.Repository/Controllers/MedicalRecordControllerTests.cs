@@ -76,6 +76,70 @@ public class MedicalRecordControllerTests
         ok.StatusCode.Should().Be(200);
         _svc.VerifyAll();
     }
+
+    [Fact]
+    public async Task GetAllByDoctor_ReturnsOk_WithRecords()
+    {
+        var records = new List<MedicalRecord>
+        {
+            new MedicalRecord { RecordId = 1, AppointmentId = 1, Diagnosis = "Diagnosis 1" },
+            new MedicalRecord { RecordId = 2, AppointmentId = 2, Diagnosis = "Diagnosis 2" }
+        };
+        _svc.Setup(s => s.GetAllByDoctorAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(records);
+
+        var res = await NewCtrl().GetAllByDoctorAsync(1, default);
+        var ok = Assert.IsType<OkObjectResult>(res.Result);
+        ok.StatusCode.Should().Be(200);
+        var result = ok.Value as List<MedicalRecord>;
+        result.Should().HaveCount(2);
+        _svc.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetAllByDoctor_ReturnsOk_WhenNoRecords()
+    {
+        _svc.Setup(s => s.GetAllByDoctorAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<MedicalRecord>());
+
+        var res = await NewCtrl().GetAllByDoctorAsync(1, default);
+        var ok = Assert.IsType<OkObjectResult>(res.Result);
+        ok.StatusCode.Should().Be(200);
+        var result = ok.Value as string;
+        result.Should().Be("Không có hồ sơ bệnh án");
+        _svc.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetById_ReturnsOk_WhenFound()
+    {
+        var record = new MedicalRecord { RecordId = 1, AppointmentId = 1, Diagnosis = "Test Diagnosis" };
+        _svc.Setup(s => s.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(record);
+
+        var res = await NewCtrl().GetByIdAsync(1, default);
+        var ok = Assert.IsType<OkObjectResult>(res.Result);
+        ok.StatusCode.Should().Be(200);
+        var result = ok.Value as MedicalRecord;
+        result.Should().NotBeNull();
+        result!.Diagnosis.Should().Be("Test Diagnosis");
+        _svc.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Update_ReturnsOk_WhenUpdated()
+    {
+        var dto = new UpdateMedicalRecordDto { Diagnosis = "Updated Diagnosis", DoctorNotes = "Updated Notes" };
+        var updated = new MedicalRecord { RecordId = 5, Diagnosis = "Updated Diagnosis", DoctorNotes = "Updated Notes" };
+        _svc.Setup(s => s.UpdateAsync(5, dto, It.IsAny<CancellationToken>())).ReturnsAsync(updated);
+
+        var res = await NewCtrl().UpdateAsync(5, dto, default);
+        var ok = Assert.IsType<OkObjectResult>(res.Result);
+        ok.StatusCode.Should().Be(200);
+        var result = ok.Value as MedicalRecord;
+        result!.Diagnosis.Should().Be("Updated Diagnosis");
+        _svc.VerifyAll();
+    }
 }
 
 
