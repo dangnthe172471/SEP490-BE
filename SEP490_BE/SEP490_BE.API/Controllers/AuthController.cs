@@ -103,7 +103,7 @@ namespace SEP490_BE.API.Controllers
 						<p>Cảm ơn bạn đã đăng ký tài khoản tại Diamond Health!</p>
 						<p>Mã OTP để xác thực email của bạn là:</p>
 						<h2 style='color:#007bff; font-size: 24px;'>{otpCode}</h2>
-						<p>Mã này sẽ hết hạn sau 5 phút.</p>
+						<p>Mã này sẽ hết hạn sau 2 phút.</p>
 						<p>Vui lòng nhập mã này để xác thực email của bạn.</p>
 						<p>Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>";
 
@@ -308,7 +308,7 @@ namespace SEP490_BE.API.Controllers
             var otpCode = new Random().Next(100000, 999999).ToString();
 
             // Lưu mã OTP tạm (hoặc dùng Redis/Database)
-            await _resetTokenService.StoreOtpAsync(request.Email, otpCode, TimeSpan.FromMinutes(5));
+            await _resetTokenService.StoreOtpAsync(request.Email, otpCode, TimeSpan.FromMinutes(2));
 
             // Gửi email
             string subject = "Xác thực đặt lại mật khẩu";
@@ -316,7 +316,7 @@ namespace SEP490_BE.API.Controllers
         <h3>Xin chào {user.FullName},</h3>
         <p>Mã OTP để đặt lại mật khẩu của bạn là:</p>
         <h2 style='color:#007bff'>{otpCode}</h2>
-        <p>Mã này sẽ hết hạn sau 5 phút.</p>";
+        <p>Mã này sẽ hết hạn sau 2 phút.</p>";
 
             await _emailService.SendEmailAsync(request.Email, subject, body, cancellationToken);
 
@@ -390,7 +390,7 @@ namespace SEP490_BE.API.Controllers
                 <h3>Xin chào {user.FullName},</h3>
                 <p>Mã OTP để xác thực email của bạn là:</p>
                 <h2 style='color:#007bff; font-size: 24px;'>{otpCode}</h2>
-                <p>Mã này sẽ hết hạn sau 5 phút.</p>
+                <p>Mã này sẽ hết hạn sau 2 phút.</p>
                 <p>Vui lòng nhập mã này để xác thực email của bạn.</p>";
 
                 await _emailService.SendEmailAsync(request.Email, subject, body, cancellationToken);
