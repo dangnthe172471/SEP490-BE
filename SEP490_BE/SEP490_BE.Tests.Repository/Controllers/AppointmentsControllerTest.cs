@@ -6,6 +6,7 @@ using SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment;
 using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
+using SEP490_BE.DAL.Models;
 using System.Security.Claims;
 
 namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
@@ -368,9 +369,207 @@ namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
 
         #region GetMyAppointments (Patient) Tests
 
-        
+        [Fact]
+        public async Task GetMyAppointments_ReturnsOk_WhenPatientExists()
+        {
+            var patient = new Patient { PatientId = 10, UserId = 1 };
+            _repo.Setup(r => r.GetPatientByUserIdAsync(1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(patient);
+            _svc.Setup(s => s.GetByPatientIdAsync(10, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<AppointmentDto>
+                {
+                    new() { AppointmentId = 1, PatientName = "John Doe" }
+                });
 
-        
+            var ctrl = MakeControllerWithUser(1, "Patient");
+
+            var result = await ctrl.GetMyAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyAppointments_ReturnsNotFound_WhenPatientNotExists()
+        {
+            _repo.Setup(r => r.GetPatientByUserIdAsync(999, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Patient?)null);
+
+            var ctrl = MakeControllerWithUser(999, "Patient");
+
+            var result = await ctrl.GetMyAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        #endregion
+
+        #region GetMyDoctorAppointments Tests
+
+        [Fact]
+        public async Task GetMyDoctorAppointments_ReturnsOk_WhenDoctorExists()
+        {
+            var user = new User { UserId = 1, FullName = "Dr. Smith" };
+            var doctor = new DoctorInfoDto { DoctorId = 5, UserId = 1 };
+            _svc.Setup(s => s.GetUserByIdAsync(1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+            _svc.Setup(s => s.GetDoctorByIdAsync(1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(doctor);
+            _svc.Setup(s => s.GetByDoctorIdAsync(5, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<AppointmentDto>
+                {
+                    new() { AppointmentId = 1, DoctorName = "Dr. Smith" }
+                });
+
+            var ctrl = MakeControllerWithUser(1, "Doctor");
+
+            var result = await ctrl.GetMyDoctorAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyDoctorAppointments_ReturnsNotFound_WhenDoctorNotExists()
+        {
+            var user = new User { UserId = 1 };
+            _svc.Setup(s => s.GetUserByIdAsync(1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+            _svc.Setup(s => s.GetDoctorByIdAsync(1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((DoctorInfoDto?)null);
+
+            var ctrl = MakeControllerWithUser(1, "Doctor");
+
+            var result = await ctrl.GetMyDoctorAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        #endregion
+
+        #region GetMyReceptionistAppointments Tests
+
+        [Fact]
+        public async Task GetMyReceptionistAppointments_ReturnsOk_WhenReceptionistExists()
+        {
+            var user = new User { UserId = 2, FullName = "Receptionist" };
+            var receptionist = new ReceptionistInfoDto { ReceptionistId = 20, UserId = 2 };
+            _svc.Setup(s => s.GetUserByIdAsync(2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+            _svc.Setup(s => s.GetReceptionistByUserIdAsync(2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(receptionist);
+            _svc.Setup(s => s.GetByReceptionistIdAsync(20, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<AppointmentDto>
+                {
+                    new() { AppointmentId = 1, ReceptionistName = "Receptionist" }
+                });
+
+            var ctrl = MakeControllerWithUser(2, "Receptionist");
+
+            var result = await ctrl.GetMyReceptionistAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyReceptionistAppointments_ReturnsNotFound_WhenReceptionistNotExists()
+        {
+            var user = new User { UserId = 2 };
+            _svc.Setup(s => s.GetUserByIdAsync(2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(user);
+            _svc.Setup(s => s.GetReceptionistByUserIdAsync(2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((ReceptionistInfoDto?)null);
+
+            var ctrl = MakeControllerWithUser(2, "Receptionist");
+
+            var result = await ctrl.GetMyReceptionistAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<NotFoundObjectResult>();
+        }
+
+        #endregion
+
+        #region GetTimeSeries Tests
+
+        [Fact]
+        public async Task GetTimeSeries_ReturnsOk_WithData()
+        {
+            var timeSeriesData = new List<AppointmentTimeSeriesPointDto>
+            {
+                new() { Period = "2024-01-01", Count = 10 },
+                new() { Period = "2024-01-02", Count = 15 }
+            };
+            _svc.Setup(s => s.GetAppointmentTimeSeriesAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), "day", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(timeSeriesData);
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetTimeSeries(null, null, "day", CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+            var okResult = result.Result as OkObjectResult;
+            var data = okResult!.Value as List<AppointmentTimeSeriesPointDto>;
+            data.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task GetTimeSeries_ReturnsOk_WithDateRange()
+        {
+            var from = DateTime.Now.AddDays(-30);
+            var to = DateTime.Now;
+            var timeSeriesData = new List<AppointmentTimeSeriesPointDto>();
+            _svc.Setup(s => s.GetAppointmentTimeSeriesAsync(
+                from, to, "month", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(timeSeriesData);
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetTimeSeries(from, to, "month", CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+        }
+
+        #endregion
+
+        #region GetHeatmap Tests
+
+        [Fact]
+        public async Task GetHeatmap_ReturnsOk_WithData()
+        {
+            var heatmapData = new List<AppointmentHeatmapPointDto>
+            {
+                new() { Weekday = 1, Hour = 9, Count = 5 },
+                new() { Weekday = 1, Hour = 10, Count = 8 }
+            };
+            _svc.Setup(s => s.GetAppointmentHeatmapAsync(
+                It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(heatmapData);
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetHeatmap(null, null, CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+            var okResult = result.Result as OkObjectResult;
+            var data = okResult!.Value as List<AppointmentHeatmapPointDto>;
+            data.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task GetHeatmap_ReturnsOk_WithDateRange()
+        {
+            var from = DateTime.Now.AddDays(-30);
+            var to = DateTime.Now;
+            var heatmapData = new List<AppointmentHeatmapPointDto>();
+            _svc.Setup(s => s.GetAppointmentHeatmapAsync(
+                from, to, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(heatmapData);
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetHeatmap(from, to, CancellationToken.None);
+
+            result.Result.Should().BeOfType<OkObjectResult>();
+        }
 
         #endregion
 
