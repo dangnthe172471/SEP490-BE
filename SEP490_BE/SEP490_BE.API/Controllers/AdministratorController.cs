@@ -13,10 +13,12 @@ namespace SEP490_BE.API.Controllers
     public class AdministratorController : ControllerBase
     {
         private readonly IAdministratorService _administratorService;
+        private readonly IRoomService _roomService;
 
-        public AdministratorController(IAdministratorService administratorService)
+        public AdministratorController(IAdministratorService administratorService, IRoomService roomService)
         {
             _administratorService = administratorService;
+            _roomService = roomService;
         }
 
         [HttpGet]
@@ -53,6 +55,21 @@ namespace SEP490_BE.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Đã xảy ra lỗi khi tạo người dùng.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("list-rooms")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<ActionResult<IEnumerable<RoomDto>>> GetAllRooms(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var rooms = await _roomService.GetAllAsync(cancellationToken);
+                return Ok(rooms);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi khi lấy danh sách phòng.", error = ex.Message });
             }
         }
 

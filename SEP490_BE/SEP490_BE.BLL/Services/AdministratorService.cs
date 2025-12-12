@@ -73,6 +73,32 @@ namespace SEP490_BE.BLL.Services
                 };
             }
 
+            // Create Doctor record if user is a doctor
+            if (request.RoleId == 4) // 4 is Doctor role based on DB.sql
+            {
+                if (string.IsNullOrWhiteSpace(request.Specialty))
+                {
+                    throw new InvalidOperationException("Chuyên khoa là bắt buộc cho bác sĩ.");
+                }
+                if (!request.ExperienceYears.HasValue || request.ExperienceYears.Value < 0)
+                {
+                    throw new InvalidOperationException("Số năm kinh nghiệm phải là số dương.");
+                }
+                if (!request.RoomId.HasValue || request.RoomId.Value <= 0)
+                {
+                    throw new InvalidOperationException("Phòng làm việc là bắt buộc cho bác sĩ.");
+                }
+
+                var maxDoctorId = await _administratorRepository.GetMaxDoctorIdAsync(cancellationToken);
+                user.Doctor = new SEP490_BE.DAL.Models.Doctor
+                {
+                    DoctorId = maxDoctorId + 1,
+                    Specialty = request.Specialty,
+                    ExperienceYears = request.ExperienceYears.Value,
+                    RoomId = request.RoomId.Value
+                };
+            }
+
             await _administratorRepository.AddAsync(user, cancellationToken);
 
             // Return the created user

@@ -47,9 +47,11 @@ namespace SEP490_BE.DAL.Repositories
 
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
-            // Temporarily remove Patient from user to avoid adding it with UserId = 0
+            // Temporarily remove Patient and Doctor from user to avoid adding them with UserId = 0
             var patient = user.Patient;
+            var doctor = user.Doctor;
             user.Patient = null;
+            user.Doctor = null;
 
             await _dbContext.Users.AddAsync(user, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -63,6 +65,17 @@ namespace SEP490_BE.DAL.Repositories
 
                 // Restore the relationship
                 user.Patient = patient;
+            }
+
+            // Handle Doctor record similarly
+            if (doctor != null)
+            {
+                doctor.UserId = user.UserId;
+                await _dbContext.Doctors.AddAsync(doctor, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                // Restore the relationship
+                user.Doctor = doctor;
             }
         }
 
@@ -96,6 +109,13 @@ namespace SEP490_BE.DAL.Repositories
         {
             var maxId = await _dbContext.Patients
                 .MaxAsync(p => (int?)p.PatientId, cancellationToken);
+            return maxId ?? 0;
+        }
+
+        public async Task<int> GetMaxDoctorIdAsync(CancellationToken cancellationToken = default)
+        {
+            var maxId = await _dbContext.Doctors
+                .MaxAsync(d => (int?)d.DoctorId, cancellationToken);
             return maxId ?? 0;
         }
 
