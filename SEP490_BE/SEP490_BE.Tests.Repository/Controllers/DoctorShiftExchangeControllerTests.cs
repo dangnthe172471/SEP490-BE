@@ -7,7 +7,6 @@ using SEP490_BE.DAL.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace SEP490_BE.Tests.Controllers;
@@ -259,6 +258,172 @@ public class DoctorShiftExchangeControllerTests
 
         // Assert
         AssertOkResult(result);
+        _service.VerifyAll();
+    }
+
+    #endregion
+
+    #region GetRequestById Tests
+
+    [Fact]
+    public async Task GetRequestById_ReturnsOk_WhenFound()
+    {
+        // Arrange
+        var exchangeId = 1;
+        var expectedRequest = new ShiftSwapRequestResponseDTO
+        {
+            ExchangeId = exchangeId,
+            Doctor1Id = 1,
+            Doctor1Name = "Bác sĩ A",
+            Doctor2Id = 2,
+            Doctor2Name = "Bác sĩ B",
+            Status = "Pending"
+        };
+
+        _service.Setup(s => s.GetRequestByIdAsync(exchangeId))
+            .ReturnsAsync(expectedRequest);
+
+        // Act
+        var result = await NewController().GetRequestById(exchangeId);
+
+        // Assert
+        AssertOkResult(result);
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetRequestById_ReturnsNotFound_WhenNotFound()
+    {
+        // Arrange
+        var exchangeId = 999;
+        _service.Setup(s => s.GetRequestByIdAsync(exchangeId))
+            .ReturnsAsync((ShiftSwapRequestResponseDTO?)null);
+
+        // Act
+        var result = await NewController().GetRequestById(exchangeId);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        notFound.StatusCode.Should().Be(404);
+        _service.VerifyAll();
+    }
+
+    #endregion
+
+    #region ReviewShiftSwapRequest Tests
+
+    [Fact]
+    public async Task ReviewShiftSwapRequest_ReturnsOk_WhenApproved()
+    {
+        // Arrange
+        var review = new ReviewShiftSwapRequestDTO
+        {
+            ExchangeId = 1,
+            Status = "Approved"
+        };
+
+        _service.Setup(s => s.ReviewShiftSwapRequestAsync(review))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await NewController().ReviewShiftSwapRequest(review);
+
+        // Assert
+        AssertOkResult(result, expectedMessage: "Yêu cầu đổi ca đã được chấp nhận");
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ReviewShiftSwapRequest_ReturnsOk_WhenRejected()
+    {
+        // Arrange
+        var review = new ReviewShiftSwapRequestDTO
+        {
+            ExchangeId = 1,
+            Status = "Rejected"
+        };
+
+        _service.Setup(s => s.ReviewShiftSwapRequestAsync(review))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await NewController().ReviewShiftSwapRequest(review);
+
+        // Assert
+        AssertOkResult(result, expectedMessage: "Yêu cầu đổi ca đã bị từ chối");
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ReviewShiftSwapRequest_ReturnsBadRequest_WhenUpdateFails()
+    {
+        // Arrange
+        var review = new ReviewShiftSwapRequestDTO
+        {
+            ExchangeId = 1,
+            Status = "Approved"
+        };
+
+        _service.Setup(s => s.ReviewShiftSwapRequestAsync(review))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await NewController().ReviewShiftSwapRequest(review);
+
+        // Assert
+        AssertBadRequestResult(result, expectedMessage: "Không thể cập nhật trạng thái yêu cầu");
+        _service.VerifyAll();
+    }
+
+    #endregion
+
+    #region ValidateShiftSwapRequest Tests
+
+    [Fact]
+    public async Task ValidateShiftSwapRequest_ReturnsOk_WhenValid()
+    {
+        // Arrange
+        var request = CreateValidRequest();
+        _service.Setup(s => s.ValidateShiftSwapRequestAsync(request))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await NewController().ValidateShiftSwapRequest(request);
+
+        // Assert
+        AssertOkResult(result, expectedMessage: "Yêu cầu hợp lệ");
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ValidateShiftSwapRequest_ReturnsBadRequest_WhenInvalid()
+    {
+        // Arrange
+        var request = CreateInvalidRequest();
+        _service.Setup(s => s.ValidateShiftSwapRequestAsync(request))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await NewController().ValidateShiftSwapRequest(request);
+
+        // Assert
+        AssertBadRequestResult(result, expectedMessage: "Yêu cầu đổi ca không hợp lệ");
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task ValidateShiftSwapRequest_ReturnsBadRequest_WhenException()
+    {
+        // Arrange
+        var request = CreateValidRequest();
+        _service.Setup(s => s.ValidateShiftSwapRequestAsync(request))
+            .ThrowsAsync(new Exception("Validation error"));
+
+        // Act
+        var result = await NewController().ValidateShiftSwapRequest(request);
+
+        // Assert
+        AssertBadRequestResult(result, expectedMessage: "Validation error");
         _service.VerifyAll();
     }
 

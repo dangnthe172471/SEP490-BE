@@ -4,8 +4,10 @@ using Moq;
 using SEP490_BE.API.Controllers.NotificationControllers;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.BLL.IServices.IManagerService;
+using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 using SEP490_BE.DAL.Helpers;
+using System.Linq;
 
 namespace SEP490_BE.Tests.Controllers
 {
@@ -60,6 +62,18 @@ namespace SEP490_BE.Tests.Controllers
             _svc.VerifyAll();
         }
         [Fact]
+        public async Task SendNotification_NullDto_ReturnsBadRequest()
+        {
+            var ctrl = NewController();
+            var result = await ctrl.SendNotification(null!);
+
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Notification data is required", bad.Value!.ToString());
+
+            _svc.Verify(s => s.SendNotificationAsync(It.IsAny<CreateNotificationDTO>()), Times.Never);
+        }
+
+        [Fact]
         public async Task SendNotification_InvalidDto_ReturnsBadRequest()
         {
         
@@ -77,6 +91,26 @@ namespace SEP490_BE.Tests.Controllers
       
             var bad = Assert.IsType<BadRequestObjectResult>(result);
             Assert.Contains("Title and content are required", bad.Value!.ToString());
+
+            _svc.Verify(s => s.SendNotificationAsync(It.IsAny<CreateNotificationDTO>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task SendNotification_InvalidCreatedBy_ReturnsBadRequest()
+        {
+            var dto = new CreateNotificationDTO
+            {
+                Title = "Test",
+                Content = "Content",
+                Type = "System",
+                CreatedBy = 0
+            };
+
+            var ctrl = NewController();
+            var result = await ctrl.SendNotification(dto);
+
+            var bad = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("CreatedBy must be greater than 0", bad.Value!.ToString());
 
             _svc.Verify(s => s.SendNotificationAsync(It.IsAny<CreateNotificationDTO>()), Times.Never);
         }
@@ -519,6 +553,54 @@ namespace SEP490_BE.Tests.Controllers
 
 
 
+        #endregion
+
+        #region GetAll (all-user endpoint)
+
+        [Fact]
+        public async Task GetAll_ReturnsOk_WithUsers()
+        {
+            // Arrange
+            var users = new List<UserDto>
+            {
+                new UserDto { UserId = 1, FullName = "User 1", Phone = "0909123456" },
+                new UserDto { UserId = 2, FullName = "User 2", Phone = "0909123457" }
+            };
+            _adminSvc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync((IEnumerable<UserDto>)users);
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetAll(CancellationToken.None);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var value = Assert.IsAssignableFrom<IEnumerable<UserDto>>(ok.Value);
+            var list = value.ToList();
+            Assert.Equal(2, list.Count);
+            Assert.Equal("User 1", list[0].FullName);
+            _adminSvc.VerifyAll();
+        }
+
+        [Fact]
+        public async Task GetAll_ReturnsOk_WithEmptyList()
+        {
+            // Arrange
+            _adminSvc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync((IEnumerable<UserDto>)new List<UserDto>());
+
+            var ctrl = NewController();
+
+            // Act
+            var result = await ctrl.GetAll(CancellationToken.None);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var value = Assert.IsAssignableFrom<IEnumerable<UserDto>>(ok.Value);
+            Assert.Empty(value);
+            _adminSvc.VerifyAll();
+        }
         #endregion
     }
 }

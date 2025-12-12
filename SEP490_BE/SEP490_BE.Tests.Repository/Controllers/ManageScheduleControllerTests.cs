@@ -6,10 +6,12 @@ using SEP490_BE.BLL.IServices.IDoctorServices;
 using SEP490_BE.BLL.IServices.IManagerService;
 using SEP490_BE.BLL.IServices.IManagerServices;
 using SEP490_BE.DAL.DTOs;
+using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.ManagerDTO.ManagerSchedule;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
 using SEP490_BE.DAL.Helpers;
 using SEP490_BE.DAL.Models;
+using System.Security.Claims;
 
 namespace SEP490_BE.Tests.Controllers
 {
@@ -29,6 +31,18 @@ namespace SEP490_BE.Tests.Controllers
                 _notificationServiceMock.Object,
                 _doctorScheduleServiceMock.Object
             );
+
+            // Set up ControllerContext with "Clinic Manager" role for authorization
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, "1"),
+                new Claim(ClaimTypes.Role, "Clinic Manager")
+            };
+            var user = new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = user }
+            };
         }
 
         #region GetAllShifts
@@ -1035,6 +1049,226 @@ namespace SEP490_BE.Tests.Controllers
             _serviceMock.Verify(
                 s => s.GetDoctorsWithoutScheduleAsync(start, end),
                 Times.Once);
+        }
+
+        #endregion
+
+        #region GetAllDoctors2
+        [Fact]
+        public async Task GetAllDoctors2_ReturnsOk_WithDoctorList()
+        {
+            // Arrange
+            var doctors = new List<DoctorHomeDTO>
+            {
+                new DoctorHomeDTO { DoctorID = 1, FullName = "Dr. A", Specialty = "Cardiology" },
+                new DoctorHomeDTO { DoctorID = 2, FullName = "Dr. B", Specialty = "Dermatology" }
+            };
+
+            _serviceMock
+                .Setup(s => s.GetAllDoctors2Async())
+                .ReturnsAsync(doctors);
+
+            // Act
+            var result = await _controller.GetAllDoctors2(null);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsType<List<DoctorHomeDTO>>(ok.Value);
+            Assert.Equal(2, data.Count);
+            Assert.Equal("Dr. A", data[0].FullName);
+
+            _serviceMock.VerifyAll();
+        }
+
+        #endregion
+
+        #region GetAll (get-all-doctor-schedule)
+        [Fact]
+        public async Task GetAll_WithValidDateRange_ReturnsOk()
+        {
+            // Arrange
+            var startDate = new DateOnly(2025, 1, 1);
+            var endDate = new DateOnly(2025, 1, 31);
+            var schedules = new List<DoctorActiveScheduleRangeDto>
+            {
+                new DoctorActiveScheduleRangeDto
+                {
+                    DoctorId = 1,
+                    DoctorName = "Dr. A",
+                    Specialty = "Cardiology",
+                    RoomName = "Room 1",
+                    Date = startDate,
+                    ShiftType = "Morning",
+                    StartTime = new TimeOnly(8, 0),
+                    EndTime = new TimeOnly(12, 0)
+                }
+            };
+
+            _doctorScheduleServiceMock
+                .Setup(s => s.GetAllDoctorSchedulesByRangeAsync(startDate, endDate))
+                .ReturnsAsync(schedules);
+
+            // Act
+            var result = await _controller.GetAll(startDate, endDate);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var data = Assert.IsType<List<DoctorActiveScheduleRangeDto>>(ok.Value);
+            Assert.Single(data);
+            _doctorScheduleServiceMock.VerifyAll();
+        }
+
+        #endregion
+
+        #region GetByRange (getScheduleByRange)
+        [Fact]
+        public async Task GetByRange_WithValidDateRange_ReturnsOk()
+        {
+            // Arrange
+            var start = new DateOnly(2025, 1, 1);
+            var end = new DateOnly(2025, 1, 31);
+            var schedules = new List<DailyWorkScheduleViewDto>
+            {
+                new DailyWorkScheduleViewDto
+                {
+                    Date = start,
+                    Shifts = new List<ShiftResponseDto>()
+                }
+            };
+
+            _serviceMock
+                .Setup(s => s.GetWorkScheduleByDateRangeAsync(start, end))
+                .ReturnsAsync(schedules);
+
+            // Act
+            var result = await _controller.GetByRange(start, end);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var data = Assert.IsType<List<DailyWorkScheduleViewDto>>(ok.Value);
+            Assert.Single(data);
+            _serviceMock.VerifyAll();
+        }
+
+        #endregion
+
+        #region GetByDate (getScheduleByDate)
+        [Fact]
+        public async Task GetByDate_WithValidDate_ReturnsOk()
+        {
+            // Arrange
+            var date = new DateOnly(2025, 1, 15);
+            var pageNumber = 1;
+            var pageSize = 10;
+            var pagedResult = new PaginationHelper.PagedResult<DailyWorkScheduleDto>
+            {
+                Items = new List<DailyWorkScheduleDto>
+                {
+                    new DailyWorkScheduleDto
+                    {
+                        Date = date,
+                        Shifts = new List<WorkScheduleDto>()
+                    }
+                },
+                TotalCount = 1,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            _serviceMock
+                .Setup(s => s.GetWorkSchedulesByDateAsync(date, pageNumber, pageSize))
+                .ReturnsAsync(pagedResult);
+
+            // Act
+            var result = await _controller.GetByDate(date, pageNumber, pageSize);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var data = Assert.IsType<PaginationHelper.PagedResult<DailyWorkScheduleDto>>(ok.Value);
+            Assert.Equal(1, data.TotalCount);
+            _serviceMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task GetByDate_WithNullDate_ReturnsOk()
+        {
+            // Arrange
+            DateOnly? date = null;
+            var pageNumber = 1;
+            var pageSize = 10;
+            var pagedResult = new PaginationHelper.PagedResult<DailyWorkScheduleDto>
+            {
+                Items = new List<DailyWorkScheduleDto>(),
+                TotalCount = 0,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            _serviceMock
+                .Setup(s => s.GetWorkSchedulesByDateAsync(date, pageNumber, pageSize))
+                .ReturnsAsync(pagedResult);
+
+            // Act
+            var result = await _controller.GetByDate(date, pageNumber, pageSize);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var data = Assert.IsType<PaginationHelper.PagedResult<DailyWorkScheduleDto>>(ok.Value);
+            Assert.Equal(0, data.TotalCount);
+            _serviceMock.VerifyAll();
+        }
+
+        #endregion
+
+        #region GetMonthlyWorkSummary
+        [Fact]
+        public async Task GetMonthlyWorkSummary_WithValidYearMonth_ReturnsOk()
+        {
+            // Arrange
+            var year = 2025;
+            var month = 1;
+            var summaries = new List<DailySummaryDto>
+            {
+                new DailySummaryDto
+                {
+                    Date = new DateOnly(2025, 1, 1),
+                    ShiftCount = 5,
+                    DoctorCount = 3
+                }
+            };
+
+            _serviceMock
+                .Setup(s => s.GetMonthlyWorkSummaryAsync(year, month))
+                .ReturnsAsync(summaries);
+
+            // Act
+            var result = await _controller.GetMonthlyWorkSummary(year, month);
+
+            // Assert
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            var data = Assert.IsType<List<DailySummaryDto>>(ok.Value);
+            Assert.Single(data);
+            _serviceMock.VerifyAll();
+        }
+
+        [Fact]
+        public async Task GetMonthlyWorkSummary_WithException_ReturnsBadRequest()
+        {
+            // Arrange
+            var year = 2025;
+            var month = 13; // Invalid month
+
+            _serviceMock
+                .Setup(s => s.GetMonthlyWorkSummaryAsync(year, month))
+                .ThrowsAsync(new ArgumentException("Tháng hoặc năm không hợp lệ"));
+
+            // Act
+            var result = await _controller.GetMonthlyWorkSummary(year, month);
+
+            // Assert
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+            Assert.Contains("Tháng hoặc năm không hợp lệ", badRequest.Value!.ToString());
+            _serviceMock.VerifyAll();
         }
 
         #endregion

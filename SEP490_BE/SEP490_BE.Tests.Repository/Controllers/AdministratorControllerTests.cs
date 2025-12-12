@@ -762,4 +762,64 @@ public class AdministratorControllerTests
         statusCodeResult.StatusCode.Should().Be(500);
         _serviceMock.VerifyAll();
     }
+
+    // ===== GetAllRooms Tests =====
+
+    [Fact]
+    public async Task GetAllRooms_UTCID01_ReturnsOk_WithRooms()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        var rooms = new List<RoomDto>
+        {
+            new RoomDto { RoomId = 1, RoomName = "Phòng 101" },
+            new RoomDto { RoomId = 2, RoomName = "Phòng 102" }
+        };
+        _roomServiceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rooms);
+
+        // Act
+        var result = await _controller.GetAllRooms(default);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().BeEquivalentTo(rooms);
+        _roomServiceMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetAllRooms_UTCID02_ReturnsOk_WithEmptyList()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        _roomServiceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RoomDto>());
+
+        // Act
+        var result = await _controller.GetAllRooms(default);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        okResult.StatusCode.Should().Be(200);
+        ((IEnumerable<RoomDto>)okResult.Value!).Should().BeEmpty();
+        _roomServiceMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetAllRooms_UTCID03_ReturnsInternalServerError_WhenException()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        _roomServiceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _controller.GetAllRooms(default);
+
+        // Assert
+        var statusCodeResult = Assert.IsType<ObjectResult>(result.Result);
+        statusCodeResult.StatusCode.Should().Be(500);
+        _roomServiceMock.VerifyAll();
+    }
 }

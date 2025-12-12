@@ -217,11 +217,8 @@ namespace SEP490_BE.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetAll_Requires_AuthorizeAttribute()
+        public void GetAll_Requires_AuthorizeAttribute()
         {
-            var ctrl = MakeControllerWithUser();
-
-            // Verify that the endpoint requires authorization
             var method = typeof(RoomsController).GetMethod(nameof(RoomsController.GetAll));
             var attributes = method?.GetCustomAttributes(typeof(Microsoft.AspNetCore.Authorization.AuthorizeAttribute), true);
 
@@ -242,6 +239,21 @@ namespace SEP490_BE.Tests.Controllers
             okResult.Should().NotBeNull();
             var list = okResult!.Value as IEnumerable<RoomDto>;
             list.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task GetAll_ReturnsInternalServerError_WhenException()
+        {
+            _svc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser();
+
+            var result = await ctrl.GetAll(CancellationToken.None);
+            var statusCodeResult = result.Result as ObjectResult;
+
+            statusCodeResult.Should().NotBeNull();
+            statusCodeResult!.StatusCode.Should().Be(500);
         }
 
         [Fact]
@@ -481,6 +493,57 @@ namespace SEP490_BE.Tests.Controllers
             var result = await ctrl.Delete(5, CancellationToken.None);
 
             result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetAllForAdmin_ReturnsOk_WithData()
+        {
+            _svc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<RoomDto>
+                {
+                    new() { RoomId = 1, RoomName = "Phòng 101" },
+                    new() { RoomId = 2, RoomName = "Phòng 102" }
+                });
+
+            var ctrl = MakeControllerWithUser(role: "Administrator");
+
+            var result = await ctrl.GetAllForAdmin(CancellationToken.None);
+            var okResult = result.Result as OkObjectResult;
+
+            okResult.Should().NotBeNull();
+            var list = okResult!.Value as IEnumerable<RoomDto>;
+            list.Should().HaveCount(2);
+        }
+
+        [Fact]
+        public async Task GetAllForAdmin_ReturnsOk_WithEmptyList()
+        {
+            _svc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<RoomDto>());
+
+            var ctrl = MakeControllerWithUser(role: "Administrator");
+
+            var result = await ctrl.GetAllForAdmin(CancellationToken.None);
+            var okResult = result.Result as OkObjectResult;
+
+            okResult.Should().NotBeNull();
+            var list = okResult!.Value as IEnumerable<RoomDto>;
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task GetAllForAdmin_ReturnsInternalServerError_WhenException()
+        {
+            _svc.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(role: "Administrator");
+
+            var result = await ctrl.GetAllForAdmin(CancellationToken.None);
+            var statusCodeResult = result.Result as ObjectResult;
+
+            statusCodeResult.Should().NotBeNull();
+            statusCodeResult!.StatusCode.Should().Be(500);
         }
     }
 }

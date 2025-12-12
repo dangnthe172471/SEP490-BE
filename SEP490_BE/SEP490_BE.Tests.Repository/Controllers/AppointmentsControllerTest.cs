@@ -7,6 +7,7 @@ using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
+using System.Linq;
 using System.Security.Claims;
 
 namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
@@ -112,8 +113,6 @@ namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
         #endregion
 
         #region BookAppointment (Patient) Tests
-
-        
 
         [Fact]
         public async Task BookAppointment_ReturnsBadRequest_When_DoctorNotAvailable()
@@ -572,8 +571,6 @@ namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
         }
 
         #endregion
-
-      
 
         #region GetStatistics Tests
 
@@ -1086,6 +1083,203 @@ namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
 
             results.Should().HaveCount(3);
             results.Should().AllSatisfy(r => r.Result.Should().BeOfType<CreatedAtActionResult>());
+        }
+
+        [Fact]
+        public async Task BookAppointment_ReturnsUnauthorized_When_UserId_Invalid()
+        {
+            var ctrl = MakeControllerWithUser(null, "Patient");
+            var request = new BookAppointmentRequest
+            {
+                DoctorId = 5,
+                AppointmentDate = DateTime.Now.AddDays(1),
+                ReasonForVisit = "Checkup"
+            };
+
+            var result = await ctrl.BookAppointment(request, CancellationToken.None);
+
+            result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        }
+
+        [Fact]
+        public async Task CreateAppointment_Returns500_When_Exception()
+        {
+            var receptionist = new ReceptionistInfoDto { ReceptionistId = 20, UserId = 2 };
+
+            _svc.Setup(s => s.GetReceptionistByUserIdAsync(2, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(receptionist);
+            _svc.Setup(s => s.CreateAppointmentByReceptionistAsync(It.IsAny<CreateAppointmentByReceptionistRequest>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(2, "Receptionist");
+            var request = new CreateAppointmentByReceptionistRequest
+            {
+                PatientId = 10,
+                DoctorId = 5,
+                AppointmentDate = DateTime.Now.AddDays(2),
+                ReasonForVisit = "Consultation"
+            };
+
+            var result = await ctrl.CreateAppointment(request, CancellationToken.None);
+
+            var statusCode = Assert.IsType<ObjectResult>(result.Result);
+            statusCode.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task Reschedule_ReturnsBadRequest_When_ArgumentException()
+        {
+            _svc.Setup(s => s.RescheduleAppointmentAsync(5, 1, It.IsAny<RescheduleAppointmentRequest>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new ArgumentException("Invalid date."));
+
+            var ctrl = MakeControllerWithUser(1, "Patient");
+            var request = new RescheduleAppointmentRequest
+            {
+                NewAppointmentDate = DateTime.Now.AddDays(-1)
+            };
+
+            var result = await ctrl.Reschedule(5, request, CancellationToken.None);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task UpdateStatus_ReturnsBadRequest_When_InvalidOperationException()
+        {
+            _svc.Setup(s => s.UpdateAppointmentStatusAsync(5, It.IsAny<UpdateAppointmentStatusRequest>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Cannot update status."));
+
+            var ctrl = MakeControllerWithUser(1, "Doctor");
+            var request = new UpdateAppointmentStatusRequest { Status = "Completed" };
+
+            var result = await ctrl.UpdateStatus(5, request, CancellationToken.None);
+
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyAppointments_ReturnsBadRequest_When_Exception()
+        {
+            _repo.Setup(r => r.GetPatientByUserIdAsync(1, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(1, "Patient");
+
+            var result = await ctrl.GetMyAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyDoctorAppointments_ReturnsBadRequest_When_Exception()
+        {
+            _svc.Setup(s => s.GetUserByIdAsync(1, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(1, "Doctor");
+
+            var result = await ctrl.GetMyDoctorAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyReceptionistAppointments_ReturnsBadRequest_When_Exception()
+        {
+            _svc.Setup(s => s.GetUserByIdAsync(2, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(2, "Receptionist");
+
+            var result = await ctrl.GetMyReceptionistAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetStatistics_Returns500_When_Exception()
+        {
+            _svc.Setup(s => s.GetAppointmentStatisticsAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetStatistics(CancellationToken.None);
+
+            var statusCode = Assert.IsType<ObjectResult>(result.Result);
+            statusCode.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task GetTimeSeries_Returns500_When_Exception()
+        {
+            _svc.Setup(s => s.GetAppointmentTimeSeriesAsync(It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetTimeSeries(null, null, "day", CancellationToken.None);
+
+            var statusCode = Assert.IsType<ObjectResult>(result.Result);
+            statusCode.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task GetHeatmap_Returns500_When_Exception()
+        {
+            _svc.Setup(s => s.GetAppointmentHeatmapAsync(It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Database error"));
+
+            var ctrl = MakeControllerWithUser(1, "Clinic Manager");
+
+            var result = await ctrl.GetHeatmap(null, null, CancellationToken.None);
+
+            var statusCode = Assert.IsType<ObjectResult>(result.Result);
+            statusCode.StatusCode.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task GetMyAppointments_ReturnsUnauthorized_When_UserId_Invalid()
+        {
+            var ctrl = MakeControllerWithUser(null, "Patient");
+
+            var result = await ctrl.GetMyAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyDoctorAppointments_ReturnsUnauthorized_When_UserId_Invalid()
+        {
+            var ctrl = MakeControllerWithUser(null, "Doctor");
+
+            var result = await ctrl.GetMyDoctorAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        }
+
+        [Fact]
+        public async Task GetMyReceptionistAppointments_ReturnsUnauthorized_When_UserId_Invalid()
+        {
+            var ctrl = MakeControllerWithUser(null, "Receptionist");
+
+            var result = await ctrl.GetMyReceptionistAppointments(CancellationToken.None);
+
+            result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        }
+
+        [Fact]
+        public async Task Reschedule_ReturnsUnauthorized_When_UserId_Invalid()
+        {
+            var ctrl = MakeControllerWithUser(null, "Patient");
+            var request = new RescheduleAppointmentRequest
+            {
+                NewAppointmentDate = DateTime.Now.AddDays(3)
+            };
+
+            var result = await ctrl.Reschedule(5, request, CancellationToken.None);
+
+            result.Should().BeOfType<UnauthorizedObjectResult>();
         }
 
         #endregion
