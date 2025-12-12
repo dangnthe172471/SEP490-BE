@@ -71,14 +71,24 @@ namespace SEP490_BE.BLL.Services.PaymentServices
 
             int paymentId = await _repo.CreateAsync(newPayment);
 
-            
+            var rnd = new Random(); 
+            string datePart = DateTime.UtcNow.ToString("ddMMyy");
+            string randomPart = rnd.Next(100000, 999999).ToString();
+            long orderCode = long.Parse(datePart + randomPart);
+            newPayment.OrderCode = orderCode;
+            await _repo.UpdateAsync(newPayment);
+
+
             var items = dto.Items.Select(i => new ItemData(i.Name, i.Quantity, i.Price)).ToList();
 
             // Tạo link PayOS
-            string checkoutUrl = role? await _payOsService.CreatePaymentLinkAsync(paymentId, dto, items) : await _payOsService.CreatePaymentReceptionistAsync(paymentId, dto, items);
+            string checkoutUrl = role
+     ? await _payOsService.CreatePaymentLinkAsync(orderCode, dto, items)
+     : await _payOsService.CreatePaymentReceptionistAsync(orderCode, dto, items);
 
-          
-            newPayment.OrderCode = paymentId;
+
+            newPayment.OrderCode = orderCode;
+
             newPayment.CheckoutUrl = checkoutUrl;
             await _repo.UpdateAsync(newPayment);
 
