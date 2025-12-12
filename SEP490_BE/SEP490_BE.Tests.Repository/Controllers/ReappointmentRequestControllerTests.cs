@@ -256,7 +256,7 @@ public class ReappointmentRequestControllerTests
         var result = await _controller.CompleteReappointmentRequest(request, default);
 
         // Assert
-        var forbidResult = Assert.IsType<ForbidResult>(result);
+        var forbidResult = Assert.IsType<ForbidResult>(result.Result);
         _serviceMock.VerifyAll();
     }
 

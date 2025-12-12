@@ -5,6 +5,7 @@ using SEP490_BE.API.Controllers;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.PrescriptionDoctorDTO;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace SEP490_BE.Tests.Controllers
 {
@@ -78,9 +79,14 @@ namespace SEP490_BE.Tests.Controllers
             var result = await controller.Create(req, CancellationToken.None);
 
             // Assert
-            var created = Assert.IsType<CreatedAtActionResult>(result.Result);
+            var created = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(201, created.StatusCode);
-            var payload = Assert.IsType<PrescriptionSummaryDto>(created.Value);
+            // The controller returns an anonymous object with message and data
+            var json = JsonSerializer.Serialize(created.Value);
+            var doc = JsonDocument.Parse(json);
+            var dataElement = doc.RootElement.GetProperty("data");
+            var payload = JsonSerializer.Deserialize<PrescriptionSummaryDto>(dataElement.GetRawText());
+            Assert.NotNull(payload);
             Assert.Equal(1001, payload.PrescriptionId);
         }
 
@@ -109,9 +115,14 @@ namespace SEP490_BE.Tests.Controllers
             var result = await controller.Create(req, CancellationToken.None);
 
             // Assert
-            var created = Assert.IsType<CreatedAtActionResult>(result.Result);
+            var created = Assert.IsType<CreatedAtActionResult>(result);
             Assert.Equal(201, created.StatusCode);
-            var payload = Assert.IsType<PrescriptionSummaryDto>(created.Value);
+            // The controller returns an anonymous object with message and data
+            var json = JsonSerializer.Serialize(created.Value);
+            var doc = JsonDocument.Parse(json);
+            var dataElement = doc.RootElement.GetProperty("data");
+            var payload = JsonSerializer.Deserialize<PrescriptionSummaryDto>(dataElement.GetRawText());
+            Assert.NotNull(payload);
             Assert.Equal(1002, payload.PrescriptionId);
         }
 
@@ -132,9 +143,16 @@ namespace SEP490_BE.Tests.Controllers
                 issued: DateTime.Parse("2025-11-03T17:35:23.848Z"),
                 items: new[] { (1, "2 viên/ngày", "5 ngày") });
 
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => controller.Create(req, CancellationToken.None));
-            Assert.Equal("Hồ sơ bệnh án không tồn tại.", ex.Message);
+            // Act
+            var result = await controller.Create(req, CancellationToken.None);
+
+            // Assert - Controller catches exception and returns BadRequest
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, badRequest.StatusCode);
+            var json = JsonSerializer.Serialize(badRequest.Value);
+            var doc = JsonDocument.Parse(json);
+            var message = doc.RootElement.GetProperty("message").GetString();
+            Assert.Equal("Hồ sơ bệnh án không tồn tại.", message);
         }
 
         [Fact(DisplayName = "Create - hồ sơ thuộc bác sĩ khác → Service ném UnauthorizedAccessException('Bạn không phụ trách hồ sơ này.')")]
@@ -152,9 +170,16 @@ namespace SEP490_BE.Tests.Controllers
                 issued: DateTime.Parse("2025-11-03T17:35:23.848Z"),
                 items: new[] { (1, "2 viên/ngày", "5 ngày") });
 
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => controller.Create(req, CancellationToken.None));
-            Assert.Equal("Bạn không phụ trách hồ sơ này.", ex.Message);
+            // Act
+            var result = await controller.Create(req, CancellationToken.None);
+
+            // Assert - Controller catches exception and returns 403 Forbidden
+            var forbidden = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(403, forbidden.StatusCode);
+            var json = JsonSerializer.Serialize(forbidden.Value);
+            var doc = JsonDocument.Parse(json);
+            var message = doc.RootElement.GetProperty("message").GetString();
+            Assert.Equal("Bạn không phụ trách hồ sơ này.", message);
         }
 
         [Fact(DisplayName = "Create - Items rỗng → Service ném InvalidOperationException('Đơn thuốc phải có ít nhất 1 dòng.')")]
@@ -174,9 +199,16 @@ namespace SEP490_BE.Tests.Controllers
                 Items = new List<CreatePrescriptionItem>() // rỗng
             };
 
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => controller.Create(req, CancellationToken.None));
-            Assert.Equal("Đơn thuốc phải có ít nhất 1 dòng.", ex.Message);
+            // Act
+            var result = await controller.Create(req, CancellationToken.None);
+
+            // Assert - Controller catches exception and returns BadRequest
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, badRequest.StatusCode);
+            var json = JsonSerializer.Serialize(badRequest.Value);
+            var doc = JsonDocument.Parse(json);
+            var message = doc.RootElement.GetProperty("message").GetString();
+            Assert.Equal("Đơn thuốc phải có ít nhất 1 dòng.", message);
         }
 
         [Fact(DisplayName = "Create - Thuốc không tồn tại → Service ném InvalidOperationException('Một hoặc nhiều thuốc không hợp lệ.')")]
@@ -194,9 +226,16 @@ namespace SEP490_BE.Tests.Controllers
                 issued: DateTime.Parse("2025-11-03T17:35:23.848Z"),
                 items: new[] { (99, "1 viên/ngày", "5 ngày") });
 
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => controller.Create(req, CancellationToken.None));
-            Assert.Equal("Một hoặc nhiều thuốc không hợp lệ.", ex.Message);
+            // Act
+            var result = await controller.Create(req, CancellationToken.None);
+
+            // Assert - Controller catches exception and returns BadRequest
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Equal(400, badRequest.StatusCode);
+            var json = JsonSerializer.Serialize(badRequest.Value);
+            var doc = JsonDocument.Parse(json);
+            var message = doc.RootElement.GetProperty("message").GetString();
+            Assert.Equal("Một hoặc nhiều thuốc không hợp lệ.", message);
         }
 
         // ========================= SYSTEM ERROR =========================
