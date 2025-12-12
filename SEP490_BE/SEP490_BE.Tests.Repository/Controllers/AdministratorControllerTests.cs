@@ -12,11 +12,12 @@ namespace SEP490_BE.Tests.Controllers;
 public class AdministratorControllerTests
 {
     private readonly Mock<IAdministratorService> _serviceMock = new(MockBehavior.Strict);
+    private readonly Mock<IRoomService> _roomServiceMock = new(MockBehavior.Strict);
     private readonly AdministratorController _controller;
 
     public AdministratorControllerTests()
     {
-        _controller = new AdministratorController(_serviceMock.Object);
+        _controller = new AdministratorController(_serviceMock.Object, _roomServiceMock.Object);
     }
 
     private static ControllerContext AdminContext()
