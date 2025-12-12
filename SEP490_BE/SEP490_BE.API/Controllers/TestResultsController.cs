@@ -65,7 +65,7 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Doctor,Patient,Nurse")]
+        [Authorize(Roles = "Doctor,Patient,Nurse,Receptionist")]
         [HttpGet("record/{recordId:int}")]
         public async Task<ActionResult<List<ReadTestResultDto>>> GetByRecordId(
             [FromRoute] int recordId,
@@ -88,7 +88,7 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
-        [Authorize(Roles = "Doctor,Patient,Nurse")]
+        [Authorize(Roles = "Doctor,Patient,Nurse,Receptionist")]
         [HttpGet("{id:int}")]
         public async Task<ActionResult<ReadTestResultDto>> GetById(
             [FromRoute] int id,
