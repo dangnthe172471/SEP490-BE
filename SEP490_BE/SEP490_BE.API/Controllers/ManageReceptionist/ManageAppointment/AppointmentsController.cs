@@ -364,6 +364,10 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
 
                 return Ok(new { message = "Appointment status updated successfully." });
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
