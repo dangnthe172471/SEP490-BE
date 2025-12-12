@@ -1,4 +1,4 @@
-﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -33,7 +33,10 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
-                Avatar = u.Avatar
+                Avatar = u.Avatar,
+                Specialty = u.Doctor?.Specialty,
+                Allergies = u.Patient?.Allergies,
+                MedicalHistory = u.Patient?.MedicalHistory
             });
         }
         public async Task<UserDto?> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
@@ -273,7 +276,8 @@ namespace SEP490_BE.BLL.Services
                 Gender = user.Gender,
                 Dob = user.Dob,
                 IsActive = user.IsActive,
-                Avatar = user.Avatar
+                Avatar = user.Avatar,
+                Specialty = user.Doctor?.Specialty
             };
 
             // If user is a patient, include patient-specific information
@@ -302,6 +306,7 @@ namespace SEP490_BE.BLL.Services
                 Dob = u.Dob,
                 IsActive = u.IsActive,
                 Avatar = u.Avatar,
+                Specialty = u.Doctor?.Specialty,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
             }).ToList();

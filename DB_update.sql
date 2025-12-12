@@ -547,16 +547,20 @@ PRIMARY KEY CLUSTERED
 GO
 SET IDENTITY_INSERT [dbo].[Appointment] ON 
 
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (1, 1, 1, CAST(N'2025-10-10T09:00:00.000' AS DateTime), 1, 3, N'Confirmed', CAST(N'2025-11-15T23:18:53.543' AS DateTime), NULL)
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (2, 3, 1, CAST(N'2025-11-17T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-16T22:38:44.063' AS DateTime), N'đau bụng')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (3, 3, 4, CAST(N'2025-11-18T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-17T02:58:09.480' AS DateTime), N'đau đầu')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (4, 1, 1, CAST(N'2025-11-19T06:00:00.000' AS DateTime), 1, NULL, N'Cancelled', CAST(N'2025-11-18T05:59:10.927' AS DateTime), N'đau đầu')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (5, 1, 1, CAST(N'2025-11-19T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:01:48.297' AS DateTime), N'đau đầu')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (6, 2, 1, CAST(N'2025-11-21T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:34:10.970' AS DateTime), N'đau bụng')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (7, 3, 1, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:55:03.453' AS DateTime), N'đau đầu')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (8, 3, 1, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:59:58.500' AS DateTime), N'dđ')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (9, 3, 1, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T08:05:24.443' AS DateTime), N'đau đầu')
-INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (10, 1, 1, CAST(N'2025-11-23T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T08:11:37.540' AS DateTime), N'đau bụng')
+-- ============================================
+-- INSERT APPOINTMENTS
+-- ============================================
+-- Note: Updated DoctorID references to match new doctor structure
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (1, 1, 1, CAST(N'2025-10-10T09:00:00.000' AS DateTime), 1, 3, N'Confirmed', CAST(N'2025-11-15T23:18:53.543' AS DateTime), N'Khám tổng quát')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (2, 3, 1, CAST(N'2025-11-17T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-16T22:38:44.063' AS DateTime), N'Đau bụng')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (3, 3, 3, CAST(N'2025-11-18T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-17T02:58:09.480' AS DateTime), N'Khám nhi khoa')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (4, 1, 1, CAST(N'2025-11-19T06:00:00.000' AS DateTime), 1, NULL, N'Cancelled', CAST(N'2025-11-18T05:59:10.927' AS DateTime), N'Đau đầu')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (5, 1, 1, CAST(N'2025-11-19T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:01:48.297' AS DateTime), N'Đau đầu')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (6, 2, 2, CAST(N'2025-11-21T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:34:10.970' AS DateTime), N'Đau bụng')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (7, 3, 5, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:55:03.453' AS DateTime), N'Khám da liễu')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (8, 3, 5, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T06:59:58.500' AS DateTime), N'Khám da liễu')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (9, 3, 5, CAST(N'2025-11-22T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T08:05:24.443' AS DateTime), N'Khám da liễu')
+INSERT [dbo].[Appointment] ([AppointmentID], [PatientID], [DoctorID], [AppointmentDate], [ReceptionistID], [UpdatedBy], [Status], [CreatedAt], [ReasonForVisit]) VALUES (10, 1, 7, CAST(N'2025-11-23T17:00:00.000' AS DateTime), 1, NULL, N'Confirmed', CAST(N'2025-11-18T08:11:37.540' AS DateTime), N'Khám chuyên khoa')
 SET IDENTITY_INSERT [dbo].[Appointment] OFF
 GO
 SET IDENTITY_INSERT [dbo].[DermatologyRecord] ON 
@@ -568,23 +572,75 @@ INSERT [dbo].[DermatologyRecord] ([DermRecordID], [RecordID], [PerformedByUserID
 INSERT [dbo].[DermatologyRecord] ([DermRecordID], [RecordID], [PerformedByUserID], [RequestedProcedure], [BodyArea], [ProcedureNotes], [ResultSummary], [Attachment], [PerformedAt]) VALUES (5, 6, 6, N'khám da', N'tay', N'soi lazer da', N'da bình thường', N'aa.jpg', CAST(N'2025-11-18T13:53:59.123' AS DateTime))
 SET IDENTITY_INSERT [dbo].[DermatologyRecord] OFF
 GO
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (1, 1, N'Sản phụ khoa', 10, 2)
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (2, 8, N'Nội khoa', 8, 1)
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (3, 9, N'Da liễu', 6, 1)
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (4, 10, N'Sản phụ khoa', 12, 2)
+-- ============================================
+-- INSERT DOCTORS - 4 SPECIALTIES, 2 DOCTORS EACH
+-- MỖI BÁC SĨ CÓ 1 PHÒNG RIÊNG
+-- ============================================
+-- Nội khoa (Internal Medicine) - 2 doctors
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (1, 8, N'Nội khoa', 10, 1)   -- Phòng 101
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (2, 13, N'Nội khoa', 8, 5)   -- Phòng 102
+
+-- Nhi khoa (Pediatrics) - 2 doctors
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (3, 14, N'Nhi khoa', 12, 3)   -- Phòng 301
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (4, 15, N'Nhi khoa', 9, 6)    -- Phòng 302
+
+-- Da liễu (Dermatology) - 2 doctors
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (5, 9, N'Da liễu', 7, 4)      -- Phòng 401
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (6, 16, N'Da liễu', 6, 7)     -- Phòng 402
+
+-- Chuyên khoa (Specialist) - 2 doctors
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (7, 1, N'Chuyên khoa', 15, 2) -- Phòng 201
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (8, 10, N'Chuyên khoa', 11, 8) -- Phòng 202
 GO
+-- ============================================
+-- INSERT DOCTOR SHIFTS
+-- ============================================
 SET IDENTITY_INSERT [dbo].[DoctorShift] ON 
 
+-- Nội khoa Doctors (1, 2)
+-- Doctor 1 (Nội khoa)
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (1, 1, 1, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (2, 1, 2, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (3, 1, 1, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (4, 1, 2, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+-- Doctor 2 (Nội khoa)
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (5, 2, 1, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
 INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (6, 2, 3, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
-INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (7, 3, 2, CAST(N'2025-01-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
-INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (8, 3, 3, CAST(N'2025-01-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
-INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (9, 4, 3, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
-INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (10, 4, 3, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (7, 2, 1, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (8, 2, 3, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+
+-- Nhi khoa Doctors (3, 4)
+-- Doctor 3 (Nhi khoa)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (9, 3, 1, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (10, 3, 2, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (11, 3, 1, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (12, 3, 2, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+-- Doctor 4 (Nhi khoa)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (13, 4, 2, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (14, 4, 3, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (15, 4, 2, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (16, 4, 3, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+
+-- Da liễu Doctors (5, 6)
+-- Doctor 5 (Da liễu)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (17, 5, 2, CAST(N'2025-01-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (18, 5, 3, CAST(N'2025-01-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+-- Doctor 6 (Da liễu)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (19, 6, 1, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (20, 6, 2, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (21, 6, 1, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (22, 6, 2, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+
+-- Chuyên khoa Doctors (7, 8)
+-- Doctor 7 (Chuyên khoa)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (23, 7, 1, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (24, 7, 2, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (25, 7, 1, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (26, 7, 2, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+-- Doctor 8 (Chuyên khoa)
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (27, 8, 3, CAST(N'2025-11-01' AS Date), CAST(N'2025-12-01' AS Date), N'Active')
+INSERT [dbo].[DoctorShift] ([DoctorShiftID], [DoctorID], [ShiftID], [EffectiveFrom], [EffectiveTo], [Status]) VALUES (28, 8, 3, CAST(N'2025-12-01' AS Date), CAST(N'2026-01-01' AS Date), N'Active')
+
 SET IDENTITY_INSERT [dbo].[DoctorShift] OFF
 GO
 INSERT [dbo].[InternalMedRecord] ([RecordID], [BloodPressure], [HeartRate], [BloodSugar], [Notes]) VALUES (1, 135, 78, NULL, N'Khám tổng quát - theo dõi huyết áp')
@@ -669,15 +725,19 @@ INSERT [dbo].[PharmacyProvider] ([ProviderID], [UserID], [Contact]) VALUES (1, 4
 GO
 SET IDENTITY_INSERT [dbo].[Prescription] ON 
 
+-- ============================================
+-- INSERT PRESCRIPTIONS
+-- ============================================
+-- Note: Updated DoctorID references to match new doctor structure
 INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (1, 1, 1, CAST(N'2025-11-15T23:18:53.567' AS DateTime))
 INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (2, 2, 1, CAST(N'2025-11-16T16:50:06.077' AS DateTime))
-INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (3, 3, 4, CAST(N'2025-11-16T20:02:27.007' AS DateTime))
+INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (3, 3, 3, CAST(N'2025-11-16T20:02:27.007' AS DateTime))
 INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (4, 4, 1, CAST(N'2025-11-17T23:25:11.340' AS DateTime))
 INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (5, 5, 1, CAST(N'2025-11-17T23:35:35.273' AS DateTime))
-INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (6, 6, 1, CAST(N'2025-11-17T23:56:15.713' AS DateTime))
-INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (7, 7, 1, CAST(N'2025-11-18T00:00:52.500' AS DateTime))
-INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (8, 8, 1, CAST(N'2025-11-18T01:06:56.353' AS DateTime))
-INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (9, 9, 1, CAST(N'2025-11-18T01:14:11.337' AS DateTime))
+INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (6, 6, 2, CAST(N'2025-11-17T23:56:15.713' AS DateTime))
+INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (7, 7, 5, CAST(N'2025-11-18T00:00:52.500' AS DateTime))
+INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (8, 8, 5, CAST(N'2025-11-18T01:06:56.353' AS DateTime))
+INSERT [dbo].[Prescription] ([PrescriptionID], [RecordID], [DoctorID], [IssuedDate]) VALUES (9, 9, 5, CAST(N'2025-11-18T01:14:11.337' AS DateTime))
 SET IDENTITY_INSERT [dbo].[Prescription] OFF
 GO
 SET IDENTITY_INSERT [dbo].[PrescriptionDetail] ON 
@@ -700,24 +760,43 @@ SET IDENTITY_INSERT [dbo].[PrescriptionDetail] OFF
 GO
 INSERT [dbo].[Receptionist] ([ReceptionistID], [UserID]) VALUES (1, 3)
 GO
+-- ============================================
+-- INSERT ROLES
+-- ============================================
 SET IDENTITY_INSERT [dbo].[Role] ON 
 
-INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (8, N'Administrator')
-INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (7, N'Clinic Manager')
-INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (4, N'Doctor')
 INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (1, N'Guest')
-INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (5, N'Nurse')
 INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (2, N'Patient')
-INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (6, N'Pharmacy Provider')
 INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (3, N'Receptionist')
+INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (4, N'Doctor')
+INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (5, N'Nurse')
+INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (6, N'Pharmacy Provider')
+INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (7, N'Clinic Manager')
+INSERT [dbo].[Role] ([RoleID], [RoleName]) VALUES (8, N'Administrator')
+
 SET IDENTITY_INSERT [dbo].[Role] OFF
 GO
+-- ============================================
+-- INSERT ROOMS - MỖI BÁC SĨ 1 PHÒNG
+-- ============================================
 SET IDENTITY_INSERT [dbo].[Room] ON 
 
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (1, N'Phòng khám tổng quát 101')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (2, N'Phòng tim mạch 202')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (3, N'Phòng khám tổng quát 102')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (4, N'Phòng tim mạch 203')
+-- Nội khoa
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (1, N'Phòng nội khoa 101 - BS. Nguyễn Thị H')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (5, N'Phòng nội khoa 102 - BS. Phạm Văn M')
+
+-- Chuyên khoa
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (2, N'Phòng chuyên khoa 201 - BS. Nguyễn Văn A')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (8, N'Phòng chuyên khoa 202 - BS. Lê Thị J')
+
+-- Nhi khoa
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (3, N'Phòng nhi khoa 301 - BS. Nguyễn Thị N')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (6, N'Phòng nhi khoa 302 - BS. Trần Văn O')
+
+-- Da liễu
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (4, N'Phòng da liễu 401 - BS. Trần Văn I')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (7, N'Phòng da liễu 402 - BS. Lê Thị P')
+
 SET IDENTITY_INSERT [dbo].[Room] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Service] ON 
@@ -749,20 +828,47 @@ INSERT [dbo].[TestResult] ([TestResultID], [RecordID], [ServiceID], [ResultValue
 INSERT [dbo].[TestResult] ([TestResultID], [RecordID], [ServiceID], [ResultValue], [Unit], [Attachment], [ResultDate], [Notes]) VALUES (3, 9, 23, N'Âm tính (–)', NULL, NULL, CAST(N'2025-11-21T19:05:00.000' AS DateTime), N'Kết quả âm tính, không phát hiện kháng nguyên SARS-CoV-2')
 SET IDENTITY_INSERT [dbo].[TestResult] OFF
 GO
+-- ============================================
+-- INSERT USERS
+-- ============================================
 SET IDENTITY_INSERT [dbo].[User] ON 
 
+-- Doctors (8 doctors - 2 per specialty)
+-- Chuyên khoa Doctors
 INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (1, N'0905123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', CAST(N'1990-05-15' AS Date), N'Nam', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (2, N'0906123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', CAST(N'1995-03-22' AS Date), N'Nữ', 2, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (3, N'0907123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', CAST(N'1992-07-10' AS Date), N'Nam', 3, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (4, N'0908123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', CAST(N'1988-09-30' AS Date), N'Nam', 6, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (5, N'0909123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', CAST(N'1985-12-05' AS Date), N'Nữ', 7, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (6, N'0910123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', CAST(N'1993-08-18' AS Date), N'Nữ', 5, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (7, N'0911123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', CAST(N'1980-01-20' AS Date), N'Nam', 8, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (8, N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị H', N'h.nguyen@diamondhealth.vn', CAST(N'1988-08-20' AS Date), N'Nữ', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (9, N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn I', N'i.tran@diamondhealth.vn', CAST(N'1992-03-15' AS Date), N'Nam', 4, 1, NULL, 1)
 INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (10, N'0905123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị J', N'j.le@diamondhealth.vn', CAST(N'1985-11-10' AS Date), N'Nữ', 4, 1, NULL, 1)
+
+-- Nội khoa Doctors
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (8, N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị H', N'h.nguyen@diamondhealth.vn', CAST(N'1988-08-20' AS Date), N'Nữ', 4, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (13, N'0905123460', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn M', N'm.pham@diamondhealth.vn', CAST(N'1985-04-18' AS Date), N'Nam', 4, 1, NULL, 1)
+
+-- Nhi khoa Doctors
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (14, N'0905123461', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị N', N'n.nguyen@diamondhealth.vn', CAST(N'1982-09-25' AS Date), N'Nữ', 4, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (15, N'0905123462', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn O', N'o.tran@diamondhealth.vn', CAST(N'1989-07-12' AS Date), N'Nam', 4, 1, NULL, 1)
+
+-- Da liễu Doctors
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (9, N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn I', N'i.tran@diamondhealth.vn', CAST(N'1992-03-15' AS Date), N'Nam', 4, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (16, N'0905123463', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị P', N'p.le@diamondhealth.vn', CAST(N'1991-11-08' AS Date), N'Nữ', 4, 1, NULL, 1)
+
+-- Patients
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (2, N'0906123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', CAST(N'1995-03-22' AS Date), N'Nữ', 2, 1, NULL, 1)
 INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (11, N'0906123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn K', N'k.pham@email.com', CAST(N'1990-06-15' AS Date), N'Nam', 2, 1, NULL, 1)
 INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (12, N'0906123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Hoàng Thị L', N'l.hoang@email.com', CAST(N'1987-12-03' AS Date), N'Nữ', 2, 1, NULL, 1)
+
+-- Receptionist
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (3, N'0907123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', CAST(N'1992-07-10' AS Date), N'Nam', 3, 1, NULL, 1)
+
+-- Pharmacy Provider
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (4, N'0908123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', CAST(N'1988-09-30' AS Date), N'Nam', 6, 1, NULL, 1)
+
+-- Clinic Manager
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (5, N'0909123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', CAST(N'1985-12-05' AS Date), N'Nữ', 7, 1, NULL, 1)
+
+-- Nurse
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (6, N'0910123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', CAST(N'1993-08-18' AS Date), N'Nữ', 5, 1, NULL, 1)
+
+-- Administrator
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (7, N'0911123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', CAST(N'1980-01-20' AS Date), N'Nam', 8, 1, NULL, 1)
 SET IDENTITY_INSERT [dbo].[User] OFF
 GO
 /****** Object:  Index [UQ__Doctor__1788CCAD324C6F8B]    Script Date: 22/11/2025 19:51:58 ******/

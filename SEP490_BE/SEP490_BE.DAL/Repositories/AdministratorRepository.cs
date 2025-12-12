@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -24,6 +24,8 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
+                .Include(u => u.Patient)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
@@ -41,6 +43,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
                 .Include(u => u.Patient)
                 .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
         }
@@ -214,6 +217,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             var query = _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
                 .Include(u => u.Patient)
                 .AsQueryable();
 
