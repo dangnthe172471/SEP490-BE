@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
@@ -17,7 +16,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<IEnumerable<ServiceDto>>> GetAll(CancellationToken cancellationToken)
         {
             var services = await _serviceService.GetAllAsync(cancellationToken);
@@ -25,7 +23,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet("paged")]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<PagedResponse<ServiceDto>>> GetPaged(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10,
@@ -37,7 +34,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<ServiceDto>> GetById(int id, CancellationToken cancellationToken)
         {
             var service = await _serviceService.GetByIdAsync(id, cancellationToken);
@@ -50,7 +46,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<int>> Create(
             [FromBody] CreateServiceRequest request,
             CancellationToken cancellationToken)
@@ -71,7 +66,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<ActionResult<ServiceDto>> Update(
             int id,
             [FromBody] UpdateServiceRequest request,
@@ -98,7 +92,6 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Clinic Manager")]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
         {
             try
