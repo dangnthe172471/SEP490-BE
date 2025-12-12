@@ -50,11 +50,22 @@ namespace SEP490_BE.BLL.Services.PaymentServices
 
                     if (isActive)
                     {
-                        return new CreatePaymentResponseDTO
+                        // Kiểm tra xem URL cũ có dùng IP không, nếu có thì tạo link mới
+                        var oldUrl = lastPayment.CheckoutUrl ?? "";
+                        if (oldUrl.Contains("103.200.22.75"))
                         {
-                            PaymentId = lastPayment.PaymentId,
-                            CheckoutUrl = lastPayment.CheckoutUrl
-                        };
+                            Console.WriteLine($"[Payment] Old payment link uses IP, creating new link for RecordId: {dto.MedicalRecordId}");
+                            // Không tái sử dụng link cũ, tiếp tục tạo link mới
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Payment] Reusing existing payment link for RecordId: {dto.MedicalRecordId}");
+                            return new CreatePaymentResponseDTO
+                            {
+                                PaymentId = lastPayment.PaymentId,
+                                CheckoutUrl = lastPayment.CheckoutUrl
+                            };
+                        }
                     }
                 }
                

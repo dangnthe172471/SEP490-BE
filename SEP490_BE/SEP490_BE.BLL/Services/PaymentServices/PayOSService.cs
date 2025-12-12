@@ -31,32 +31,52 @@ namespace SEP490_BE.BLL.Services.PaymentServices
         {
             dto.Description = Shorten(dto.Description);
 
+            var cancelUrl = _config["PayOS:CancelUrl"];
+            var returnUrl = _config["PayOS:ReturnUrl"];
+
+            // Đảm bảo URL luôn dùng domain, không dùng IP
+            cancelUrl = NormalizeUrl(cancelUrl);
+            returnUrl = NormalizeUrl(returnUrl);
+
+            Console.WriteLine($"[PayOS] Creating payment link - CancelUrl: {cancelUrl}, ReturnUrl: {returnUrl}");
+
             var paymentData = new PaymentData(
                 orderCode,
                 dto.Amount,
                 dto.Description,
                 items,
-                _config["PayOS:CancelUrl"],
-                _config["PayOS:ReturnUrl"]
+                cancelUrl,
+                returnUrl
             );
 
             var result = await _payOS.createPaymentLink(paymentData);
+            Console.WriteLine($"[PayOS] Created checkout URL: {result.checkoutUrl}");
             return result.checkoutUrl;
         }
         public async Task<string> CreatePaymentReceptionistAsync(long orderCode, CreatePaymentRequestDTO dto, List<ItemData> items)
         {
             dto.Description = Shorten(dto.Description);
 
+            var cancelUrl = _config["PayOS:CancelReceptionistUrl"];
+            var returnUrl = _config["PayOS:ReturnReceptionistUrl"];
+
+            // Đảm bảo URL luôn dùng domain, không dùng IP
+            cancelUrl = NormalizeUrl(cancelUrl);
+            returnUrl = NormalizeUrl(returnUrl);
+
+            Console.WriteLine($"[PayOS] Creating receptionist payment link - CancelUrl: {cancelUrl}, ReturnUrl: {returnUrl}");
+
             var paymentData = new PaymentData(
                 orderCode,
                 dto.Amount,
                 dto.Description,
                 items,
-                _config["PayOS:CancelReceptionistUrl"],
-                _config["PayOS:ReturnReceptionistUrl"]
+                cancelUrl,
+                returnUrl
             );
 
             var result = await _payOS.createPaymentLink(paymentData);
+            Console.WriteLine($"[PayOS] Created checkout URL: {result.checkoutUrl}");
             return result.checkoutUrl;
         }
 
@@ -67,6 +87,27 @@ namespace SEP490_BE.BLL.Services.PaymentServices
 
             input = input.Trim();
             return input.Length > 25 ? input.Substring(0, 25) : input;
+        }
+
+        /// <summary>
+        /// Normalize URL: Đảm bảo URL luôn dùng domain diamondhealth.io.vn thay vì IP
+        /// </summary>
+        private string NormalizeUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return url;
+
+            // Thay thế IP bằng domain nếu có
+            url = url.Replace("http://103.200.22.75", "https://diamondhealth.io.vn");
+            url = url.Replace("https://103.200.22.75", "https://diamondhealth.io.vn");
+            
+            // Đảm bảo dùng HTTPS
+            if (url.StartsWith("http://diamondhealth.io.vn"))
+            {
+                url = url.Replace("http://", "https://");
+            }
+
+            return url;
         }
         public WebhookData VerifyWebhook(WebhookType webhook)
         {
