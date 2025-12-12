@@ -25,6 +25,7 @@ namespace SEP490_BE.DAL.Repositories
                   .Include(r => r.Appointment)
                       .ThenInclude(a => a.Doctor)
                           .ThenInclude(d => d.User)
+                  .AsNoTracking()
                   .FirstOrDefaultAsync(r => r.RecordId == recordId, ct);
 
         public async Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(
@@ -92,8 +93,8 @@ namespace SEP490_BE.DAL.Repositories
                       .ThenInclude(d => d.MedicineVersion)
                   .FirstOrDefaultAsync(p => p.PrescriptionId == prescriptionId, ct);
 
-        public async Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
-            int userIdFromToken,
+        public async Task<(List<MedicalRecord> Items, int TotalCount)> GetRecordsForDoctorAsync(
+            int doctorId,
             DateOnly? visitDateFrom,
             DateOnly? visitDateTo,
             string? patientNameSearch,
@@ -101,15 +102,11 @@ namespace SEP490_BE.DAL.Repositories
             int pageSize,
             CancellationToken ct)
         {
-            var doctor = await _db.Doctors
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.UserId == userIdFromToken, ct)
-                ?? throw new InvalidOperationException("Bác sĩ không tồn tại.");
-
             var q = _db.MedicalRecords
                 .Include(r => r.Appointment)
-                    .ThenInclude(a => a.Patient).ThenInclude(p => p.User)
-                .Where(r => r.Appointment.DoctorId == doctor.DoctorId)
+                    .ThenInclude(a => a.Patient)
+                        .ThenInclude(p => p.User)
+                .Where(r => r.Appointment.DoctorId == doctorId)
                 .AsQueryable();
 
             if (visitDateFrom.HasValue)
@@ -117,6 +114,7 @@ namespace SEP490_BE.DAL.Repositories
                 var from = visitDateFrom.Value.ToDateTime(TimeOnly.MinValue);
                 q = q.Where(r => r.Appointment.AppointmentDate >= from);
             }
+
             if (visitDateTo.HasValue)
             {
                 var toExclusive = visitDateTo.Value.AddDays(1).ToDateTime(TimeOnly.MinValue);
@@ -131,43 +129,35 @@ namespace SEP490_BE.DAL.Repositories
             }
 
             var total = await q.CountAsync(ct);
-            var presQ = _db.Prescriptions.AsQueryable();
 
             var items = await q
                 .OrderByDescending(r => r.Appointment.AppointmentDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(r => new RecordListItemDto
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            return (items, total);
+        }
+
+        public async Task<Dictionary<int, int?>> GetLatestPrescriptionIdsByRecordIdsAsync(
+            IEnumerable<int> recordIds,
+            CancellationToken ct)
+        {
+            var ids = recordIds.Distinct().ToArray();
+
+            var latest = await _db.Prescriptions
+                .Where(p => ids.Contains(p.RecordId))
+                .GroupBy(p => p.RecordId)
+                .Select(g => new
                 {
-                    RecordId = r.RecordId,
-                    AppointmentId = r.AppointmentId,
-                    VisitAt = r.Appointment.AppointmentDate,
-
-                    PatientId = r.Appointment.PatientId,
-                    PatientName = r.Appointment.Patient.User.FullName ?? $"BN#{r.Appointment.PatientId}",
-                    Gender = r.Appointment.Patient.User.Gender,
-                    Dob = r.Appointment.Patient.User.Dob,
-                    Phone = r.Appointment.Patient.User.Phone,
-
-                    DiagnosisRaw = r.Diagnosis,
-
-                    HasPrescription = presQ.Any(p => p.RecordId == r.RecordId),
-                    LatestPrescriptionId = presQ
-                        .Where(p => p.RecordId == r.RecordId)
-                        .OrderByDescending(p => p.PrescriptionId)
-                        .Select(p => (int?)p.PrescriptionId)
-                        .FirstOrDefault()
+                    RecordId = g.Key,
+                    LatestPrescriptionId = (int?)g.Max(p => p.PrescriptionId)
                 })
                 .AsNoTracking()
                 .ToListAsync(ct);
 
-            return new PagedResult<RecordListItemDto>
-            {
-                Items = items,
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalCount = total
-            };
+            return latest.ToDictionary(x => x.RecordId, x => x.LatestPrescriptionId);
         }
     }
 }

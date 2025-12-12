@@ -21,9 +21,9 @@ namespace SEP490_BE.API.Controllers
 
         [Authorize(Roles = "Doctor")]
         [HttpPost]
-        public async Task<ActionResult<PrescriptionSummaryDto>> Create(
-            [FromBody] CreatePrescriptionRequest req,
-            CancellationToken ct = default)
+        public async Task<ActionResult> Create(
+    [FromBody] CreatePrescriptionRequest req,
+    CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
             if (!int.TryParse(userIdStr, out var userId))
@@ -34,7 +34,16 @@ namespace SEP490_BE.API.Controllers
             try
             {
                 var result = await _service.CreateAsync(userId, req, ct);
-                return CreatedAtAction(nameof(GetById), new { id = result.PrescriptionId }, result);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = result.PrescriptionId },
+                    new
+                    {
+                        message = "Tạo đơn thuốc thành công",
+                        data = result
+                    }
+                );
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -46,6 +55,7 @@ namespace SEP490_BE.API.Controllers
             }
         }
 
+
         [Authorize(Roles = "Doctor,Patient")]
         [HttpGet("{id:int}")]
         public async Task<ActionResult<PrescriptionSummaryDto>> GetById(
@@ -53,10 +63,20 @@ namespace SEP490_BE.API.Controllers
             CancellationToken ct = default)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-            _ = int.TryParse(userIdStr, out var userId);
+            if (!int.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized();
+            }
 
-            var result = await _service.GetByIdAsync(userId, id, ct);
-            return result is null ? NotFound() : Ok(result);
+            try
+            {
+                var result = await _service.GetByIdAsync(userId, id, ct);
+                return result is null ? NotFound() : Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         [Authorize(Roles = "Doctor")]
@@ -75,12 +95,21 @@ namespace SEP490_BE.API.Controllers
                 return Unauthorized();
             }
 
+            // Clamp pageNumber & pageSize
+            pageNumber = pageNumber <= 0 ? 1 : pageNumber;
             pageSize = pageSize <= 0 ? 20 : Math.Min(pageSize, 100);
 
-            var result = await _service.GetRecordsForDoctorAsync(
-                userId, from, to, search, pageNumber, pageSize, ct);
+            try
+            {
+                var result = await _service.GetRecordsForDoctorAsync(
+                    userId, from, to, search, pageNumber, pageSize, ct);
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

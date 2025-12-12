@@ -10,7 +10,9 @@ namespace SEP490_BE.DAL.IRepositories
 
         Task<MedicalRecord?> GetRecordWithAppointmentAsync(int recordId, CancellationToken ct);
 
-        Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(IEnumerable<int> ids, CancellationToken ct);
+        Task<Dictionary<int, Medicine>> GetMedicinesByIdsAsync(
+            IEnumerable<int> ids,
+            CancellationToken ct);
 
         Task<Dictionary<int, MedicineVersion>> GetLatestMedicineVersionsByMedicineIdsAsync(
             IEnumerable<int> ids,
@@ -21,15 +23,21 @@ namespace SEP490_BE.DAL.IRepositories
             IEnumerable<PrescriptionDetail> details,
             CancellationToken ct);
 
-        Task<Prescription?> GetPrescriptionGraphAsync(int prescriptionId, CancellationToken ct);
+        Task<Prescription?> GetPrescriptionGraphAsync(
+            int prescriptionId,
+            CancellationToken ct);
 
-        Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
-            int userIdFromToken,
+        Task<(List<MedicalRecord> Items, int TotalCount)> GetRecordsForDoctorAsync(
+            int doctorId,
             DateOnly? visitDateFrom,
             DateOnly? visitDateTo,
             string? patientNameSearch,
             int pageNumber,
             int pageSize,
+            CancellationToken ct);
+
+        Task<Dictionary<int, int?>> GetLatestPrescriptionIdsByRecordIdsAsync(
+            IEnumerable<int> recordIds,
             CancellationToken ct);
     }
 }

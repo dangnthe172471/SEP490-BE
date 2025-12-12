@@ -29,7 +29,7 @@ namespace SEP490_BE.API.Controllers
             {
                 return NotFound(new
                 {
-                    message = $"PediatricRecord cho RecordId {recordId} không tồn tại"
+                    message = $"Không tìm thấy hồ sơ khám nhi cho phiếu khám có mã {recordId}."
                 });
             }
 
@@ -47,6 +47,14 @@ namespace SEP490_BE.API.Controllers
                 var created = await _service.CreateAsync(dto, ct);
                 return CreatedAtAction(nameof(Get), new { recordId = created.RecordId }, created);
             }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
@@ -61,7 +69,7 @@ namespace SEP490_BE.API.Controllers
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi tạo PediatricRecord",
+                        message = "Đã xảy ra lỗi hệ thống khi tạo hồ sơ khám nhi.",
                         detail = ex.Message
                     });
             }
@@ -79,6 +87,14 @@ namespace SEP490_BE.API.Controllers
                 var updated = await _service.UpdateAsync(recordId, dto, ct);
                 return Ok(updated);
             }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { message = ex.Message });
@@ -89,7 +105,7 @@ namespace SEP490_BE.API.Controllers
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi cập nhật PediatricRecord",
+                        message = "Đã xảy ra lỗi hệ thống khi cập nhật hồ sơ khám nhi.",
                         detail = ex.Message
                     });
             }
@@ -104,7 +120,12 @@ namespace SEP490_BE.API.Controllers
             try
             {
                 await _service.DeleteAsync(recordId, ct);
+                // 204 No Content
                 return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -112,7 +133,7 @@ namespace SEP490_BE.API.Controllers
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi xóa PediatricRecord",
+                        message = "Đã xảy ra lỗi hệ thống khi xoá hồ sơ khám nhi.",
                         detail = ex.Message
                     });
             }

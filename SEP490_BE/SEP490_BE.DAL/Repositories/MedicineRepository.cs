@@ -7,6 +7,8 @@ namespace SEP490_BE.DAL.Repositories
     public class MedicineRepository : IMedicineRepository
     {
         private readonly DiamondHealthContext _dbContext;
+        private const int MaxPageSize = 100;
+        private const int DefaultPageSize = 10;
 
         public MedicineRepository(DiamondHealthContext dbContext)
         {
@@ -31,78 +33,95 @@ namespace SEP490_BE.DAL.Repositories
 
         public async Task CreateMedicineAsync(Medicine medicine, CancellationToken ct = default)
         {
-            var normalized = (medicine.MedicineName ?? string.Empty).Trim().ToLower();
-
-            bool exists = await _dbContext.Medicines.AnyAsync(
-                m => m.ProviderId == medicine.ProviderId &&
-                     m.MedicineName.ToLower() == normalized,
-                ct);
-
-            if (exists)
-                throw new InvalidOperationException(
-                    $"Medicine '{medicine.MedicineName}' already exists for this provider.");
 
             await using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
 
-            await _dbContext.Medicines.AddAsync(medicine, ct);
-            await _dbContext.SaveChangesAsync(ct);
+            try
+            {
+                var normalized = medicine.MedicineName.Trim().ToLower();
 
-            await CreateMedicineVersionSnapshotAsync(medicine, ct);
+                bool exists = await _dbContext.Medicines.AnyAsync(
+                    m => m.ProviderId == medicine.ProviderId &&
+                         m.MedicineName.ToLower() == normalized,
+                    ct);
 
-            await tx.CommitAsync(ct);
+                if (exists)
+                    throw new InvalidOperationException(
+                        $"Medicine '{medicine.MedicineName}' already exists for this provider.");
+
+                await _dbContext.Medicines.AddAsync(medicine, ct);
+                await _dbContext.SaveChangesAsync(ct);
+
+                await CreateMedicineVersionSnapshotAsync(medicine, ct);
+
+                await tx.CommitAsync(ct);
+            }
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                throw;
+            }
         }
 
         public async Task UpdateMedicineAsync(Medicine medicine, CancellationToken ct = default)
         {
+            // Service đã validate medicine
+
             await using var tx = await _dbContext.Database.BeginTransactionAsync(ct);
 
-            var existing = await _dbContext.Medicines
-                .Include(m => m.Provider).ThenInclude(p => p.User)
-                .FirstOrDefaultAsync(m => m.MedicineId == medicine.MedicineId, ct);
-
-            if (existing == null)
-                throw new KeyNotFoundException($"Medicine with ID {medicine.MedicineId} not found.");
-
-            if (existing.ProviderId != medicine.ProviderId)
-                throw new InvalidOperationException("Changing Provider is not allowed.");
-
-            var incomingName = medicine.MedicineName?.Trim();
-            var isRename = incomingName != null &&
-                           !string.Equals(incomingName, existing.MedicineName,
-                               StringComparison.OrdinalIgnoreCase);
-
-            if (isRename)
+            try
             {
-                var normalized = incomingName!.ToLower();
-                bool duplicated = await _dbContext.Medicines.AnyAsync(
-                    m => m.ProviderId == existing.ProviderId &&
-                         m.MedicineId != existing.MedicineId &&
-                         m.MedicineName.ToLower() == normalized,
-                    ct);
+                var existing = await _dbContext.Medicines
+                    .FirstOrDefaultAsync(m => m.MedicineId == medicine.MedicineId, ct);
 
-                if (duplicated)
-                    throw new InvalidOperationException(
-                        $"Medicine '{incomingName}' already exists for this provider.");
+                if (existing == null)
+                    throw new KeyNotFoundException($"Medicine with ID {medicine.MedicineId} not found.");
 
-                existing.MedicineName = incomingName;
+                if (existing.ProviderId != medicine.ProviderId)
+                    throw new InvalidOperationException("Changing Provider is not allowed.");
+
+                var incomingName = medicine.MedicineName.Trim();
+                var isRename = !string.Equals(incomingName, existing.MedicineName,
+                    StringComparison.OrdinalIgnoreCase);
+
+                if (isRename)
+                {
+                    var normalized = incomingName.ToLower();
+                    bool duplicated = await _dbContext.Medicines.AnyAsync(
+                        m => m.ProviderId == existing.ProviderId &&
+                             m.MedicineId != existing.MedicineId &&
+                             m.MedicineName.ToLower() == normalized,
+                        ct);
+
+                    if (duplicated)
+                        throw new InvalidOperationException(
+                            $"Medicine '{incomingName}' already exists for this provider.");
+
+                    existing.MedicineName = incomingName;
+                }
+
+                existing.Status = medicine.Status;
+                existing.ActiveIngredient = medicine.ActiveIngredient;
+                existing.Strength = medicine.Strength;
+                existing.DosageForm = medicine.DosageForm;
+                existing.Route = medicine.Route;
+                existing.PrescriptionUnit = medicine.PrescriptionUnit;
+                existing.TherapeuticClass = medicine.TherapeuticClass;
+                existing.PackSize = medicine.PackSize;
+                existing.CommonSideEffects = medicine.CommonSideEffects;
+                existing.NoteForDoctor = medicine.NoteForDoctor;
+
+                await _dbContext.SaveChangesAsync(ct);
+
+                await CreateMedicineVersionSnapshotAsync(existing, ct);
+
+                await tx.CommitAsync(ct);
             }
-
-            existing.Status = medicine.Status;
-            existing.ActiveIngredient = medicine.ActiveIngredient;
-            existing.Strength = medicine.Strength;
-            existing.DosageForm = medicine.DosageForm;
-            existing.Route = medicine.Route;
-            existing.PrescriptionUnit = medicine.PrescriptionUnit;
-            existing.TherapeuticClass = medicine.TherapeuticClass;
-            existing.PackSize = medicine.PackSize;
-            existing.CommonSideEffects = medicine.CommonSideEffects;
-            existing.NoteForDoctor = medicine.NoteForDoctor;
-
-            await _dbContext.SaveChangesAsync(ct);
-
-            await CreateMedicineVersionSnapshotAsync(existing, ct);
-
-            await tx.CommitAsync(ct);
+            catch
+            {
+                await tx.RollbackAsync(ct);
+                throw;
+            }
         }
 
         public async Task<int?> GetProviderIdByUserIdAsync(int userId, CancellationToken ct = default)
@@ -119,11 +138,11 @@ namespace SEP490_BE.DAL.Repositories
             CancellationToken ct = default)
         {
             if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 10;
+            if (pageSize < 1) pageSize = DefaultPageSize;
+            if (pageSize > MaxPageSize) pageSize = MaxPageSize;
 
             var query = _dbContext.Medicines
                 .Where(m => m.ProviderId == providerId)
-                .Include(m => m.Provider).ThenInclude(p => p.User)
                 .AsNoTracking();
 
             if (!string.IsNullOrWhiteSpace(status))
@@ -139,10 +158,13 @@ namespace SEP490_BE.DAL.Repositories
                 _ => query.OrderByDescending(m => m.MedicineId)
             };
 
-            int total = await query.CountAsync(ct);
+            int total = await ordered.CountAsync(ct);
+
             var items = await ordered
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
+                .Include(m => m.Provider).ThenInclude(p => p.User)
                 .ToListAsync(ct);
 
             return (items, total);
@@ -152,6 +174,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             var provider = await _dbContext.PharmacyProviders
                 .Include(p => p.User)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.ProviderId == source.ProviderId, ct);
 
             string? contact = null;
@@ -165,7 +188,8 @@ namespace SEP490_BE.DAL.Repositories
                 if (!string.IsNullOrWhiteSpace(provider.User?.Phone))
                     parts.Add(provider.User.Phone.Trim());
 
-                contact = string.Join(" - ", parts);
+                if (parts.Count > 0)
+                    contact = string.Join(" - ", parts);
             }
 
             var version = new MedicineVersion
@@ -192,6 +216,5 @@ namespace SEP490_BE.DAL.Repositories
             await _dbContext.MedicineVersions.AddAsync(version, ct);
             await _dbContext.SaveChangesAsync(ct);
         }
-
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.InternalMedRecordsDTO;
@@ -29,7 +28,7 @@ namespace SEP490_BE.API.Controllers
             {
                 return NotFound(new
                 {
-                    message = $"InternalMedRecord cho RecordId {recordId} không tồn tại"
+                    message = $"Không tìm thấy hồ sơ khám nội cho hồ sơ khám bệnh có mã {recordId}."
                 });
             }
 
@@ -61,7 +60,7 @@ namespace SEP490_BE.API.Controllers
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi tạo InternalMedRecord",
+                        message = "Đã xảy ra lỗi khi tạo hồ sơ khám nội.",
                         detail = ex.Message
                     });
             }
@@ -83,13 +82,17 @@ namespace SEP490_BE.API.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
                 return StatusCode(
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi cập nhật InternalMedRecord",
+                        message = "Đã xảy ra lỗi khi cập nhật hồ sơ khám nội.",
                         detail = ex.Message
                     });
             }
@@ -112,7 +115,7 @@ namespace SEP490_BE.API.Controllers
                     (int)HttpStatusCode.InternalServerError,
                     new
                     {
-                        message = "Lỗi khi xóa InternalMedRecord",
+                        message = "Đã xảy ra lỗi khi xóa hồ sơ khám nội.",
                         detail = ex.Message
                     });
             }

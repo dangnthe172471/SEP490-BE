@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs.Common;
 using SEP490_BE.DAL.DTOs.TestReDTO;
+using System.Net;
 
 namespace SEP490_BE.API.Controllers
 {
@@ -23,32 +24,45 @@ namespace SEP490_BE.API.Controllers
             [FromQuery] int pageSize = 20,
             CancellationToken ct = default)
         {
-            if (!Enum.TryParse<RequiredState>(requiredState, true, out var state))
-                state = RequiredState.All;
-
-            if (!string.IsNullOrWhiteSpace(patientName) &&
-                string.Equals(patientName, "patientName", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                patientName = null;
+                if (!Enum.TryParse<RequiredState>(requiredState, true, out var state))
+                    state = RequiredState.All;
+
+                if (!string.IsNullOrWhiteSpace(patientName) &&
+                    string.Equals(patientName, "patientName", StringComparison.OrdinalIgnoreCase))
+                {
+                    patientName = null;
+                }
+
+                DateOnly? visitDate = null;
+                if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
+                {
+                    visitDate = d;
+                }
+
+                var q = new TestWorklistQueryDto
+                {
+                    VisitDate = visitDate,
+                    PatientName = patientName,
+                    RequiredState = state,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+
+                var result = await _service.GetWorklistAsync(q, ct);
+                return Ok(result);
             }
-
-            DateOnly? visitDate = null;
-            if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
+            catch (Exception ex)
             {
-                visitDate = d;
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi lấy danh sách worklist xét nghiệm.",
+                        detail = ex.Message
+                    });
             }
-
-            var q = new TestWorklistQueryDto
-            {
-                VisitDate = visitDate,
-                PatientName = patientName,
-                RequiredState = state,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
-
-            var result = await _service.GetWorklistAsync(q, ct);
-            return Ok(result);
         }
 
         [Authorize(Roles = "Doctor,Patient,Nurse")]
@@ -57,8 +71,21 @@ namespace SEP490_BE.API.Controllers
             [FromRoute] int recordId,
             CancellationToken ct = default)
         {
-            var items = await _service.GetByRecordIdAsync(recordId, ct);
-            return Ok(items);
+            try
+            {
+                var items = await _service.GetByRecordIdAsync(recordId, ct);
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi lấy danh sách kết quả xét nghiệm theo phiếu khám.",
+                        detail = ex.Message
+                    });
+            }
         }
 
         [Authorize(Roles = "Doctor,Patient,Nurse")]
@@ -67,9 +94,29 @@ namespace SEP490_BE.API.Controllers
             [FromRoute] int id,
             CancellationToken ct = default)
         {
-            var item = await _service.GetByIdAsync(id, ct);
-            if (item == null) return NotFound();
-            return Ok(item);
+            try
+            {
+                var item = await _service.GetByIdAsync(id, ct);
+                if (item == null)
+                {
+                    return NotFound(new
+                    {
+                        message = $"Không tìm thấy kết quả xét nghiệm với mã {id}."
+                    });
+                }
+
+                return Ok(item);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi lấy chi tiết kết quả xét nghiệm.",
+                        detail = ex.Message
+                    });
+            }
         }
 
         [Authorize(Roles = "Doctor,Nurse")]
@@ -78,8 +125,37 @@ namespace SEP490_BE.API.Controllers
             [FromBody] CreateTestResultDto dto,
             CancellationToken ct = default)
         {
-            var created = await _service.CreateAsync(dto, ct);
-            return CreatedAtAction(nameof(GetById), new { id = created.TestResultId }, created);
+            try
+            {
+                var created = await _service.CreateAsync(dto, ct);
+                return CreatedAtAction(nameof(GetById), new { id = created.TestResultId }, created);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi tạo kết quả xét nghiệm.",
+                        detail = ex.Message
+                    });
+            }
         }
 
         [Authorize(Roles = "Doctor,Nurse")]
@@ -89,8 +165,33 @@ namespace SEP490_BE.API.Controllers
             [FromBody] UpdateTestResultDto dto,
             CancellationToken ct = default)
         {
-            var updated = await _service.UpdateAsync(id, dto, ct);
-            return Ok(updated);
+            try
+            {
+                var updated = await _service.UpdateAsync(id, dto, ct);
+                return Ok(updated);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi cập nhật kết quả xét nghiệm.",
+                        detail = ex.Message
+                    });
+            }
         }
 
         [Authorize(Roles = "Doctor,Nurse")]
@@ -99,16 +200,46 @@ namespace SEP490_BE.API.Controllers
             [FromRoute] int id,
             CancellationToken ct = default)
         {
-            await _service.DeleteAsync(id, ct);
-            return NoContent();
+            try
+            {
+                await _service.DeleteAsync(id, ct);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi xoá kết quả xét nghiệm.",
+                        detail = ex.Message
+                    });
+            }
         }
 
         [Authorize(Roles = "Doctor,Nurse")]
         [HttpGet("types")]
         public async Task<ActionResult<List<TestTypeLite>>> GetTypes(CancellationToken ct = default)
         {
-            var types = await _service.GetTestTypesAsync(ct);
-            return Ok(types);
+            try
+            {
+                var types = await _service.GetTestTypesAsync(ct);
+                return Ok(types);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(
+                    (int)HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        message = "Đã xảy ra lỗi hệ thống khi lấy danh sách loại xét nghiệm.",
+                        detail = ex.Message
+                    });
+            }
         }
     }
 }

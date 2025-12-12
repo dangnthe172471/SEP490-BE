@@ -19,7 +19,7 @@ namespace SEP490_BE.API.Controllers
             _medicineService = medicineService;
         }
 
-        private static int RequireUserId(ClaimsPrincipal user)
+        private static int GetUserIdFromClaims(ClaimsPrincipal user)
         {
             var raw = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(raw, out var id)) return id;
@@ -28,56 +28,106 @@ namespace SEP490_BE.API.Controllers
 
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken ct)
-            => Ok(await _medicineService.GetAllMedicineAsync(ct));
+        {
+            try
+            {
+                var medicines = await _medicineService.GetAllMedicineAsync(ct);
+                return Ok(medicines);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id, CancellationToken ct)
         {
-            var medicine = await _medicineService.GetMedicineByIdAsync(id, ct);
-            return medicine is null
-                ? NotFound(new { message = $"Medicine with ID {id} not found." })
-                : Ok(medicine);
+            try
+            {
+                // Service sẽ validate id
+                var medicine = await _medicineService.GetMedicineByIdAsync(id, ct);
+                return medicine is null
+                    ? NotFound(new { message = $"thuốc với ID: {id} không tồn tại." })
+                    : Ok(medicine);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize(Roles = ProviderRole)]
         [HttpPost("create")]
         public async Task<IActionResult> Create([FromBody] CreateMedicineDto dto, CancellationToken ct)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            int userId;
-            try { userId = RequireUserId(User); }
-            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
+                var userId = GetUserIdFromClaims(User);
+
                 var providerId = await _medicineService.GetProviderIdByUserIdAsync(userId, ct);
-                if (!providerId.HasValue) return Forbid();
+                if (!providerId.HasValue)
+                    return Forbid();
 
                 await _medicineService.CreateMedicineAsync(dto, providerId.Value, ct);
-                return Ok(new { message = "Medicine added successfully." });
+                return Ok(new { message = "Thêm thuốc thành công." });
             }
-            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred.", detail = ex.Message });
+            }
         }
 
         [Authorize(Roles = ProviderRole)]
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateMedicineDto dto, CancellationToken ct)
         {
-            int userId;
-            try { userId = RequireUserId(User); }
-            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
-
             try
             {
+                var userId = GetUserIdFromClaims(User);
+
                 await _medicineService.UpdateMineAsync(userId, id, dto, ct);
-                return Ok(new { message = "Medicine updated successfully." });
+                return Ok(new { message = "Cập nhật thuốc thành công." });
             }
-            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
-            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi.", detail = ex.Message });
+            }
         }
 
         [Authorize(Roles = ProviderRole)]
@@ -89,17 +139,27 @@ namespace SEP490_BE.API.Controllers
             [FromQuery] string? sort = null,
             CancellationToken ct = default)
         {
-            int userId;
-            try { userId = RequireUserId(User); }
-            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
-
             try
             {
-                var result = await _medicineService.GetMinePagedAsync(userId, pageNumber, pageSize, status, sort, ct);
+                var userId = GetUserIdFromClaims(User);
+
+                var result = await _medicineService.GetMinePagedAsync(
+                    userId, pageNumber, pageSize, status, sort, ct);
+
                 return Ok(result);
             }
-            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
-            catch (UnauthorizedAccessException) { return Forbid(); }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi.", detail = ex.Message });
+            }
         }
 
         [Authorize(Roles = ProviderRole)]
@@ -128,23 +188,34 @@ namespace SEP490_BE.API.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest(new { message = "File Excel không hợp lệ." });
 
-            int userId;
-            try { userId = RequireUserId(User); }
-            catch { return Unauthorized("Thiếu hoặc không hợp lệ claim NameIdentifier."); }
+            var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+            if (extension != ".xlsx" && extension != ".xls")
+                return BadRequest(new { message = "Chỉ chấp nhận file Excel (.xlsx hoặc .xls)." });
+
+            const long maxFileSize = 10 * 1024 * 1024;
+            if (file.Length > maxFileSize)
+                return BadRequest(new { message = "File không được vượt quá 10MB." });
 
             try
             {
+                var userId = GetUserIdFromClaims(User);
+
                 using var stream = file.OpenReadStream();
                 var result = await _medicineService.ImportFromExcelAsync(userId, stream, ct);
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Lỗi khi import Excel.", detail = ex.Message });
             }
         }
     }

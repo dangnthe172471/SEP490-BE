@@ -28,14 +28,30 @@ namespace SEP490_BE.BLL.Services
             if (req.Items.Count == 0)
                 throw new InvalidOperationException("Đơn thuốc phải có ít nhất 1 dòng.");
 
+            // Validate Dosage & Duration khác null cho từng dòng
+            for (var idx = 0; idx < req.Items.Count; idx++)
+            {
+                var item = req.Items[idx];
+
+                if (item.Dosage is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Dòng {idx + 1}: Liều dùng (Dosage) không được để trống.");
+                }
+
+                if (item.Duration is null)
+                {
+                    throw new InvalidOperationException(
+                        $"Dòng {idx + 1}: Thời gian dùng thuốc (Duration) không được để trống.");
+                }
+            }
+
             var medicineIds = req.Items.Select(i => i.MedicineId).Distinct().ToArray();
 
-            // Validate MedicineId tồn tại
             var meds = await _repo.GetMedicinesByIdsAsync(medicineIds, ct);
             if (meds.Count != medicineIds.Length)
                 throw new InvalidOperationException("Một hoặc nhiều thuốc không hợp lệ.");
 
-            // ✅ Chỉ cho kê thuốc đang cung cấp (Status = Providing). Các status khác coi như Stopped.
             var invalidStopped = meds.Values
                 .Where(m => !string.Equals(m.Status?.Trim(), "Providing", StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -47,7 +63,6 @@ namespace SEP490_BE.BLL.Services
                     $"Không thể kê đơn với các thuốc đã ngừng cung cấp: {names}.");
             }
 
-            // Lấy snapshot version mới nhất cho từng MedicineId
             var latestVersions = await _repo.GetLatestMedicineVersionsByMedicineIdsAsync(medicineIds, ct);
 
             var header = new Prescription
@@ -57,7 +72,6 @@ namespace SEP490_BE.BLL.Services
                 IssuedDate = req.IssuedDate ?? DateTime.UtcNow,
             };
 
-            // Tạo PrescriptionDetail: KHÔNG còn MedicineId, chỉ cần MedicineVersionId
             var details = req.Items.Select(i =>
             {
                 if (!latestVersions.TryGetValue(i.MedicineId, out var v))
@@ -75,7 +89,6 @@ namespace SEP490_BE.BLL.Services
             var created = await _repo.CreatePrescriptionAsync(header, details, ct);
             var appt = record.Appointment;
 
-            // Map lại theo VersionId vì PrescriptionDetail không còn MedicineId
             var latestByVersionId = latestVersions.Values
                 .ToDictionary(v => v.MedicineVersionId, v => v);
 
@@ -144,6 +157,16 @@ namespace SEP490_BE.BLL.Services
 
             var appt = pres.Record.Appointment;
 
+            var doctorUserId = appt.Doctor?.UserId;
+            var patientUserId = appt.Patient?.UserId;
+
+            if (userIdFromToken != 0 &&
+                userIdFromToken != doctorUserId &&
+                userIdFromToken != patientUserId)
+            {
+                throw new UnauthorizedAccessException("Bạn không có quyền xem đơn thuốc này.");
+            }
+
             return new PrescriptionSummaryDto
             {
                 PrescriptionId = pres.PrescriptionId,
@@ -205,7 +228,7 @@ namespace SEP490_BE.BLL.Services
                 : new DiagnosisInfoDto { Text = raw };
         }
 
-        public Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
+        public async Task<PagedResult<RecordListItemDto>> GetRecordsForDoctorAsync(
             int userIdFromToken,
             DateOnly? visitDateFrom,
             DateOnly? visitDateTo,
@@ -213,7 +236,65 @@ namespace SEP490_BE.BLL.Services
             int pageNumber,
             int pageSize,
             CancellationToken ct)
-            => _repo.GetRecordsForDoctorAsync(userIdFromToken, visitDateFrom, visitDateTo, patientNameSearch, pageNumber, pageSize, ct);
+        {
+            var doctor = await _repo.GetDoctorByUserIdAsync(userIdFromToken, ct)
+                         ?? throw new InvalidOperationException("Bác sĩ không tồn tại.");
+
+            var (records, total) = await _repo.GetRecordsForDoctorAsync(
+                doctor.DoctorId,
+                visitDateFrom,
+                visitDateTo,
+                patientNameSearch,
+                pageNumber,
+                pageSize,
+                ct);
+
+            if (records.Count == 0)
+            {
+                return new PagedResult<RecordListItemDto>
+                {
+                    Items = new List<RecordListItemDto>(),
+                    PageNumber = pageNumber,
+                    PageSize = pageSize,
+                    TotalCount = total
+                };
+            }
+
+            var recordIds = records.Select(r => r.RecordId).ToArray();
+            var latestByRecord = await _repo.GetLatestPrescriptionIdsByRecordIdsAsync(recordIds, ct);
+
+            var items = records.Select(r =>
+            {
+                latestByRecord.TryGetValue(r.RecordId, out var latestPresId);
+                var appt = r.Appointment;
+
+                return new RecordListItemDto
+                {
+                    RecordId = r.RecordId,
+                    AppointmentId = r.AppointmentId,
+                    VisitAt = appt.AppointmentDate,
+
+                    PatientId = appt.PatientId,
+                    PatientName = appt.Patient.User.FullName ?? $"BN#{appt.PatientId}",
+                    Gender = appt.Patient.User.Gender,
+                    Dob = appt.Patient.User.Dob,
+                    Phone = appt.Patient.User.Phone,
+
+                    DiagnosisRaw = r.Diagnosis,
+
+                    HasPrescription = latestPresId.HasValue,
+                    LatestPrescriptionId = latestPresId
+                };
+            }).ToList();
+
+            return new PagedResult<RecordListItemDto>
+            {
+                Items = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = total
+            };
+        }
     }
 }
 

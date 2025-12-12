@@ -6,9 +6,9 @@ namespace SEP490_BE.BLL.IServices
     public interface IPrescriptionDoctorService
     {
         Task<PrescriptionSummaryDto> CreateAsync(
-             int userIdFromToken,
-             CreatePrescriptionRequest req,
-             CancellationToken ct);
+            int userIdFromToken,
+            CreatePrescriptionRequest req,
+            CancellationToken ct);
 
         Task<PrescriptionSummaryDto?> GetByIdAsync(
             int userIdFromToken,

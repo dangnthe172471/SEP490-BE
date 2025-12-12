@@ -30,12 +30,17 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<ReadPediatricRecordDto> CreateAsync(CreatePediatricRecordDto dto, CancellationToken ct = default)
         {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto), "Dữ liệu tạo hồ sơ khám nhi không được để trống.");
+            }
+
             var record = await _medicalRecordRepo.GetByIdAsync(dto.RecordId, ct);
             if (record == null)
-                throw new KeyNotFoundException($"MedicalRecord {dto.RecordId} không tồn tại");
+                throw new KeyNotFoundException($"Phiếu khám (MedicalRecord) với mã {dto.RecordId} không tồn tại.");
 
             if (await _pediatricRepo.HasPediatricAsync(dto.RecordId, ct))
-                throw new InvalidOperationException("PediatricRecord đã tồn tại cho MedicalRecord này.");
+                throw new InvalidOperationException("Hồ sơ khám nhi đã tồn tại cho phiếu khám này.");
 
             var created = await _pediatricRepo.CreateAsync(new PediatricRecord
             {
@@ -53,25 +58,49 @@ namespace SEP490_BE.BLL.Services
 
         public async Task<ReadPediatricRecordDto> UpdateAsync(int recordId, UpdatePediatricRecordDto dto, CancellationToken ct = default)
         {
-            var entity = await _pediatricRepo.GetByRecordIdAsync(recordId, ct)
-                ?? throw new KeyNotFoundException($"PediatricRecord cho RecordId {recordId} không tồn tại");
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto), "Dữ liệu cập nhật hồ sơ khám nhi không được để trống.");
+            }
 
-            if (dto.WeightKg.HasValue) entity.WeightKg = dto.WeightKg;
-            if (dto.HeightCm.HasValue) entity.HeightCm = dto.HeightCm;
-            if (dto.HeartRate.HasValue) entity.HeartRate = dto.HeartRate;
-            if (dto.TemperatureC.HasValue) entity.TemperatureC = dto.TemperatureC;
+            var hasAnyField =
+                dto.WeightKg.HasValue ||
+                dto.HeightCm.HasValue ||
+                dto.HeartRate.HasValue ||
+                dto.TemperatureC.HasValue;
+
+            if (!hasAnyField)
+            {
+                throw new ArgumentException("Không có dữ liệu nào để cập nhật hồ sơ khám nhi.", nameof(dto));
+            }
+
+            var entity = await _pediatricRepo.GetByRecordIdAsync(recordId, ct)
+                ?? throw new KeyNotFoundException($"Không tìm thấy hồ sơ khám nhi cho phiếu khám có mã {recordId}.");
+
+            if (dto.WeightKg.HasValue) entity.WeightKg = dto.WeightKg.Value;
+            if (dto.HeightCm.HasValue) entity.HeightCm = dto.HeightCm.Value;
+            if (dto.HeartRate.HasValue) entity.HeartRate = dto.HeartRate.Value;
+            if (dto.TemperatureC.HasValue) entity.TemperatureC = dto.TemperatureC.Value;
 
             await _pediatricRepo.UpdateAsync(entity, ct);
             return Map(entity);
         }
 
-        public Task DeleteAsync(int recordId, CancellationToken ct = default)
-            => _pediatricRepo.DeleteAsync(recordId, ct);
+        public async Task DeleteAsync(int recordId, CancellationToken ct = default)
+        {
+            var entity = await _pediatricRepo.GetByRecordIdAsync(recordId, ct);
+            if (entity == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy hồ sơ khám nhi cho phiếu khám có mã {recordId}.");
+            }
+
+            await _pediatricRepo.DeleteAsync(recordId, ct);
+        }
 
         private async Task AddMedicalServiceAsync(int recordId, string category, CancellationToken ct)
         {
             var service = await _medicalServiceRepo.GetServiceByCategoryAsync(category, ct)
-                ?? throw new InvalidOperationException($"Chưa cấu hình Service cho Category '{category}'");
+                ?? throw new InvalidOperationException($"Chưa cấu hình dịch vụ cho nhóm '{category}'.");
 
             bool exists = await _medicalServiceRepo.MedicalServiceExistsAsync(recordId, service.ServiceId, ct);
             if (exists) return;

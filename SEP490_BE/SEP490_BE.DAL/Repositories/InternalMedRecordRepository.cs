@@ -4,7 +4,7 @@ using SEP490_BE.DAL.Models;
 
 namespace SEP490_BE.DAL.Repositories
 {
-    public class InternalMedRecordRepository: IInternalMedRecordRepository
+    public class InternalMedRecordRepository : IInternalMedRecordRepository
     {
         private readonly DiamondHealthContext _context;
 
