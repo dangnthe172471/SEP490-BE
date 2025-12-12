@@ -45,44 +45,145 @@ namespace SEP490_BE.API.Controllers.NotificationControllers
         [HttpPost("send")]
         public async Task<IActionResult> SendNotification([FromBody] CreateNotificationDTO dto)
         {
-            await _notificationService.SendNotificationAsync(dto);
+            if (dto == null)
+            {
+                return BadRequest(new { message = "Notification data is required." });
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Title) ||
+                string.IsNullOrWhiteSpace(dto.Content))
+            {
+                return BadRequest(new { message = "Title and content are required." });
+            }
+
+            if (dto.CreatedBy <= 0)
+            {
+                return BadRequest(new { message = "CreatedBy must be greater than 0." });
+            }
+
+            try
+            {
+                await _notificationService.SendNotificationAsync(dto);
             return Ok(new { Message = "Notification sent successfully!" });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while sending notification." });
+            }
         }
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserNotifications(int userId, int pageNumber = 1, int pageSize = 10)
         {
-            var result = await _notificationService.GetNotificationsByUserAsync(userId, pageNumber, pageSize);
+            if (userId <= 0 || pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest(new { message = "userId, pageNumber và pageSize phải lớn hơn 0." });
+            }
+
+            try
+            {
+                var result = await _notificationService.GetNotificationsByUserAsync(userId, pageNumber, pageSize);
             return Ok(result);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = "Không tìm thấy user tương ứng." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách thông báo của user." });
+            }
         }
 
         [HttpPut("read/{userId}/{notificationId}")]
         public async Task<IActionResult> MarkAsRead(int userId, int notificationId)
         {
-            var result = await _notificationService.MarkAsReadAsync(userId, notificationId);
+            if (userId <= 0 || notificationId <= 0)
+            {
+                return BadRequest(new { message = "userId và notificationId phải > 0." });
+            }
+            try
+            {
+                var result = await _notificationService.MarkAsReadAsync(userId, notificationId);
             if (!result)
                 return NotFound(new { message = "Không tìm thấy thông báo hoặc user tương ứng." });
 
             return Ok(new { message = "Đã đánh dấu thông báo là đã đọc." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi cập nhật trạng thái thông báo." });
+            }
         }
 
 
         [HttpGet("unread-count/{userId}")]
         public async Task<IActionResult> GetUnreadCount(int userId)
         {
-            var count = await _notificationService.CountUnreadAsync(userId);
+            if (userId <= 0)
+            {
+                return BadRequest(new { message = "userId phải lớn hơn 0." });
+            }
+            try
+            {
+                var count = await _notificationService.CountUnreadAsync(userId);
             return Ok(count);
+            
+            }
+            catch (KeyNotFoundException)
+            {
+               
+                return NotFound(new { message = "Không tìm thấy user tương ứng." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy số lượng thông báo chưa đọc." });
+            }
         }
         [HttpPut("read-all/{userId}")]
         public async Task<IActionResult> MarkAllAsRead(int userId)
         {
-            await _notificationService.MarkAllAsReadAsync(userId);
+            if (userId <= 0)
+            {
+                return BadRequest(new { message = "userId must be greater than 0." });
+            }
+
+            try
+            {
+                await _notificationService.MarkAllAsReadAsync(userId);
             return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound(new { message = "Không tìm thấy user tương ứng." });
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi cập nhật trạng thái thông báo." });
+            }
         }
         [HttpGet("list-notification")]
         public async Task<IActionResult> GetAllNotifications( int pageNumber = 1, int pageSize = 10)
         {
-            var result = await _notificationService.GetListNotificationsAsync( pageNumber, pageSize);
+            if (pageNumber <= 0 || pageSize <= 0)
+            {
+                return BadRequest(new { message = "pageNumber và pageSize phải lớn hơn 0." });
+            }
+
+            try
+            {
+                var result = await _notificationService.GetListNotificationsAsync( pageNumber, pageSize);
             return Ok(result);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "Có lỗi xảy ra khi lấy danh sách thông báo." });
+            }
         }
     }
 }

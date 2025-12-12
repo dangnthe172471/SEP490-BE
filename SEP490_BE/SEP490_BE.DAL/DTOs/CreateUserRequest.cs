@@ -28,6 +28,11 @@ namespace SEP490_BE.DAL.DTOs
         // Patient specific fields
         public string? Allergies { get; set; }
         public string? MedicalHistory { get; set; }
+
+        // Doctor specific fields
+        public string? Specialty { get; set; }
+        public int? ExperienceYears { get; set; }
+        public int? RoomId { get; set; }
     }
 }
 

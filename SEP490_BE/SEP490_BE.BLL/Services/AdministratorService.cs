@@ -1,4 +1,4 @@
-﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -33,7 +33,10 @@ namespace SEP490_BE.BLL.Services
                 Gender = u.Gender,
                 Dob = u.Dob,
                 IsActive = u.IsActive,
-                Avatar = u.Avatar
+                Avatar = u.Avatar,
+                Specialty = u.Doctor?.Specialty,
+                Allergies = u.Patient?.Allergies,
+                MedicalHistory = u.Patient?.MedicalHistory
             });
         }
         public async Task<UserDto?> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
@@ -70,6 +73,32 @@ namespace SEP490_BE.BLL.Services
                     PatientId = maxPatientId + 1,
                     Allergies = request.Allergies,
                     MedicalHistory = request.MedicalHistory
+                };
+            }
+
+            // Create Doctor record if user is a doctor
+            if (request.RoleId == 4) // 4 is Doctor role based on DB.sql
+            {
+                if (string.IsNullOrWhiteSpace(request.Specialty))
+                {
+                    throw new InvalidOperationException("Chuyên khoa là bắt buộc cho bác sĩ.");
+                }
+                if (!request.ExperienceYears.HasValue || request.ExperienceYears.Value < 0)
+                {
+                    throw new InvalidOperationException("Số năm kinh nghiệm phải là số dương.");
+                }
+                if (!request.RoomId.HasValue || request.RoomId.Value <= 0)
+                {
+                    throw new InvalidOperationException("Phòng làm việc là bắt buộc cho bác sĩ.");
+                }
+
+                var maxDoctorId = await _administratorRepository.GetMaxDoctorIdAsync(cancellationToken);
+                user.Doctor = new SEP490_BE.DAL.Models.Doctor
+                {
+                    DoctorId = maxDoctorId + 1,
+                    Specialty = request.Specialty,
+                    ExperienceYears = request.ExperienceYears.Value,
+                    RoomId = request.RoomId.Value
                 };
             }
 
@@ -247,7 +276,8 @@ namespace SEP490_BE.BLL.Services
                 Gender = user.Gender,
                 Dob = user.Dob,
                 IsActive = user.IsActive,
-                Avatar = user.Avatar
+                Avatar = user.Avatar,
+                Specialty = user.Doctor?.Specialty
             };
 
             // If user is a patient, include patient-specific information
@@ -276,6 +306,7 @@ namespace SEP490_BE.BLL.Services
                 Dob = u.Dob,
                 IsActive = u.IsActive,
                 Avatar = u.Avatar,
+                Specialty = u.Doctor?.Specialty,
                 Allergies = u.Patient?.Allergies,
                 MedicalHistory = u.Patient?.MedicalHistory
             }).ToList();

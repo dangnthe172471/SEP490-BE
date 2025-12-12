@@ -15,6 +15,7 @@ namespace SEP490_BE.BLL.IServices.IManagerServices
     {
         Task<List<ShiftResponseDTO>> GetAllShiftsAsync();
         Task<List<DoctorDTO>> GetAllDoctorsAsync();
+        Task<List<DoctorHomeDTO>> GetAllDoctors2Async();
         Task<List<DoctorDTO>> SearchDoctorsAsync(string keyword);
         Task<bool> CheckDoctorConflictAsync(int doctorId, int shiftId, DateOnly from, DateOnly to);
         Task<int> CreateScheduleAsync(CreateScheduleRequestDTO dto);

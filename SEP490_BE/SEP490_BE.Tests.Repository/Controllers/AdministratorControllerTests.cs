@@ -12,11 +12,12 @@ namespace SEP490_BE.Tests.Controllers;
 public class AdministratorControllerTests
 {
     private readonly Mock<IAdministratorService> _serviceMock = new(MockBehavior.Strict);
+    private readonly Mock<IRoomService> _roomServiceMock = new(MockBehavior.Strict);
     private readonly AdministratorController _controller;
 
     public AdministratorControllerTests()
     {
-        _controller = new AdministratorController(_serviceMock.Object);
+        _controller = new AdministratorController(_serviceMock.Object, _roomServiceMock.Object);
     }
 
     private static ControllerContext AdminContext()
@@ -41,16 +42,35 @@ public class AdministratorControllerTests
         return new ControllerContext { HttpContext = new DefaultHttpContext { User = user } };
     }
 
+    private static UserDto CreateCompleteUserDto(int userId, string fullName, string phone, string? role = "Patient", bool isActive = true)
+    {
+        return new UserDto
+        {
+            UserId = userId,
+            Phone = phone,
+            FullName = fullName,
+            Email = $"user{userId}@example.com",
+            Role = role,
+            Gender = "Male",
+            Dob = DateOnly.FromDateTime(DateTime.Now.AddYears(-30)),
+            IsActive = isActive,
+            EmailVerified = true,
+            Avatar = $"avatar{userId}.jpg",
+            Allergies = "None",
+            MedicalHistory = "No history"
+        };
+    }
+
     // ===== GetAll Tests =====
 
     [Fact]
-    public async Task GetAll_ReturnsOk_WithUsers()
+    public async Task GetAll_UTCID01_ReturnsOk_WithUsers()
     {
         // Arrange
         var users = new List<UserDto>
         {
-            new UserDto { UserId = 1, FullName = "User 1", Phone = "0909123456" },
-            new UserDto { UserId = 2, FullName = "User 2", Phone = "0909123457" }
+            CreateCompleteUserDto(1, "User 1", "0909123456", "Patient"),
+            CreateCompleteUserDto(2, "User 2", "0909123457", "Doctor")
         };
         _serviceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(users);
@@ -66,7 +86,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task GetAll_ReturnsEmptyList_WhenNoUsers()
+    public async Task GetAll_UTCID02_ReturnsOk_WithEmptyList()
     {
         // Arrange
         _serviceMock.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
@@ -85,10 +105,10 @@ public class AdministratorControllerTests
     // ===== GetById Tests =====
 
     [Fact]
-    public async Task GetById_ReturnsOk_WhenUserExists()
+    public async Task GetById_UTCID01_ReturnsOk_WhenUserExists()
     {
         // Arrange
-        var user = new UserDto { UserId = 1, FullName = "Test User", Phone = "0909123456" };
+        var user = CreateCompleteUserDto(1, "Test User", "0909123456", "Patient");
         _serviceMock.Setup(s => s.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
@@ -103,7 +123,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task GetById_ReturnsNotFound_WhenUserNotExists()
+    public async Task GetById_UTCID02_ReturnsNotFound_WhenUserNotExists()
     {
         // Arrange
         _serviceMock.Setup(s => s.GetByIdAsync(999, It.IsAny<CancellationToken>()))
@@ -118,10 +138,26 @@ public class AdministratorControllerTests
         _serviceMock.VerifyAll();
     }
 
+    [Fact]
+    public async Task GetById_UTCID03_ReturnsOk_WhenUserIdIsZero()
+    {
+        // Arrange
+        _serviceMock.Setup(s => s.GetByIdAsync(0, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserDto?)null);
+
+        // Act
+        var result = await _controller.GetById(0, default);
+
+        // Assert
+        var notFoundResult = Assert.IsType<NotFoundResult>(result.Result);
+        notFoundResult.StatusCode.Should().Be(404);
+        _serviceMock.VerifyAll();
+    }
+
     // ===== CreateUser Tests =====
 
     [Fact]
-    public async Task CreateUser_ReturnsCreated_WhenValidRequest()
+    public async Task CreateUser_UTCID01_ReturnsCreated_WhenValidRequest()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -130,9 +166,12 @@ public class AdministratorControllerTests
             Phone = "0909123456",
             Password = "123456",
             FullName = "New User",
+            Email = "newuser@example.com",
+            Dob = DateOnly.FromDateTime(DateTime.Now.AddYears(-25)),
+            Gender = "Male",
             RoleId = 2
         };
-        var createdUser = new UserDto { UserId = 100, FullName = request.FullName, Phone = request.Phone };
+        var createdUser = CreateCompleteUserDto(100, request.FullName, request.Phone, "Patient");
         _serviceMock.Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(createdUser);
 
@@ -149,11 +188,43 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task CreateUser_ReturnsBadRequest_WhenModelStateInvalid()
+    public async Task CreateUser_UTCID02_ReturnsCreated_WhenValidRequestWithPatientFields()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
-        _controller.ModelState.AddModelError("Phone", "Phone is required");
+        var request = new CreateUserRequest
+        {
+            Phone = "0909123457",
+            Password = "123456",
+            FullName = "New Patient",
+            Email = "patient@example.com",
+            Dob = DateOnly.FromDateTime(DateTime.Now.AddYears(-30)),
+            Gender = "Female",
+            RoleId = 3,
+            Allergies = "Peanuts",
+            MedicalHistory = "Diabetes"
+        };
+        var createdUser = CreateCompleteUserDto(101, request.FullName, request.Phone, "Patient");
+        createdUser.Allergies = request.Allergies;
+        createdUser.MedicalHistory = request.MedicalHistory;
+        _serviceMock.Setup(s => s.CreateUserAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(createdUser);
+
+        // Act
+        var result = await _controller.CreateUser(request, default);
+
+        // Assert
+        var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
+        createdResult.StatusCode.Should().Be(201);
+        _serviceMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task CreateUser_UTCID03_ReturnsBadRequest_WhenModelStateInvalid()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        _controller.ModelState.AddModelError("Phone", "Số điện thoại là bắt buộc");
         var request = new CreateUserRequest();
 
         // Act
@@ -166,7 +237,53 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task CreateUser_ReturnsBadRequest_WhenServiceReturnsNull()
+    public async Task CreateUser_UTCID04_ReturnsBadRequest_WhenPhoneIsEmpty()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        var request = new CreateUserRequest
+        {
+            Phone = "",
+            Password = "123456",
+            FullName = "New User",
+            RoleId = 2
+        };
+        _controller.ModelState.AddModelError("Phone", "Số điện thoại là bắt buộc");
+
+        // Act
+        var result = await _controller.CreateUser(request, default);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        badRequestResult.StatusCode.Should().Be(400);
+        _serviceMock.Verify(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateUser_UTCID05_ReturnsBadRequest_WhenPasswordIsTooShort()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        var request = new CreateUserRequest
+        {
+            Phone = "0909123456",
+            Password = "12345",
+            FullName = "New User",
+            RoleId = 2
+        };
+        _controller.ModelState.AddModelError("Password", "Mật khẩu phải có ít nhất 6 ký tự");
+
+        // Act
+        var result = await _controller.CreateUser(request, default);
+
+        // Assert
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        badRequestResult.StatusCode.Should().Be(400);
+        _serviceMock.Verify(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateUser_UTCID06_ReturnsBadRequest_WhenServiceReturnsNull()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -190,7 +307,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task CreateUser_ReturnsBadRequest_WhenInvalidOperationException()
+    public async Task CreateUser_UTCID07_ReturnsBadRequest_WhenInvalidOperationException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -214,7 +331,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task CreateUser_ReturnsInternalServerError_WhenException()
+    public async Task CreateUser_UTCID08_ReturnsInternalServerError_WhenException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -240,12 +357,13 @@ public class AdministratorControllerTests
     // ===== UpdateUser Tests =====
 
     [Fact]
-    public async Task UpdateUser_ReturnsOk_WhenValidRequest()
+    public async Task UpdateUser_UTCID01_ReturnsOk_WhenAdminUpdatesUser()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
-        var request = new UpdateUserRequest { FullName = "Updated Name" };
-        var updatedUser = new UserDto { UserId = 1, FullName = "Updated Name" };
+        var request = new UpdateUserRequest { FullName = "Updated Name", Email = "updated@example.com" };
+        var updatedUser = CreateCompleteUserDto(1, "Updated Name", "0909123456", "Patient");
+        updatedUser.Email = "updated@example.com";
         _serviceMock.Setup(s => s.UpdateUserAsync(1, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatedUser);
 
@@ -260,12 +378,12 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task UpdateUser_ReturnsOk_WhenUserUpdatesThemselves()
+    public async Task UpdateUser_UTCID02_ReturnsOk_WhenUserUpdatesThemselves()
     {
         // Arrange
         _controller.ControllerContext = UserContext(5);
-        var request = new UpdateUserRequest { FullName = "My Updated Name" };
-        var updatedUser = new UserDto { UserId = 5, FullName = "My Updated Name" };
+        var request = new UpdateUserRequest { FullName = "My Updated Name", Phone = "0909999999" };
+        var updatedUser = CreateCompleteUserDto(5, "My Updated Name", "0909999999", "Patient");
         _serviceMock.Setup(s => s.UpdateUserAsync(5, request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatedUser);
 
@@ -275,11 +393,12 @@ public class AdministratorControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         okResult.StatusCode.Should().Be(200);
+        okResult.Value.Should().BeEquivalentTo(updatedUser);
         _serviceMock.VerifyAll();
     }
 
     [Fact]
-    public async Task UpdateUser_ReturnsForbidden_WhenUserTriesToUpdateOtherUser()
+    public async Task UpdateUser_UTCID03_ReturnsForbidden_WhenUserTriesToUpdateOtherUser()
     {
         // Arrange
         _controller.ControllerContext = UserContext(5);
@@ -295,12 +414,12 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task UpdateUser_ReturnsBadRequest_WhenModelStateInvalid()
+    public async Task UpdateUser_UTCID04_ReturnsBadRequest_WhenModelStateInvalid()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
-        _controller.ModelState.AddModelError("Email", "Invalid email");
-        var request = new UpdateUserRequest();
+        _controller.ModelState.AddModelError("Email", "Email không hợp lệ");
+        var request = new UpdateUserRequest { Email = "invalid-email" };
 
         // Act
         var result = await _controller.UpdateUser(1, request, default);
@@ -312,7 +431,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task UpdateUser_ReturnsNotFound_WhenUserNotExists()
+    public async Task UpdateUser_UTCID05_ReturnsNotFound_WhenUserNotExists()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -330,7 +449,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task UpdateUser_ReturnsBadRequest_WhenInvalidOperationException()
+    public async Task UpdateUser_UTCID06_ReturnsBadRequest_WhenInvalidOperationException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -347,10 +466,28 @@ public class AdministratorControllerTests
         _serviceMock.VerifyAll();
     }
 
+    [Fact]
+    public async Task UpdateUser_UTCID07_ReturnsInternalServerError_WhenException()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        var request = new UpdateUserRequest { FullName = "Updated Name" };
+        _serviceMock.Setup(s => s.UpdateUserAsync(1, request, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _controller.UpdateUser(1, request, default);
+
+        // Assert
+        var statusCodeResult = Assert.IsType<ObjectResult>(result.Result);
+        statusCodeResult.StatusCode.Should().Be(500);
+        _serviceMock.VerifyAll();
+    }
+
     // ===== DeleteUser Tests =====
 
     [Fact]
-    public async Task DeleteUser_ReturnsNoContent_WhenUserDeleted()
+    public async Task DeleteUser_UTCID01_ReturnsNoContent_WhenUserDeleted()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -361,12 +498,13 @@ public class AdministratorControllerTests
         var result = await _controller.DeleteUser(1, default);
 
         // Assert
-        Assert.IsType<NoContentResult>(result);
+        var noContentResult = Assert.IsType<NoContentResult>(result);
+        noContentResult.StatusCode.Should().Be(204);
         _serviceMock.VerifyAll();
     }
 
     [Fact]
-    public async Task DeleteUser_ReturnsNotFound_WhenUserNotExists()
+    public async Task DeleteUser_UTCID02_ReturnsNotFound_WhenUserNotExists()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -383,7 +521,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task DeleteUser_ReturnsConflict_WhenInvalidOperationException()
+    public async Task DeleteUser_UTCID03_ReturnsConflict_WhenInvalidOperationException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -400,7 +538,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task DeleteUser_ReturnsInternalServerError_WhenException()
+    public async Task DeleteUser_UTCID04_ReturnsInternalServerError_WhenException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -419,13 +557,13 @@ public class AdministratorControllerTests
     // ===== ToggleUserStatus Tests =====
 
     [Fact]
-    public async Task ToggleUserStatus_ReturnsOk_WhenStatusToggled()
+    public async Task ToggleUserStatus_UTCID01_ReturnsOk_WhenStatusToggled()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
         _serviceMock.Setup(s => s.ToggleUserStatusAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
-        var updatedUser = new UserDto { UserId = 1, IsActive = false };
+        var updatedUser = CreateCompleteUserDto(1, "Test User", "0909123456", "Patient", false);
         _serviceMock.Setup(s => s.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatedUser);
 
@@ -440,7 +578,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task ToggleUserStatus_ReturnsNotFound_WhenUserNotExists()
+    public async Task ToggleUserStatus_UTCID02_ReturnsNotFound_WhenUserNotExists()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -457,7 +595,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task ToggleUserStatus_ReturnsInternalServerError_WhenException()
+    public async Task ToggleUserStatus_UTCID03_ReturnsInternalServerError_WhenException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -476,7 +614,7 @@ public class AdministratorControllerTests
     // ===== SearchUsers Tests =====
 
     [Fact]
-    public async Task SearchUsers_ReturnsOk_WithResults()
+    public async Task SearchUsers_UTCID01_ReturnsOk_WithResults()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -485,7 +623,7 @@ public class AdministratorControllerTests
         {
             Users = new List<UserDto>
             {
-                new UserDto { UserId = 1, FullName = "Test User" }
+                CreateCompleteUserDto(1, "Test User", "0909123456", "Patient")
             },
             TotalCount = 1,
             PageNumber = 1,
@@ -505,12 +643,38 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task SearchUsers_ReturnsBadRequest_WhenModelStateInvalid()
+    public async Task SearchUsers_UTCID02_ReturnsOk_WithEmptyResults()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        var request = new SearchUserRequest { FullName = "NonExistent", PageNumber = 1, PageSize = 10 };
+        var response = new SearchUserResponse
+        {
+            Users = new List<UserDto>(),
+            TotalCount = 0,
+            PageNumber = 1,
+            PageSize = 10
+        };
+        _serviceMock.Setup(s => s.SearchUsersAsync(request, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(response);
+
+        // Act
+        var result = await _controller.SearchUsers(request, default);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        okResult.StatusCode.Should().Be(200);
+        ((SearchUserResponse)okResult.Value!).Users.Should().BeEmpty();
+        _serviceMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task SearchUsers_UTCID03_ReturnsBadRequest_WhenModelStateInvalid()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
         _controller.ModelState.AddModelError("PageNumber", "Invalid page number");
-        var request = new SearchUserRequest();
+        var request = new SearchUserRequest { PageNumber = -1, PageSize = 10 };
 
         // Act
         var result = await _controller.SearchUsers(request, default);
@@ -522,7 +686,7 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task SearchUsers_ReturnsInternalServerError_WhenException()
+    public async Task SearchUsers_UTCID04_ReturnsInternalServerError_WhenException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -542,14 +706,14 @@ public class AdministratorControllerTests
     // ===== GetAllPatients Tests =====
 
     [Fact]
-    public async Task GetAllPatients_ReturnsOk_WithPatients()
+    public async Task GetAllPatients_UTCID01_ReturnsOk_WithPatients()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
         var patients = new List<UserDto>
         {
-            new UserDto { UserId = 1, FullName = "Patient 1", Role = "Patient" },
-            new UserDto { UserId = 2, FullName = "Patient 2", Role = "Patient" }
+            CreateCompleteUserDto(1, "Patient 1", "0909123456", "Patient"),
+            CreateCompleteUserDto(2, "Patient 2", "0909123457", "Patient")
         };
         _serviceMock.Setup(s => s.GetAllPatientsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(patients);
@@ -565,7 +729,25 @@ public class AdministratorControllerTests
     }
 
     [Fact]
-    public async Task GetAllPatients_ReturnsInternalServerError_WhenException()
+    public async Task GetAllPatients_UTCID02_ReturnsOk_WithEmptyList()
+    {
+        // Arrange
+        _controller.ControllerContext = AdminContext();
+        _serviceMock.Setup(s => s.GetAllPatientsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserDto>());
+
+        // Act
+        var result = await _controller.GetAllPatients(default);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        okResult.StatusCode.Should().Be(200);
+        ((IEnumerable<UserDto>)okResult.Value!).Should().BeEmpty();
+        _serviceMock.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetAllPatients_UTCID03_ReturnsInternalServerError_WhenException()
     {
         // Arrange
         _controller.ControllerContext = AdminContext();
@@ -581,5 +763,3 @@ public class AdministratorControllerTests
         _serviceMock.VerifyAll();
     }
 }
-
-

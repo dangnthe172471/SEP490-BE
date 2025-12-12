@@ -18,11 +18,34 @@ namespace SEP490_BE.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Clinic Manager")]
+        [Authorize(Roles = "Clinic Manager,Administrator")]
         public async Task<ActionResult<IEnumerable<RoomDto>>> GetAll(CancellationToken cancellationToken)
         {
-            var rooms = await _roomService.GetAllAsync(cancellationToken);
-            return Ok(rooms);
+            try
+            {
+                var rooms = await _roomService.GetAllAsync(cancellationToken);
+                return Ok(rooms);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi lấy danh sách phòng.", error = ex.Message });
+            }
+        }
+
+        // Endpoint riêng cho admin để lấy danh sách phòng (không cần authorization chặt chẽ)
+        [HttpGet("for-admin")]
+        [Authorize] // Chỉ cần authenticated, không cần role cụ thể
+        public async Task<ActionResult<IEnumerable<RoomDto>>> GetAllForAdmin(CancellationToken cancellationToken)
+        {
+            try
+            {
+                var rooms = await _roomService.GetAllAsync(cancellationToken);
+                return Ok(rooms);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Có lỗi xảy ra khi lấy danh sách phòng.", error = ex.Message });
+            }
         }
 
 

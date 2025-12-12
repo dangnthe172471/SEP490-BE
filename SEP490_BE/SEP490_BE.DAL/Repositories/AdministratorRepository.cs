@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.IRepositories;
 using SEP490_BE.DAL.Models;
@@ -24,6 +24,8 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
+                .Include(u => u.Patient)
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
@@ -41,15 +43,18 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
                 .Include(u => u.Patient)
                 .FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
         }
 
         public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
-            // Temporarily remove Patient from user to avoid adding it with UserId = 0
+            // Temporarily remove Patient and Doctor from user to avoid adding them with UserId = 0
             var patient = user.Patient;
+            var doctor = user.Doctor;
             user.Patient = null;
+            user.Doctor = null;
 
             await _dbContext.Users.AddAsync(user, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -63,6 +68,17 @@ namespace SEP490_BE.DAL.Repositories
 
                 // Restore the relationship
                 user.Patient = patient;
+            }
+
+            // Handle Doctor record similarly
+            if (doctor != null)
+            {
+                doctor.UserId = user.UserId;
+                await _dbContext.Doctors.AddAsync(doctor, cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                // Restore the relationship
+                user.Doctor = doctor;
             }
         }
 
@@ -96,6 +112,13 @@ namespace SEP490_BE.DAL.Repositories
         {
             var maxId = await _dbContext.Patients
                 .MaxAsync(p => (int?)p.PatientId, cancellationToken);
+            return maxId ?? 0;
+        }
+
+        public async Task<int> GetMaxDoctorIdAsync(CancellationToken cancellationToken = default)
+        {
+            var maxId = await _dbContext.Doctors
+                .MaxAsync(d => (int?)d.DoctorId, cancellationToken);
             return maxId ?? 0;
         }
 
@@ -194,6 +217,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             var query = _dbContext.Users
                 .Include(u => u.Role)
+                .Include(u => u.Doctor)
                 .Include(u => u.Patient)
                 .AsQueryable();
 

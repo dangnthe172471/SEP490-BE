@@ -26,4 +26,13 @@ namespace SEP490_BE.DAL.DTOs
         public TimeOnly EndTime { get; set; }
         public string? Status { get; set; }
     }
+    public class DoctorHomeDTO
+    {
+        public int DoctorID { get; set; }
+        public string FullName { get; set; }
+        public string Specialty { get; set; }
+        public string Experience { get; set; }
+        public string Email { get; set; }
+        public string? AvatarUrl { get; set; }
+    }
 }
