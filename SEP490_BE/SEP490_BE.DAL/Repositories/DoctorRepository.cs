@@ -23,6 +23,7 @@ namespace SEP490_BE.DAL.Repositories
         {
             return await _context.Doctors
                 .Include(d => d.User)
+                .Include(d => d.Room)
                 .ToListAsync();
         }
         public async Task<List<Doctor>> SearchDoctorsAsync(string keyword)

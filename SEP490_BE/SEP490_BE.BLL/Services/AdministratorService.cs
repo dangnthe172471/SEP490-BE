@@ -61,7 +61,8 @@ namespace SEP490_BE.BLL.Services
                 Dob = request.Dob,
                 Gender = request.Gender,
                 RoleId = request.RoleId,
-                IsActive = true
+                IsActive = true,
+                Avatar = request.Avatar
             };
 
             // Create Patient record if user is a patient

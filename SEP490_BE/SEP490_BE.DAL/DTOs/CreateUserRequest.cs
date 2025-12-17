@@ -33,6 +33,9 @@ namespace SEP490_BE.DAL.DTOs
         public string? Specialty { get; set; }
         public int? ExperienceYears { get; set; }
         public int? RoomId { get; set; }
+
+        // Avatar URL
+        public string? Avatar { get; set; }
     }
 }
 

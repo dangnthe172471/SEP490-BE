@@ -69,7 +69,8 @@ namespace SEP490_BE.BLL.Services.ManagerServices
                 Specialty = d.Specialty,
                 Experience = d.ExperienceYears.ToString(),
                 Email = d.User.Email,
-                AvatarUrl = d.User.Avatar
+                AvatarUrl = d.User.Avatar,
+                RoomName = d.Room?.RoomName
             }).ToList();
         }
         // Tìm bsi theo tên

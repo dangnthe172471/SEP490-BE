@@ -34,5 +34,6 @@ namespace SEP490_BE.DAL.DTOs
         public string Experience { get; set; }
         public string Email { get; set; }
         public string? AvatarUrl { get; set; }
+        public string? RoomName { get; set; }
     }
 }
