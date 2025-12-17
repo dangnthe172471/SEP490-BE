@@ -436,5 +436,31 @@ namespace SEP490_BE.DAL.Repositories
                 .Include(d => d.User)
                 .FirstOrDefaultAsync(d => d.DoctorId == doctorId);
         }
+
+        public async Task<int?> GetDoctorIdByUserIdAsync(int userId)
+        {
+            var doctor = await _context.Doctors
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+            return doctor?.DoctorId;
+        }
+
+        public async Task<DoctorDTO?> GetDoctorByUserIdAsync(int userId)
+        {
+            var doctor = await _context.Doctors
+                .AsNoTracking()
+                .Include(d => d.User)
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+            
+            if (doctor == null) return null;
+            
+            return new DoctorDTO
+            {
+                DoctorID = doctor.DoctorId,
+                FullName = doctor.User.FullName,
+                Specialty = doctor.Specialty,
+                Email = doctor.User.Email ?? ""
+            };
+        }
     }
 }

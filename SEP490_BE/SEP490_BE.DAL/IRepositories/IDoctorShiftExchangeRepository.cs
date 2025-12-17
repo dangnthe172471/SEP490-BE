@@ -19,5 +19,7 @@ namespace SEP490_BE.DAL.IRepositories
         Task<List<DoctorDTO>> GetAllDoctorsAsync();
         Task<List<string>> GetSpecialtiesAsync();
         Task<Doctor?> GetDoctorByIdAsync(int doctorId);
+        Task<int?> GetDoctorIdByUserIdAsync(int userId);
+        Task<DoctorDTO?> GetDoctorByUserIdAsync(int userId);
     }
 }

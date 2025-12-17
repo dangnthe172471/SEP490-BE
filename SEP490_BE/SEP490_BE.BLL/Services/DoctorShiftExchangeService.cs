@@ -83,19 +83,14 @@ namespace SEP490_BE.BLL.Services
             return await _repository.GetDoctorsBySpecialtyAsync(specialty);
         }
 
-        public async Task<List<DoctorDTO>> GetAllDoctorsAsync()
+        public async Task<int?> GetDoctorIdByUserIdAsync(int userId)
         {
-            return await _repository.GetAllDoctorsAsync();
+            return await _repository.GetDoctorIdByUserIdAsync(userId);
         }
 
-        public async Task<List<string>> GetSpecialtiesAsync()
+        public async Task<DoctorDTO?> GetDoctorByUserIdAsync(int userId)
         {
-            return await _repository.GetSpecialtiesAsync();
-        }
-
-        public async Task<Doctor?> GetDoctorByIdAsync(int doctorId)
-        {
-            return await _repository.GetDoctorByIdAsync(doctorId);
+            return await _repository.GetDoctorByUserIdAsync(userId);
         }
 
         public async Task<bool> ValidateShiftSwapRequestAsync(CreateShiftSwapRequestDTO request)

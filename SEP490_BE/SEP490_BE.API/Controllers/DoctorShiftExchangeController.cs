@@ -130,5 +130,41 @@ namespace SEP490_BE.API.Controllers
                 return BadRequest(new { success = false, message = ex.Message });
             }
         }
+
+        [HttpGet("doctor-id/user/{userId}")]
+        public async Task<IActionResult> GetDoctorIdByUserId(int userId)
+        {
+            try
+            {
+                var doctorId = await _service.GetDoctorIdByUserIdAsync(userId);
+                if (!doctorId.HasValue)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy bác sĩ với userId này" });
+                }
+                return Ok(new { success = true, data = doctorId.Value });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
+        [HttpGet("doctor/user/{userId}")]
+        public async Task<IActionResult> GetDoctorByUserId(int userId)
+        {
+            try
+            {
+                var doctor = await _service.GetDoctorByUserIdAsync(userId);
+                if (doctor == null)
+                {
+                    return NotFound(new { success = false, message = "Không tìm thấy bác sĩ với userId này" });
+                }
+                return Ok(new { success = true, data = doctor });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
     }
 }

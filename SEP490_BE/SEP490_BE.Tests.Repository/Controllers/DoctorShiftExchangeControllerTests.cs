@@ -428,4 +428,139 @@ public class DoctorShiftExchangeControllerTests
     }
 
     #endregion
+
+    #region GetDoctorIdByUserId Tests
+
+    [Fact]
+    public async Task GetDoctorIdByUserId_ReturnsOk_WhenFound()
+    {
+        // Arrange
+        var userId = 1;
+        var expectedDoctorId = 5;
+        _service.Setup(s => s.GetDoctorIdByUserIdAsync(userId))
+            .ReturnsAsync((int?)expectedDoctorId);
+
+        // Act
+        var result = await NewController().GetDoctorIdByUserId(userId);
+
+        // Assert
+        AssertOkResult(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var valueType = okResult.Value!.GetType();
+        var dataProperty = valueType.GetProperty("data");
+        var dataValue = dataProperty?.GetValue(okResult.Value);
+        Assert.Equal(expectedDoctorId, (int)dataValue!);
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserId_ReturnsNotFound_WhenNotFound()
+    {
+        // Arrange
+        var userId = 999;
+        _service.Setup(s => s.GetDoctorIdByUserIdAsync(userId))
+            .ReturnsAsync((int?)null);
+
+        // Act
+        var result = await NewController().GetDoctorIdByUserId(userId);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        notFound.StatusCode.Should().Be(404);
+        var valueType = notFound.Value!.GetType();
+        var messageProperty = valueType.GetProperty("message");
+        var messageValue = messageProperty?.GetValue(notFound.Value)?.ToString();
+        Assert.Equal("Không tìm thấy bác sĩ với userId này", messageValue);
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetDoctorIdByUserId_ReturnsInternalServerError_WhenException()
+    {
+        // Arrange
+        var userId = 1;
+        _service.Setup(s => s.GetDoctorIdByUserIdAsync(userId))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await NewController().GetDoctorIdByUserId(userId);
+
+        // Assert
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        statusCodeResult.StatusCode.Should().Be(500);
+        _service.VerifyAll();
+    }
+
+    #endregion
+
+    #region GetDoctorByUserId Tests
+
+    [Fact]
+    public async Task GetDoctorByUserId_ReturnsOk_WhenFound()
+    {
+        // Arrange
+        var userId = 1;
+        var expectedDoctor = new DoctorDTO
+        {
+            DoctorID = 5,
+            FullName = "Bác sĩ A",
+            Specialty = "Nội khoa",
+            Email = "doctor1@example.com"
+        };
+
+        _service.Setup(s => s.GetDoctorByUserIdAsync(userId))
+            .ReturnsAsync(expectedDoctor);
+
+        // Act
+        var result = await NewController().GetDoctorByUserId(userId);
+
+        // Assert
+        AssertOkResult(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var valueType = okResult.Value!.GetType();
+        var dataProperty = valueType.GetProperty("data");
+        var dataValue = dataProperty?.GetValue(okResult.Value);
+        Assert.NotNull(dataValue);
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserId_ReturnsNotFound_WhenNotFound()
+    {
+        // Arrange
+        var userId = 999;
+        _service.Setup(s => s.GetDoctorByUserIdAsync(userId))
+            .ReturnsAsync((DoctorDTO?)null);
+
+        // Act
+        var result = await NewController().GetDoctorByUserId(userId);
+
+        // Assert
+        var notFound = Assert.IsType<NotFoundObjectResult>(result);
+        notFound.StatusCode.Should().Be(404);
+        var valueType = notFound.Value!.GetType();
+        var messageProperty = valueType.GetProperty("message");
+        var messageValue = messageProperty?.GetValue(notFound.Value)?.ToString();
+        Assert.Equal("Không tìm thấy bác sĩ với userId này", messageValue);
+        _service.VerifyAll();
+    }
+
+    [Fact]
+    public async Task GetDoctorByUserId_ReturnsInternalServerError_WhenException()
+    {
+        // Arrange
+        var userId = 1;
+        _service.Setup(s => s.GetDoctorByUserIdAsync(userId))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await NewController().GetDoctorByUserId(userId);
+
+        // Assert
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        statusCodeResult.StatusCode.Should().Be(500);
+        _service.VerifyAll();
+    }
+
+    #endregion
 }
