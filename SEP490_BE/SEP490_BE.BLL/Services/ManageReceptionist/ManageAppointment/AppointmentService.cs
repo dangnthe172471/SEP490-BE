@@ -1,10 +1,15 @@
-﻿using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
+﻿using SEP490_BE.BLL.IServices;
+using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
+using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
+using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
+using SEP490_BE.DAL.IRepositories.IManagerRepository;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
@@ -13,13 +18,19 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
     {
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IEmailServiceApp _emailServiceApp;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly IMedicalRecordService _medicalRecordService;
 
         public AppointmentService(
             IAppointmentRepository appointmentRepository,
-            IEmailServiceApp emailServiceApp)
+            IEmailServiceApp emailServiceApp,
+            INotificationRepository notificationRepository,
+            IMedicalRecordService medicalRecordService)
         {
             _appointmentRepository = appointmentRepository;
             _emailServiceApp = emailServiceApp;
+            _notificationRepository = notificationRepository;
+            _medicalRecordService = medicalRecordService;
         }
 
         #region Appointment Methods
@@ -223,11 +234,17 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 throw new ArgumentException("Doctor not found.");
             }
 
-            // Validate receptionist exists
-            var receptionist = await _appointmentRepository.GetReceptionistByIdAsync(receptionistId, cancellationToken);
-            if (receptionist == null)
+            // Validate receptionist exists (nếu receptionistId > 0)
+            int? receptionistIdNullable = receptionistId > 0 ? receptionistId : null;
+            string? receptionistName = null;
+            if (receptionistIdNullable.HasValue)
             {
-                throw new ArgumentException("Receptionist not found.");
+                var receptionist = await _appointmentRepository.GetReceptionistByIdAsync(receptionistIdNullable.Value, cancellationToken);
+                if (receptionist == null)
+                {
+                    throw new ArgumentException("Receptionist not found.");
+                }
+                receptionistName = receptionist.User.FullName;
             }
 
             // Create appointment
@@ -237,12 +254,35 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 DoctorId = request.DoctorId,
                 AppointmentDate = request.AppointmentDate,
                 ReasonForVisit = request.ReasonForVisit?.Trim(),
-                Status = "Confirmed", // Receptionist tạo thì pending
+                Status = "Confirmed", // Receptionist hoặc Doctor tạo thì confirmed
                 CreatedAt = DateTime.Now,
-                ReceptionistId = receptionistId // Có ReceptionistId
+                ReceptionistId = receptionistIdNullable // Có thể null nếu Doctor tạo
             };
 
             await _appointmentRepository.AddAsync(appointment, cancellationToken);
+
+            // Tạo medical record để đảm bảo liên kết đúng bệnh nhân với appointment
+            try
+            {
+                // Kiểm tra xem đã có medical record chưa
+                var existingRecord = await _medicalRecordService.GetByAppointmentIdAsync(appointment.AppointmentId, cancellationToken);
+                if (existingRecord == null)
+                {
+                    // Tạo medical record mới nếu chưa có
+                    await _medicalRecordService.CreateAsync(new CreateMedicalRecordDto
+                    {
+                        AppointmentId = appointment.AppointmentId,
+                        DoctorNotes = null,
+                        Diagnosis = null
+                    }, cancellationToken);
+                    Console.WriteLine($"[DEBUG] ✅ Created medical record for appointment {appointment.AppointmentId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to create medical record: {ex.Message}");
+                // Không throw exception vì appointment đã được tạo thành công
+            }
 
             // Send confirmation email if patient has email
             if (!string.IsNullOrWhiteSpace(patient.User.Email))
@@ -261,14 +301,55 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                         ReasonForVisit = appointment.ReasonForVisit,
                         Status = appointment.Status,
                         CreatedAt = appointment.CreatedAt,
-                        ReceptionistName = receptionist.User.FullName
+                        ReceptionistName = receptionistName // null nếu Doctor tạo
                     };
 
                     await _emailServiceApp.SendAppointmentConfirmationEmailAsync(confirmation, cancellationToken);
+                    Console.WriteLine($"[DEBUG] ✅ Sent confirmation email to patient {patient.User.Email}");
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[ERROR] Failed to send confirmation email: {ex.Message}");
+                }
+            }
+
+            // Tạo notification cho doctor nếu đây là reappointment từ doctor (ReceptionistId = null)
+            if (!receptionistIdNullable.HasValue && doctor.UserId.HasValue)
+            {
+                try
+                {
+                    // Tạo JSON content cho notification
+                    var notificationContent = new
+                    {
+                        AppointmentId = appointment.AppointmentId,
+                        PatientId = appointment.PatientId,
+                        PatientName = patient.User.FullName,
+                        DoctorId = appointment.DoctorId,
+                        DoctorName = doctor.User.FullName,
+                        AppointmentDate = appointment.AppointmentDate.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        ReasonForVisit = appointment.ReasonForVisit
+                    };
+                    var jsonContent = JsonSerializer.Serialize(notificationContent);
+
+                    // Tạo notification cho doctor
+                    var notificationDto = new CreateNotificationDTO
+                    {
+                        Title = $"Lịch tái khám đã được đặt cho {patient.User.FullName}",
+                        Content = jsonContent,
+                        Type = "Reappointment",
+                        CreatedBy = doctor.UserId.Value,
+                        IsGlobal = false,
+                        ReceiverIds = new List<int> { doctor.UserId.Value } // Gửi cho chính doctor đó
+                    };
+
+                    var notificationId = await _notificationRepository.CreateNotificationAsync(notificationDto);
+                    await _notificationRepository.AddReceiversAsync(notificationId, new List<int> { doctor.UserId.Value });
+                    Console.WriteLine($"[DEBUG] ✅ Created notification for doctor {doctor.UserId} about reappointment");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] Failed to create notification for doctor: {ex.Message}");
+                    // Không throw exception vì appointment đã được tạo thành công
                 }
             }
 
@@ -530,6 +611,12 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         public async Task<DoctorInfoDto?> GetDoctorByIdAsync(int doctorId, CancellationToken cancellationToken = default)
         {
             var doctor = await _appointmentRepository.GetDoctorByIdAsync(doctorId, cancellationToken);
+            return doctor != null ? MapToDoctorDto(doctor) : null;
+        }
+
+        public async Task<DoctorInfoDto?> GetDoctorByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            var doctor = await _appointmentRepository.GetDoctorByUserIdAsync(userId, cancellationToken);
             return doctor != null ? MapToDoctorDto(doctor) : null;
         }
 

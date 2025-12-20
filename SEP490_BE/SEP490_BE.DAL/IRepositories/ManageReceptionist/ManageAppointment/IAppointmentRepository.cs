@@ -38,6 +38,7 @@ namespace SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment
 
         #region Doctor Methods
         Task<Doctor?> GetDoctorByIdAsync(int doctorId, CancellationToken cancellationToken = default);
+        Task<Doctor?> GetDoctorByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         Task<List<Doctor>> GetAllDoctorsAsync(CancellationToken cancellationToken = default);
         #endregion
 

@@ -275,26 +275,64 @@ namespace SEP490_BE.API.Controllers.ManageReceptionist.ManageAppointment
             }
         }
 
-        // POST: api/appointments/create (Receptionist tạo appointment cho patient)
+        // POST: api/appointments/create (Receptionist hoặc Doctor tạo appointment cho patient)
         [HttpPost("create")]
-        [Authorize(Roles = "Receptionist")]
+        [Authorize(Roles = "Receptionist,Doctor")]
         public async Task<ActionResult<int>> CreateAppointment(
             [FromBody] CreateAppointmentByReceptionistRequest request,
             CancellationToken cancellationToken)
         {
             try
             {
-                Console.WriteLine($"[DEBUG] === Creating Appointment by Receptionist ===");
+                Console.WriteLine($"[DEBUG] === Creating Appointment ===");
                 Console.WriteLine($"[DEBUG] Request data: PatientId={request.PatientId}, DoctorId={request.DoctorId}, AppointmentDate={request.AppointmentDate}, ReasonForVisit={request.ReasonForVisit}");
 
-                // Sử dụng method mới để lấy ReceptionistId
-                int receptionistId = await GetReceptionistIdFromTokenAsync(cancellationToken);
-                Console.WriteLine($"[DEBUG] Using ReceptionistId: {receptionistId}");
+                // Kiểm tra role của user hiện tại
+                var userRoles = User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+                Console.WriteLine($"[DEBUG] User roles: {string.Join(", ", userRoles)}");
 
-                var id = await _appointmentService.CreateAppointmentByReceptionistAsync(request, receptionistId, cancellationToken);
-                Console.WriteLine($"[DEBUG] ✅ Created appointment with ID: {id}");
+                int? receptionistId = null;
 
-                return CreatedAtAction(nameof(GetById), new { id }, new { appointmentId = id });
+                // Nếu là Receptionist, lấy ReceptionistId
+                if (userRoles.Contains("Receptionist"))
+                {
+                    receptionistId = await GetReceptionistIdFromTokenAsync(cancellationToken);
+                    Console.WriteLine($"[DEBUG] Using ReceptionistId: {receptionistId}");
+                }
+                // Nếu là Doctor, validate doctor có quyền tạo appointment cho bệnh nhân này
+                else if (userRoles.Contains("Doctor"))
+                {
+                    int userId = GetUserIdFromToken();
+                    var doctor = await _appointmentService.GetDoctorByUserIdAsync(userId, cancellationToken);
+                    if (doctor == null)
+                    {
+                        throw new UnauthorizedAccessException("Doctor not found for current user.");
+                    }
+                    // Validate doctor có thể tạo appointment cho bệnh nhân này
+                    // (Có thể thêm logic kiểm tra thêm nếu cần)
+                    Console.WriteLine($"[DEBUG] Doctor creating appointment: DoctorId={doctor.DoctorId}, RequestedDoctorId={request.DoctorId}");
+                    // Note: Doctor có thể tạo appointment cho bất kỳ bệnh nhân nào
+                    receptionistId = null; // Doctor tạo appointment không có ReceptionistId
+                }
+                else
+                {
+                    throw new UnauthorizedAccessException("Only Receptionist or Doctor can create appointments.");
+                }
+
+                // Nếu có ReceptionistId, dùng method hiện tại
+                if (receptionistId.HasValue)
+                {
+                    var id = await _appointmentService.CreateAppointmentByReceptionistAsync(request, receptionistId.Value, cancellationToken);
+                    Console.WriteLine($"[DEBUG] ✅ Created appointment with ID: {id} by Receptionist");
+                    return CreatedAtAction(nameof(GetById), new { id }, new { appointmentId = id });
+                }
+                else
+                {
+                    // Doctor tạo appointment với ReceptionistId = 0 (sẽ được xử lý thành null trong service)
+                    var id = await _appointmentService.CreateAppointmentByReceptionistAsync(request, 0, cancellationToken);
+                    Console.WriteLine($"[DEBUG] ✅ Created appointment with ID: {id} by Doctor");
+                    return CreatedAtAction(nameof(GetById), new { id }, new { appointmentId = id });
+                }
             }
             catch (UnauthorizedAccessException ex)
             {
