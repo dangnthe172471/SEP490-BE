@@ -4,6 +4,7 @@ using Net.payOS.Types;
 using SEP490_BE.BLL.IServices.IPaymentServices;
 using SEP490_BE.DAL.DTOs.PaymentDTO;
 using SEP490_BE.DAL.IRepositories.IPaymentRepositories;
+using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using System;
 using System.Collections.Generic;
@@ -19,12 +20,13 @@ namespace SEP490_BE.BLL.Services.PaymentServices
         private readonly IPayOSService _payOsService;
         private readonly IConfiguration _config;
         private readonly BankInfoDto _bankInfo;
-        public PaymentService(IPaymentRepository repo, IPayOSService payOsService, IConfiguration configuration)
+        private readonly IAppointmentRepository _appointmentRepository;
+        public PaymentService(IPaymentRepository repo, IPayOSService payOsService, IConfiguration configuration, IAppointmentRepository appointmentRepository)
         {
             _repo = repo;
             _payOsService = payOsService;
             _config = configuration;
-            
+            _appointmentRepository = appointmentRepository;
         }
         public async Task<CreatePaymentResponseDTO> CreatePaymentAsync(CreatePaymentRequestDTO dto, bool role)
         {
@@ -121,6 +123,26 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             payment.PaymentDate = DateTime.Now;
 
             await _repo.UpdateAsync(payment);
+
+            // Update appointment status to "Completed" when payment is successful
+            if (status == "PAID" && payment.Record != null)
+            {
+                try
+                {
+                    var appointment = await _appointmentRepository.GetByIdAsync(payment.Record.AppointmentId);
+                    if (appointment != null && appointment.Status != "Completed")
+                    {
+                        appointment.Status = "Completed";
+                        await _appointmentRepository.UpdateAsync(appointment);
+                        Console.WriteLine($"[Payment] ✅ Updated appointment {appointment.AppointmentId} status to Completed after successful payment (OrderCode: {orderCode})");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Payment] ❌ Failed to update appointment status for RecordId {payment.RecordId}: {ex.Message}");
+                    // Don't throw exception - payment update succeeded, appointment update failure is non-critical
+                }
+            }
         }
 
         public async Task<List<MedicalRecordServiceItemDTO>> GetServicesForRecordAsync(int recordId)

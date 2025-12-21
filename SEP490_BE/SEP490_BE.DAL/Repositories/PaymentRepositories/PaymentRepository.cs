@@ -69,6 +69,8 @@ namespace SEP490_BE.DAL.Repositories.PaymentRepositories
         public async Task<Payment?> GetByOrderCodeAsync(long orderCode)
         {
             return await _db.Payments
+                .Include(p => p.Record)
+                    .ThenInclude(r => r.Appointment)
                 .FirstOrDefaultAsync(x => x.OrderCode == orderCode);
         }
 
