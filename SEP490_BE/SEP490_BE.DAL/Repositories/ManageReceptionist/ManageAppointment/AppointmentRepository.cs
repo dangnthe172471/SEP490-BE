@@ -377,6 +377,14 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
                 .FirstOrDefaultAsync(d => d.DoctorId == doctorId, cancellationToken);
         }
 
+        public async Task<Doctor?> GetDoctorByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Doctors
+                .Include(d => d.User)
+                .Include(d => d.Room)
+                .FirstOrDefaultAsync(d => d.UserId == userId, cancellationToken);
+        }
+
         public async Task<List<Doctor>> GetAllDoctorsAsync(CancellationToken cancellationToken = default)
         {
             return await _dbContext.Doctors

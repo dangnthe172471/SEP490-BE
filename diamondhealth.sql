@@ -17,9 +17,9 @@ GO
 ALTER DATABASE [DiamondHealth] SET COMPATIBILITY_LEVEL = 160;
 GO
 
-IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+IF (1 = FULLTEXTSERVICEPROPERTY(N'IsFullTextInstalled'))
 BEGIN
-    EXEC [DiamondHealth].[dbo].[sp_fulltext_database] @action = 'enable';
+    EXEC [DiamondHealth].[dbo].[sp_fulltext_database] @action = N'enable';
 END
 GO
 
@@ -577,20 +577,20 @@ GO
 -- MỖI BÁC SĨ CÓ 1 PHÒNG RIÊNG
 -- ============================================
 -- Nội khoa (Internal Medicine) - 2 doctors
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (1, 8, N'Nội khoa', 10, 1)   -- Phòng 101
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (2, 13, N'Nội khoa', 8, 5)   -- Phòng 102
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (1, 1, N'Nội khoa', 10, 1)   -- Phòng 101
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (2, 8, N'Nội khoa', 8, 2)   -- Phòng 102
 
 -- Nhi khoa (Pediatrics) - 2 doctors
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (3, 14, N'Nhi khoa', 12, 3)   -- Phòng 301
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (4, 15, N'Nhi khoa', 9, 6)    -- Phòng 302
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (3, 9, N'Nhi khoa', 12, 3)   -- Phòng 301
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (4, 10, N'Nhi khoa', 9, 4)    -- Phòng 302
 
 -- Da liễu (Dermatology) - 2 doctors
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (5, 9, N'Da liễu', 7, 4)      -- Phòng 401
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (6, 16, N'Da liễu', 6, 7)     -- Phòng 402
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (5, 13, N'Da liễu', 7, 5)      -- Phòng 401
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (6, 14, N'Da liễu', 6, 6)     -- Phòng 402
 
 -- Chuyên khoa (Specialist) - 2 doctors
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (7, 1, N'Chuyên khoa', 15, 2) -- Phòng 201
-INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (8, 10, N'Chuyên khoa', 11, 8) -- Phòng 202
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (7, 15, N'Chuyên khoa', 15, 7) -- Phòng 201
+INSERT [dbo].[Doctor] ([DoctorID], [UserID], [Specialty], [ExperienceYears], [RoomID]) VALUES (8, 16, N'Chuyên khoa', 11, 8) -- Phòng 202
 GO
 -- ============================================
 -- INSERT DOCTOR SHIFTS
@@ -782,28 +782,28 @@ GO
 SET IDENTITY_INSERT [dbo].[Room] ON 
 
 -- Nội khoa
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (1, N'Phòng nội khoa 101 - BS. Nguyễn Thị H')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (5, N'Phòng nội khoa 102 - BS. Phạm Văn M')
-
--- Chuyên khoa
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (2, N'Phòng chuyên khoa 201 - BS. Nguyễn Văn A')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (8, N'Phòng chuyên khoa 202 - BS. Lê Thị J')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (1, N'Phòng nội khoa 101')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (2, N'Phòng nội khoa 102')
 
 -- Nhi khoa
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (3, N'Phòng nhi khoa 301 - BS. Nguyễn Thị N')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (6, N'Phòng nhi khoa 302 - BS. Trần Văn O')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (3, N'Phòng nhi khoa 301')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (4, N'Phòng nhi khoa 302')
 
 -- Da liễu
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (4, N'Phòng da liễu 401 - BS. Trần Văn I')
-INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (7, N'Phòng da liễu 402 - BS. Lê Thị P')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (5, N'Phòng da liễu 401')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (6, N'Phòng da liễu 402')
+
+-- Chuyên khoa
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (7, N'Phòng chuyên khoa 201')
+INSERT [dbo].[Room] ([RoomID], [RoomName]) VALUES (8, N'Phòng chuyên khoa 202')
 
 SET IDENTITY_INSERT [dbo].[Room] OFF
 GO
 SET IDENTITY_INSERT [dbo].[Service] ON 
 
-INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (13, N'Dermatology', N'Khám da li?u t?ng quát', CAST(200000.00 AS Decimal(18, 2)), N'Dermatology', 1)
-INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (14, N'InternalMed', N'Khám n?i t?ng quát', CAST(450000.00 AS Decimal(18, 2)), N'InternalMed', 1)
-INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (15, N'Pediatric', N'Khám nhi t?ng quát', CAST(300000.00 AS Decimal(18, 2)), N'Pediatric', 1)
+INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (13, N'Dermatology', N'Khám da liễu tổng quát', CAST(200000.00 AS Decimal(18, 2)), N'Dermatology', 1)
+INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (14, N'InternalMed', N'Khám nội tổng quát', CAST(450000.00 AS Decimal(18, 2)), N'InternalMed', 1)
+INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (15, N'Pediatric', N'Khám nhi tổng quát', CAST(300000.00 AS Decimal(18, 2)), N'Pediatric', 1)
 INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (16, N'Test máu tổng quát', N'Xét nghiệm máu tổng quát', CAST(150000.00 AS Decimal(18, 2)), N'Test', 1)
 INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (17, N'Test nước tiểu', N'Xét nghiệm nước tiểu', CAST(100000.00 AS Decimal(18, 2)), N'Test', 1)
 INSERT [dbo].[Service] ([ServiceID], [ServiceName], [Description], [Price], [Category], [IsActive]) VALUES (18, N'Test đường huyết', N'Xét nghiệm đường huyết', CAST(80000.00 AS Decimal(18, 2)), N'Test', 1)
@@ -834,41 +834,41 @@ GO
 SET IDENTITY_INSERT [dbo].[User] ON 
 
 -- Doctors (8 doctors - 2 per specialty)
--- Chuyên khoa Doctors
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (1, N'0905123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Văn A', N'a.nguyen@diamondhealth.vn', CAST(N'1990-05-15' AS Date), N'Nam', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (10, N'0905123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị J', N'j.le@diamondhealth.vn', CAST(N'1985-11-10' AS Date), N'Nữ', 4, 1, NULL, 1)
+-- Nội khoa
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (1, N'0905123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Minh Dũng', N'nguyen.minh.dung@diamondhealth.vn', CAST(N'1990-05-15' AS Date), N'Nam', 4, 1, N'/uploads/avatars/bsnam1.jpg', 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (8, N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị Lan', N'nguyen.thi.lan@diamondhealth.vn', CAST(N'1988-08-20' AS Date), N'Nữ', 4, 1, N'/uploads/avatars/bsnu1.jpg', 1)
 
--- Nội khoa Doctors
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (8, N'0905123457', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị H', N'h.nguyen@diamondhealth.vn', CAST(N'1988-08-20' AS Date), N'Nữ', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (13, N'0905123460', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn M', N'm.pham@diamondhealth.vn', CAST(N'1985-04-18' AS Date), N'Nam', 4, 1, NULL, 1)
+-- Nhi khoa
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (9, N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn Đức', N'tran.van.duc@diamondhealth.vn', CAST(N'1992-03-15' AS Date), N'Nam', 4, 1, N'/uploads/avatars/bsnam2.jpg', 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (10, N'0905123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị Hương', N'le.thi.huong@diamondhealth.vn', CAST(N'1985-11-10' AS Date), N'Nữ', 4, 1, N'/uploads/avatars/bsnu2.jpg', 1)
 
--- Nhi khoa Doctors
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (14, N'0905123461', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị N', N'n.nguyen@diamondhealth.vn', CAST(N'1982-09-25' AS Date), N'Nữ', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (15, N'0905123462', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn O', N'o.tran@diamondhealth.vn', CAST(N'1989-07-12' AS Date), N'Nam', 4, 1, NULL, 1)
+-- Da liễu
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (13, N'0905123460', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn Minh', N'pham.van.minh@diamondhealth.vn', CAST(N'1985-04-18' AS Date), N'Nam', 4, 1, N'/uploads/avatars/bsnam3.jpg', 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (14, N'0905123461', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Nguyễn Thị Nga', N'nguyen.thi.nga@diamondhealth.vn', CAST(N'1982-09-25' AS Date), N'Nữ', 4, 1, N'/uploads/avatars/bsnu3.jpg', 1)
 
--- Da liễu Doctors
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (9, N'0905123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn I', N'i.tran@diamondhealth.vn', CAST(N'1992-03-15' AS Date), N'Nam', 4, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (16, N'0905123463', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị P', N'p.le@diamondhealth.vn', CAST(N'1991-11-08' AS Date), N'Nữ', 4, 1, NULL, 1)
+-- Chuyên khoa
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (15, N'0905123462', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Văn Nam', N'tran.van.nam@diamondhealth.vn', CAST(N'1989-07-12' AS Date), N'Nam', 4, 1, N'/uploads/avatars/bsnam4.jpg', 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (16, N'0905123463', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị Phương', N'le.thi.phuong@diamondhealth.vn', CAST(N'1991-11-08' AS Date), N'Nữ', 4, 1, N'/uploads/avatars/bsnu4.jpg', 1)
 
 -- Patients
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (2, N'0906123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị B', N'b.le@diamondhealth.vn', CAST(N'1995-03-22' AS Date), N'Nữ', 2, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (11, N'0906123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn K', N'k.pham@email.com', CAST(N'1990-06-15' AS Date), N'Nam', 2, 1, NULL, 1)
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (12, N'0906123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Hoàng Thị L', N'l.hoang@email.com', CAST(N'1987-12-03' AS Date), N'Nữ', 2, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (2, N'0906123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Lê Thị Bình', N'le.thi.binh@diamondhealth.vn', CAST(N'1995-03-22' AS Date), N'Nữ', 2, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (11, N'0906123458', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Văn Khánh', N'pham.van.khanh@diamondhealth.vn', CAST(N'1990-06-15' AS Date), N'Nam', 2, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (12, N'0906123459', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Hoàng Thị Linh', N'hoang.thi.linh@diamondhealth.vn', CAST(N'1987-12-03' AS Date), N'Nữ', 2, 1, NULL, 1)
 
 -- Receptionist
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (3, N'0907123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh C', N'c.pham@diamondhealth.vn', CAST(N'1992-07-10' AS Date), N'Nam', 3, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (3, N'0907123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Phạm Minh Cường', N'pham.minh.cuong@diamondhealth.vn', CAST(N'1992-07-10' AS Date), N'Nam', 3, 1, NULL, 1)
 
 -- Pharmacy Provider
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (4, N'0908123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn D', N'd.vo@diamondhealth.vn', CAST(N'1988-09-30' AS Date), N'Nam', 6, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (4, N'0908123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Võ Tấn Đạt', N'vo.tan.dat@diamondhealth.vn', CAST(N'1988-09-30' AS Date), N'Nam', 6, 1, NULL, 1)
 
 -- Clinic Manager
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (5, N'0909123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị E', N'e.huynh@diamondhealth.vn', CAST(N'1985-12-05' AS Date), N'Nữ', 7, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (5, N'0909123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Huỳnh Thị Em', N'huynh.thi.em@diamondhealth.vn', CAST(N'1985-12-05' AS Date), N'Nữ', 7, 1, NULL, 1)
 
 -- Nurse
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (6, N'0910123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị F', N'f.tran@diamondhealth.vn', CAST(N'1993-08-18' AS Date), N'Nữ', 5, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (6, N'0910123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Trần Thị Phượng', N'tran.thi.phuong@diamondhealth.vn', CAST(N'1993-08-18' AS Date), N'Nữ', 5, 1, NULL, 1)
 
 -- Administrator
-INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (7, N'0911123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc G', N'g.dang@diamondhealth.vn', CAST(N'1980-01-20' AS Date), N'Nam', 8, 1, NULL, 1)
+INSERT [dbo].[User] ([UserID], [Phone], [PasswordHash], [FullName], [Email], [DOB], [Gender], [RoleID], [IsActive], [Avatar], [EmailVerified]) VALUES (7, N'0911123456', N'$2a$11$uP69F9o4TwZP9ftmztyzB.oH/HCDKLCWNmAveQv.2rlKx.nfhcrIW', N'Đặng Quốc Giang', N'dang.quoc.giang@diamondhealth.vn', CAST(N'1980-01-20' AS Date), N'Nam', 8, 1, NULL, 1)
 SET IDENTITY_INSERT [dbo].[User] OFF
 GO
 /****** Object:  Index [UQ__Doctor__1788CCAD324C6F8B]    Script Date: 22/11/2025 19:51:58 ******/

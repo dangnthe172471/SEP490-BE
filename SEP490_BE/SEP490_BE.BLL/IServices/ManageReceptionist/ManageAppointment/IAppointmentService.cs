@@ -30,6 +30,7 @@ namespace SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment
         #region Doctor Methods
         Task<List<DoctorInfoDto>> GetAllDoctorsAsync(CancellationToken cancellationToken = default);
         Task<DoctorInfoDto?> GetDoctorByIdAsync(int doctorId, CancellationToken cancellationToken = default);
+        Task<DoctorInfoDto?> GetDoctorByUserIdAsync(int userId, CancellationToken cancellationToken = default);
         #endregion
 
         #region Patient Methods
