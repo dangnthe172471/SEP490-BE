@@ -60,11 +60,29 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             var cancelUrl = _config["PayOS:CancelReceptionistUrl"];
             var returnUrl = _config["PayOS:ReturnReceptionistUrl"];
 
-            // Đảm bảo URL luôn dùng domain, không dùng IP
+            if (string.IsNullOrWhiteSpace(cancelUrl))
+            {
+                cancelUrl = "https://diamondhealth.io.vn/reception/records";
+            }
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                returnUrl = "https://diamondhealth.io.vn/reception/records";
+            }
+
+        
             cancelUrl = NormalizeUrl(cancelUrl);
             returnUrl = NormalizeUrl(returnUrl);
 
-            Console.WriteLine($"[PayOS] Creating receptionist payment link - CancelUrl: {cancelUrl}, ReturnUrl: {returnUrl}");
+            if (string.IsNullOrWhiteSpace(cancelUrl))
+            {
+                cancelUrl = "https://diamondhealth.io.vn/reception/records";
+            }
+            if (string.IsNullOrWhiteSpace(returnUrl))
+            {
+                returnUrl = "https://diamondhealth.io.vn/reception/records";
+            }
+
+     
 
             var paymentData = new PaymentData(
                 orderCode,
@@ -89,9 +107,7 @@ namespace SEP490_BE.BLL.Services.PaymentServices
             return input.Length > 25 ? input.Substring(0, 25) : input;
         }
 
-        /// <summary>
-        /// Normalize URL: Đảm bảo URL luôn dùng domain diamondhealth.io.vn thay vì IP
-        /// </summary>
+      
         private string NormalizeUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
