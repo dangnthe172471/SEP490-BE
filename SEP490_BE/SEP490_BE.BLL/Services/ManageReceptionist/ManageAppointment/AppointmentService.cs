@@ -3,6 +3,7 @@ using SEP490_BE.BLL.IServices.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.DTOs;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.DTOs.ManagerDTO.Notification;
+using SEP490_BE.DAL.DTOs.MedicalRecordDTO;
 using SEP490_BE.DAL.IRepositories.IManagerRepository;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
@@ -314,7 +315,7 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             }
 
             // Tạo notification cho doctor nếu đây là reappointment từ doctor (ReceptionistId = null)
-            if (!receptionistIdNullable.HasValue && doctor.UserId.HasValue)
+            if (!receptionistIdNullable.HasValue && doctor.UserId > 0)
             {
                 try
                 {
@@ -337,13 +338,13 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                         Title = $"Lịch tái khám đã được đặt cho {patient.User.FullName}",
                         Content = jsonContent,
                         Type = "Reappointment",
-                        CreatedBy = doctor.UserId.Value,
+                        CreatedBy = doctor.UserId,
                         IsGlobal = false,
-                        ReceiverIds = new List<int> { doctor.UserId.Value } // Gửi cho chính doctor đó
+                        ReceiverIds = new List<int> { doctor.UserId } // Gửi cho chính doctor đó
                     };
 
                     var notificationId = await _notificationRepository.CreateNotificationAsync(notificationDto);
-                    await _notificationRepository.AddReceiversAsync(notificationId, new List<int> { doctor.UserId.Value });
+                    await _notificationRepository.AddReceiversAsync(notificationId, new List<int> { doctor.UserId });
                     Console.WriteLine($"[DEBUG] ✅ Created notification for doctor {doctor.UserId} about reappointment");
                 }
                 catch (Exception ex)
