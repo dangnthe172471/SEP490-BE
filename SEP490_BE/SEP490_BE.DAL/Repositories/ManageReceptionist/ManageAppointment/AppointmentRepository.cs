@@ -1,10 +1,11 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment;
 using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
@@ -143,83 +144,46 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
                 if (from.HasValue)
                 {
                     var f = from.Value.Date;
-                    Console.WriteLine($"[AppointmentRepository] Filtering from: {f}");
                     query = query.Where(a => a.AppointmentDate >= f);
                 }
                 if (to.HasValue)
                 {
                     var t = to.Value.Date.AddDays(1).AddTicks(-1);
-                    Console.WriteLine($"[AppointmentRepository] Filtering to: {t}");
                     query = query.Where(a => a.AppointmentDate <= t);
                 }
-
-                // Check total count before grouping
-                var totalCount = await query.CountAsync(cancellationToken);
-                Console.WriteLine($"[AppointmentRepository] Total appointments in range: {totalCount}");
 
                 groupBy = (groupBy ?? "day").ToLower().Trim();
 
                 if (groupBy == "month")
                 {
-                    // Query data first, then format in memory
                     var groupedData = await query
                         .GroupBy(a => new { a.AppointmentDate.Year, a.AppointmentDate.Month })
-                        .Select(g => new
-                        {
-                            Year = g.Key.Year,
-                            Month = g.Key.Month,
-                            Count = g.Count()
-                        })
+                        .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
                         .OrderBy(x => x.Year).ThenBy(x => x.Month)
                         .ToListAsync(cancellationToken);
 
-                    // Format period string in memory (after query execution)
-                    var data = groupedData.Select(g => new AppointmentTimeSeriesPointDto
+                    return groupedData.Select(g => new AppointmentTimeSeriesPointDto
                     {
                         Period = $"{g.Year:0000}-{g.Month:00}",
                         Count = g.Count
                     }).ToList();
-
-                    return data;
                 }
-                else
+
+                var groupedDay = await query
+                    .GroupBy(a => new { a.AppointmentDate.Year, a.AppointmentDate.Month, a.AppointmentDate.Day })
+                    .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Day, Count = g.Count() })
+                    .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day)
+                    .ToListAsync(cancellationToken);
+
+                return groupedDay.Select(g => new AppointmentTimeSeriesPointDto
                 {
-                    // default: day
-                    // Query data first, then format in memory
-                    // Use EntityFunctions.TruncateTime or DbFunctions.TruncateTime for SQL Server
-                    var groupedData = await query
-                        .GroupBy(a => new
-                        {
-                            Year = a.AppointmentDate.Year,
-                            Month = a.AppointmentDate.Month,
-                            Day = a.AppointmentDate.Day
-                        })
-                        .Select(g => new
-                        {
-                            Year = g.Key.Year,
-                            Month = g.Key.Month,
-                            Day = g.Key.Day,
-                            Count = g.Count()
-                        })
-                        .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day)
-                        .ToListAsync(cancellationToken);
-
-                    // Format period string in memory (after query execution)
-                    var data = groupedData.Select(g => new AppointmentTimeSeriesPointDto
-                    {
-                        Period = $"{g.Year:0000}-{g.Month:00}-{g.Day:00}",
-                        Count = g.Count
-                    }).ToList();
-
-                    Console.WriteLine($"[AppointmentRepository] GetAppointmentTimeSeriesAsync result count: {data.Count}");
-                    return data;
-                }
+                    Period = $"{g.Year:0000}-{g.Month:00}-{g.Day:00}",
+                    Count = g.Count
+                }).ToList();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[AppointmentRepository] GetAppointmentTimeSeriesAsync error: {ex.Message}");
-                Console.WriteLine($"[AppointmentRepository] InnerException: {ex.InnerException?.Message}");
-                Console.WriteLine($"[AppointmentRepository] StackTrace: {ex.StackTrace}");
                 throw;
             }
         }
@@ -228,64 +192,38 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
         {
             try
             {
-                Console.WriteLine($"[AppointmentRepository] GetAppointmentHeatmapAsync: from={from}, to={to}");
-
                 var query = _dbContext.Appointments.AsQueryable();
 
                 if (from.HasValue)
                 {
                     var f = from.Value.Date;
-                    Console.WriteLine($"[AppointmentRepository] Filtering from: {f}");
                     query = query.Where(a => a.AppointmentDate >= f);
                 }
                 if (to.HasValue)
                 {
                     var t = to.Value.Date.AddDays(1).AddTicks(-1);
-                    Console.WriteLine($"[AppointmentRepository] Filtering to: {t}");
                     query = query.Where(a => a.AppointmentDate <= t);
                 }
 
-                // Check total count before grouping
-                var totalCount = await query.CountAsync(cancellationToken);
-                Console.WriteLine($"[AppointmentRepository] Total appointments in range: {totalCount}");
-
-                // For better performance with large datasets, we could use SQL functions
-                // But EF Core doesn't support DayOfWeek translation directly, so we load to memory
-                // This is acceptable for appointment data (typically hundreds to thousands of records)
                 var appointments = await query
                     .Select(a => new { a.AppointmentDate })
-                    .AsNoTracking() // Improve performance by not tracking entities
+                    .AsNoTracking()
                     .ToListAsync(cancellationToken);
 
-                Console.WriteLine($"[AppointmentRepository] Loaded {appointments.Count} appointments to memory");
-
-                // Group by weekday and hour in memory
-                // Note: DayOfWeek in C#: Sunday = 0, Monday = 1, ..., Saturday = 6
-                // This matches the frontend expectation (WEEKDAY_LABELS = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"])
-                var groupedData = appointments
-                    .GroupBy(a => new
-                    {
-                        Weekday = (int)a.AppointmentDate.DayOfWeek,
-                        Hour = a.AppointmentDate.Hour
-                    })
+                return appointments
+                    .GroupBy(a => new { Weekday = (int)a.AppointmentDate.DayOfWeek, Hour = a.AppointmentDate.Hour })
                     .Select(g => new AppointmentHeatmapPointDto
                     {
                         Weekday = g.Key.Weekday,
                         Hour = g.Key.Hour,
                         Count = g.Count()
                     })
-                    .OrderBy(x => x.Weekday)
-                    .ThenBy(x => x.Hour)
+                    .OrderBy(x => x.Weekday).ThenBy(x => x.Hour)
                     .ToList();
-
-                Console.WriteLine($"[AppointmentRepository] GetAppointmentHeatmapAsync result count: {groupedData.Count}");
-                return groupedData;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[AppointmentRepository] GetAppointmentHeatmapAsync error: {ex.Message}");
-                Console.WriteLine($"[AppointmentRepository] InnerException: {ex.InnerException?.Message}");
-                Console.WriteLine($"[AppointmentRepository] StackTrace: {ex.StackTrace}");
                 throw;
             }
         }
@@ -303,22 +241,17 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
         {
             var dateOnly = appointmentDate.Date;
 
-            // Get shift times
             var shift = await _dbContext.Shifts.FindAsync(new object[] { shiftId }, cancellationToken);
-            if (shift == null)
-            {
-                return 0;
-            }
+            if (shift == null) return 0;
 
-            // Count appointments within shift time range
             var shiftStartTime = shift.StartTime.ToTimeSpan();
             var shiftEndTime = shift.EndTime.ToTimeSpan();
 
             return await _dbContext.Appointments
                 .Where(a => a.AppointmentDate.Date == dateOnly &&
-                           a.AppointmentDate.TimeOfDay >= shiftStartTime &&
-                           a.AppointmentDate.TimeOfDay < shiftEndTime &&
-                           a.Status != "Cancelled")
+                            a.AppointmentDate.TimeOfDay >= shiftStartTime &&
+                            a.AppointmentDate.TimeOfDay < shiftEndTime &&
+                            a.Status != "Cancelled")
                 .CountAsync(cancellationToken);
         }
 
@@ -327,6 +260,50 @@ namespace SEP490_BE.DAL.Repositories.ManageReceptionist.ManageAppointment
             return await _dbContext.Shifts
                 .Where(s => appointmentTime >= s.StartTime && appointmentTime < s.EndTime)
                 .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        public async Task<int> CountAppointmentsByPatientAndDoctorAsync(int patientId, int doctorId, CancellationToken cancellationToken = default)
+        {
+            return await _dbContext.Appointments
+                .AsNoTracking()
+                .Where(a => a.PatientId == patientId &&
+                            a.DoctorId == doctorId &&
+                            a.Status != "Cancelled")
+                .CountAsync(cancellationToken);
+        }
+
+        // ✅ NEW: Count appointments of a doctor in a shift on a day (exclude Cancelled + optional excludeAppointmentId)
+        public async Task<int> CountAppointmentsByDoctorInShiftAsync(
+            DateTime appointmentDate,
+            int doctorId,
+            int shiftId,
+            int? excludeAppointmentId = null,
+            CancellationToken cancellationToken = default)
+        {
+            var dateOnly = appointmentDate.Date;
+
+            var shift = await _dbContext.Shifts.FindAsync(new object[] { shiftId }, cancellationToken);
+            if (shift == null) return 0;
+
+            var shiftStartTime = shift.StartTime.ToTimeSpan();
+            var shiftEndTime = shift.EndTime.ToTimeSpan();
+
+            var query = _dbContext.Appointments
+                .AsNoTracking()
+                .Where(a =>
+                    a.DoctorId == doctorId &&
+                    a.AppointmentDate.Date == dateOnly &&
+                    a.AppointmentDate.TimeOfDay >= shiftStartTime &&
+                    a.AppointmentDate.TimeOfDay < shiftEndTime &&
+                    a.Status != "Cancelled"
+                );
+
+            if (excludeAppointmentId.HasValue)
+            {
+                query = query.Where(a => a.AppointmentId != excludeAppointmentId.Value);
+            }
+
+            return await query.CountAsync(cancellationToken);
         }
 
         #endregion

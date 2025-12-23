@@ -1,4 +1,4 @@
-using SEP490_BE.DAL.Models;
+﻿using SEP490_BE.DAL.Models;
 using SEP490_BE.DAL.DTOs.ManageReceptionist.ManageAppointment;
 using System;
 using System.Collections.Generic;
@@ -21,9 +21,23 @@ namespace SEP490_BE.DAL.IRepositories.ManageReceptionist.ManageAppointment
         Task<Dictionary<string, int>> GetAppointmentStatisticsAsync(CancellationToken cancellationToken = default);
         Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default);
         Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default);
+
         Task<bool> HasAppointmentOnDateAsync(int patientId, DateTime appointmentDate, CancellationToken cancellationToken = default);
         Task<int> CountAppointmentsInShiftAsync(DateTime appointmentDate, int shiftId, CancellationToken cancellationToken = default);
         Task<Shift?> GetShiftByTimeAsync(TimeOnly appointmentTime, CancellationToken cancellationToken = default);
+
+        // ✅ Patient đặt tối đa 5 lần với mỗi Doctor (không tính Cancelled)
+        Task<int> CountAppointmentsByPatientAndDoctorAsync(int patientId, int doctorId, CancellationToken cancellationToken = default);
+
+        // ✅ NEW: 1 Doctor tối đa 5 lịch / 1 ca / 1 ngày (không tính Cancelled)
+        // excludeAppointmentId dùng cho reschedule để không tự đếm chính appointment đang reschedule
+        Task<int> CountAppointmentsByDoctorInShiftAsync(
+            DateTime appointmentDate,
+            int doctorId,
+            int shiftId,
+            int? excludeAppointmentId = null,
+            CancellationToken cancellationToken = default
+        );
         #endregion
 
         #region User Methods

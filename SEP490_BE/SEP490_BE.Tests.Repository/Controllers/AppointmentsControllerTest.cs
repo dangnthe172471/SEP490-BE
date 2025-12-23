@@ -831,7 +831,7 @@ namespace SEP490_BE.Tests.Controllers.ManageReceptionist.ManageAppointment
             result.Result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-     
+
 
         [Fact]
         public async Task Reschedule_ReturnsUnauthorized_When_NotAppointmentOwner()

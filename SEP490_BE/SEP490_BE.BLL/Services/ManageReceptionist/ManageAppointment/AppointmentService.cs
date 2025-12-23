@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
@@ -66,110 +67,103 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             return appointments.Select(MapToDto).ToList();
         }
 
+        // ✅ Helper: validate shift + doctor capacity (<=5)
+        private async Task<Shift> ValidateDoctorCapacityPerShiftAsync(
+            int doctorId,
+            DateTime appointmentDate,
+            int? excludeAppointmentId,
+            CancellationToken cancellationToken)
+        {
+            var appointmentTime = TimeOnly.FromDateTime(appointmentDate);
+            var shift = await _appointmentRepository.GetShiftByTimeAsync(appointmentTime, cancellationToken);
+
+            if (shift == null)
+            {
+                throw new ArgumentException(
+                    "Thời gian đặt lịch không hợp lệ. Vui lòng chọn thời gian trong các ca: Sáng (08:00-12:00), Chiều (13:30-17:30), Tối (18:00-22:00)."
+                );
+            }
+
+            var count = await _appointmentRepository.CountAppointmentsByDoctorInShiftAsync(
+                appointmentDate,
+                doctorId,
+                shift.ShiftId,
+                excludeAppointmentId,
+                cancellationToken
+            );
+
+            if (count >= 5)
+            {
+                // message rõ ràng theo ca
+                throw new ArgumentException(
+                    $"Bác sĩ đã đủ 5 lịch hẹn trong ca {shift.StartTime:HH\\:mm}-{shift.EndTime:HH\\:mm} ngày {appointmentDate:dd/MM/yyyy}. Vui lòng chọn giờ khác hoặc ngày khác."
+                );
+            }
+
+            return shift;
+        }
+
+        // ✅ Patient tự đặt lịch
         public async Task<int> CreateAppointmentByPatientAsync(BookAppointmentRequest request, int userId, CancellationToken cancellationToken = default)
         {
-            Console.WriteLine($"[DEBUG] === CREATE APPOINTMENT BY PATIENT ===");
-            Console.WriteLine($"[DEBUG] UserId from token: {userId}");
-
             // Validate appointment date
             if (request.AppointmentDate < DateTime.Now)
-            {
                 throw new ArgumentException("Appointment date cannot be in the past.");
-            }
 
             // Get Patient by UserId
             var patient = await _appointmentRepository.GetPatientByUserIdAsync(userId, cancellationToken);
 
             if (patient == null)
             {
-                Console.WriteLine($"[WARNING] No Patient found with UserId = {userId}. Trying to find by phone number...");
-
-                // Try to find User by phone if userId looks like phone number
+                // fallback tìm theo phone nếu userId giống phone
                 if (userId.ToString().Length >= 10)
                 {
-                    Console.WriteLine($"[DEBUG] UserId looks like phone number: {userId}");
-
-                    // Try different phone formats
                     var phoneNumber = userId.ToString();
                     var user = await _appointmentRepository.GetUserByPhoneAsync(phoneNumber, cancellationToken);
 
-                    // Try with leading zero
                     if (user == null && !phoneNumber.StartsWith("0"))
-                    {
-                        Console.WriteLine($"[DEBUG] Trying with leading zero: 0{phoneNumber}");
                         user = await _appointmentRepository.GetUserByPhoneAsync($"0{phoneNumber}", cancellationToken);
-                    }
 
-                    // Try without leading zero
                     if (user == null && phoneNumber.StartsWith("0"))
-                    {
-                        Console.WriteLine($"[DEBUG] Trying without leading zero: {phoneNumber.Substring(1)}");
                         user = await _appointmentRepository.GetUserByPhoneAsync(phoneNumber.Substring(1), cancellationToken);
-                    }
 
                     if (user != null)
-                    {
-                        Console.WriteLine($"[DEBUG] Found User by phone: UserId = {user.UserId}, Phone = {user.Phone}");
                         patient = await _appointmentRepository.GetPatientByUserIdAsync(user.UserId, cancellationToken);
-                        if (patient != null)
-                        {
-                            Console.WriteLine($"[SUCCESS] Found Patient by UserId: PatientId = {patient.PatientId}, UserId = {patient.UserId}");
-                        }
-                    }
                 }
 
                 if (patient == null)
-                {
                     throw new ArgumentException($"Patient not found for UserId = {userId}. Please contact administrator for support.");
-                }
             }
-
-            Console.WriteLine($"[DEBUG] Found Patient: PatientId = {patient.PatientId}, UserId = {patient.UserId}, Name = {patient.User.FullName}");
 
             // Validate patient has email for confirmation
             if (string.IsNullOrWhiteSpace(patient.User.Email))
-            {
                 throw new ArgumentException("Patient email is required for appointment confirmation.");
-            }
 
             // Validate doctor exists
             var doctor = await _appointmentRepository.GetDoctorByIdAsync(request.DoctorId, cancellationToken);
             if (doctor == null)
-            {
                 throw new ArgumentException("Doctor not found.");
-            }
 
-            // ✅ Business Rule 1: Patient chỉ được đặt 1 lịch trong 1 ngày
+            // ✅ Rule 1: 1 patient chỉ được 1 lịch / 1 ngày (không tính Cancelled)
             var hasExistingAppointment = await _appointmentRepository.HasAppointmentOnDateAsync(
                 patient.PatientId,
                 request.AppointmentDate,
                 cancellationToken);
 
             if (hasExistingAppointment)
-            {
                 throw new ArgumentException($"Bạn đã có lịch hẹn vào ngày {request.AppointmentDate:dd/MM/yyyy}. Vui lòng chọn ngày khác.");
-            }
 
-            // ✅ Business Rule 2: Mỗi ca chỉ được tối đa 5 người (toàn hệ thống)
-            var appointmentTime = TimeOnly.FromDateTime(request.AppointmentDate);
-            var shift = await _appointmentRepository.GetShiftByTimeAsync(appointmentTime, cancellationToken);
+            // ✅ Rule 2: 1 bệnh nhân tối đa 5 lần với 1 doctor (không tính Cancelled)
+            var countPerDoctor = await _appointmentRepository.CountAppointmentsByPatientAndDoctorAsync(
+                patient.PatientId,
+                request.DoctorId,
+                cancellationToken);
 
-            if (shift != null)
-            {
-                var appointmentCount = await _appointmentRepository.CountAppointmentsInShiftAsync(
-                    request.AppointmentDate,
-                    shift.ShiftId,
-                    cancellationToken);
+            if (countPerDoctor >= 5)
+                throw new ArgumentException("Bạn đã đặt tối đa 5 lịch hẹn với bác sĩ này. Vui lòng chọn bác sĩ khác hoặc liên hệ phòng khám để được hỗ trợ.");
 
-                if (appointmentCount >= 5)
-                {
-                    throw new ArgumentException($"Ca {shift.ShiftType} đã đủ số lượng (5/5 người). Vui lòng chọn ca khác hoặc ngày khác.");
-                }
-            }
-            else
-            {
-                throw new ArgumentException("Thời gian đặt lịch không hợp lệ. Vui lòng chọn thời gian trong các ca: Sáng (08:00-12:00), Chiều (13:30-17:30), Tối (18:00-22:00).");
-            }
+            // ✅ NEW RULE: 1 doctor tối đa 5 lịch / 1 shift / 1 ngày
+            await ValidateDoctorCapacityPerShiftAsync(request.DoctorId, request.AppointmentDate, excludeAppointmentId: null, cancellationToken);
 
             // Create appointment
             var appointment = new Appointment
@@ -178,9 +172,9 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 DoctorId = request.DoctorId,
                 AppointmentDate = request.AppointmentDate,
                 ReasonForVisit = request.ReasonForVisit?.Trim(),
-                Status = "Confirmed", // Patient tự đặt thì confirmed luôn
+                Status = "Confirmed",
                 CreatedAt = DateTime.Now,
-                ReceptionistId = null // Patient tự đặt nên không có ReceptionistId
+                ReceptionistId = null
             };
 
             await _appointmentRepository.AddAsync(appointment, cancellationToken);
@@ -200,7 +194,7 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                     ReasonForVisit = appointment.ReasonForVisit,
                     Status = appointment.Status,
                     CreatedAt = appointment.CreatedAt,
-                    ReceptionistName = null // Patient tự đặt
+                    ReceptionistName = null
                 };
 
                 await _emailServiceApp.SendAppointmentConfirmationEmailAsync(confirmation, cancellationToken);
@@ -213,38 +207,35 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
             return appointment.AppointmentId;
         }
 
+        // ✅ Receptionist hoặc Doctor tạo appointment cho patient
         public async Task<int> CreateAppointmentByReceptionistAsync(CreateAppointmentByReceptionistRequest request, int receptionistId, CancellationToken cancellationToken = default)
         {
             // Validate appointment date
             if (request.AppointmentDate < DateTime.Now)
-            {
                 throw new ArgumentException("Appointment date cannot be in the past.");
-            }
 
             // Validate patient exists
             var patient = await _appointmentRepository.GetPatientByIdAsync(request.PatientId, cancellationToken);
             if (patient == null)
-            {
                 throw new ArgumentException("Patient not found.");
-            }
 
             // Validate doctor exists
             var doctor = await _appointmentRepository.GetDoctorByIdAsync(request.DoctorId, cancellationToken);
             if (doctor == null)
-            {
                 throw new ArgumentException("Doctor not found.");
-            }
+
+            // ✅ NEW RULE: 1 doctor tối đa 5 lịch / 1 shift / 1 ngày
+            await ValidateDoctorCapacityPerShiftAsync(request.DoctorId, request.AppointmentDate, excludeAppointmentId: null, cancellationToken);
 
             // Validate receptionist exists (nếu receptionistId > 0)
             int? receptionistIdNullable = receptionistId > 0 ? receptionistId : null;
             string? receptionistName = null;
+
             if (receptionistIdNullable.HasValue)
             {
                 var receptionist = await _appointmentRepository.GetReceptionistByIdAsync(receptionistIdNullable.Value, cancellationToken);
                 if (receptionist == null)
-                {
                     throw new ArgumentException("Receptionist not found.");
-                }
                 receptionistName = receptionist.User.FullName;
             }
 
@@ -255,34 +246,30 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 DoctorId = request.DoctorId,
                 AppointmentDate = request.AppointmentDate,
                 ReasonForVisit = request.ReasonForVisit?.Trim(),
-                Status = "Confirmed", // Receptionist hoặc Doctor tạo thì confirmed
+                Status = "Confirmed",
                 CreatedAt = DateTime.Now,
-                ReceptionistId = receptionistIdNullable // Có thể null nếu Doctor tạo
+                ReceptionistId = receptionistIdNullable
             };
 
             await _appointmentRepository.AddAsync(appointment, cancellationToken);
 
-            // Tạo medical record để đảm bảo liên kết đúng bệnh nhân với appointment
+            // Tạo medical record (nếu chưa có)
             try
             {
-                // Kiểm tra xem đã có medical record chưa
                 var existingRecord = await _medicalRecordService.GetByAppointmentIdAsync(appointment.AppointmentId, cancellationToken);
                 if (existingRecord == null)
                 {
-                    // Tạo medical record mới nếu chưa có
                     await _medicalRecordService.CreateAsync(new CreateMedicalRecordDto
                     {
                         AppointmentId = appointment.AppointmentId,
                         DoctorNotes = null,
                         Diagnosis = null
                     }, cancellationToken);
-                    Console.WriteLine($"[DEBUG] ✅ Created medical record for appointment {appointment.AppointmentId}");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Failed to create medical record: {ex.Message}");
-                // Không throw exception vì appointment đã được tạo thành công
             }
 
             // Send confirmation email if patient has email
@@ -302,11 +289,10 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                         ReasonForVisit = appointment.ReasonForVisit,
                         Status = appointment.Status,
                         CreatedAt = appointment.CreatedAt,
-                        ReceptionistName = receptionistName // null nếu Doctor tạo
+                        ReceptionistName = receptionistName
                     };
 
                     await _emailServiceApp.SendAppointmentConfirmationEmailAsync(confirmation, cancellationToken);
-                    Console.WriteLine($"[DEBUG] ✅ Sent confirmation email to patient {patient.User.Email}");
                 }
                 catch (Exception ex)
                 {
@@ -314,12 +300,11 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 }
             }
 
-            // Tạo notification cho doctor nếu đây là reappointment từ doctor (ReceptionistId = null)
+            // Notification cho doctor nếu Doctor tự tạo (ReceptionistId = null)
             if (!receptionistIdNullable.HasValue && doctor.UserId > 0)
             {
                 try
                 {
-                    // Tạo JSON content cho notification
                     var notificationContent = new
                     {
                         AppointmentId = appointment.AppointmentId,
@@ -330,27 +315,23 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                         AppointmentDate = appointment.AppointmentDate.ToString("yyyy-MM-ddTHH:mm:ss"),
                         ReasonForVisit = appointment.ReasonForVisit
                     };
-                    var jsonContent = JsonSerializer.Serialize(notificationContent);
 
-                    // Tạo notification cho doctor
                     var notificationDto = new CreateNotificationDTO
                     {
                         Title = $"Lịch tái khám đã được đặt cho {patient.User.FullName}",
-                        Content = jsonContent,
+                        Content = JsonSerializer.Serialize(notificationContent),
                         Type = "Reappointment",
                         CreatedBy = doctor.UserId,
                         IsGlobal = false,
-                        ReceiverIds = new List<int> { doctor.UserId } // Gửi cho chính doctor đó
+                        ReceiverIds = new List<int> { doctor.UserId }
                     };
 
                     var notificationId = await _notificationRepository.CreateNotificationAsync(notificationDto);
                     await _notificationRepository.AddReceiversAsync(notificationId, new List<int> { doctor.UserId });
-                    Console.WriteLine($"[DEBUG] ✅ Created notification for doctor {doctor.UserId} about reappointment");
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[ERROR] Failed to create notification for doctor: {ex.Message}");
-                    // Không throw exception vì appointment đã được tạo thành công
                 }
             }
 
@@ -361,44 +342,37 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
             if (appointment == null)
-            {
                 return false;
-            }
 
-            // Get Patient by UserId to verify ownership
             var patient = await _appointmentRepository.GetPatientByUserIdAsync(userId, cancellationToken);
             if (patient == null)
-            {
                 throw new UnauthorizedAccessException("Patient not found.");
-            }
 
-            // Verify patient owns this appointment
             if (appointment.PatientId != patient.PatientId)
-            {
                 throw new UnauthorizedAccessException("You can only reschedule your own appointments.");
-            }
 
-            // Cannot reschedule completed or cancelled appointments
             if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
-            {
                 throw new InvalidOperationException("Cannot reschedule completed or cancelled appointments.");
-            }
 
             if (request.NewAppointmentDate < DateTime.Now)
-            {
                 throw new ArgumentException("New appointment date cannot be in the past.");
-            }
+
+            // ✅ NEW RULE: 1 doctor tối đa 5 lịch / 1 shift / 1 ngày (exclude chính appointment đang reschedule)
+            await ValidateDoctorCapacityPerShiftAsync(
+                appointment.DoctorId,
+                request.NewAppointmentDate,
+                excludeAppointmentId: appointment.AppointmentId,
+                cancellationToken
+            );
 
             appointment.AppointmentDate = request.NewAppointmentDate;
             if (!string.IsNullOrWhiteSpace(request.NewReasonForVisit))
-            {
                 appointment.ReasonForVisit = request.NewReasonForVisit.Trim();
-            }
+
             appointment.UpdatedBy = userId;
 
             await _appointmentRepository.UpdateAsync(appointment, cancellationToken);
 
-            // Send reschedule email
             try
             {
                 var confirmation = new AppointmentConfirmationDto
@@ -429,48 +403,32 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         public async Task<bool> UpdateAppointmentStatusAsync(int appointmentId, UpdateAppointmentStatusRequest request, CancellationToken cancellationToken = default)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
-            if (appointment == null)
-            {
-                return false;
-            }
+            if (appointment == null) return false;
 
             if (string.IsNullOrWhiteSpace(request.Status))
-            {
                 throw new ArgumentException("Status is required.");
-            }
 
             var validStatuses = new[] { "Pending", "Confirmed", "Completed", "Cancelled", "No-Show" };
             if (!validStatuses.Contains(request.Status))
-            {
                 throw new ArgumentException($"Invalid status. Valid statuses are: {string.Join(", ", validStatuses)}");
-            }
 
-            // ✅ Kiểm tra quy tắc hủy lịch: Phải hủy trước tối thiểu 4 giờ
             if (request.Status == "Cancelled")
             {
-                var currentTime = DateTime.Now;
-                var appointmentTime = appointment.AppointmentDate;
-                var timeDifference = appointmentTime - currentTime;
-
-                Console.WriteLine($"[DEBUG] Cancel Appointment Check:");
-                Console.WriteLine($"[DEBUG] Current Time: {currentTime:yyyy-MM-dd HH:mm:ss}");
-                Console.WriteLine($"[DEBUG] Appointment Time: {appointmentTime:yyyy-MM-dd HH:mm:ss}");
-                Console.WriteLine($"[DEBUG] Time Difference: {timeDifference.TotalHours:F2} hours");
-
-                // Kiểm tra nếu còn ít hơn 4 giờ
+                var timeDifference = appointment.AppointmentDate - DateTime.Now;
                 if (timeDifference.TotalHours < 4)
                 {
-                    throw new ArgumentException($"Không thể hủy lịch hẹn. Bạn chỉ có thể hủy trước tối thiểu 4 giờ so với giờ hẹn. Thời gian còn lại: {timeDifference.TotalHours:F1} giờ. Vui lòng liên hệ trực tiếp với phòng khám để được hỗ trợ.");
+                    throw new ArgumentException(
+                        $"Không thể hủy lịch hẹn. Bạn chỉ có thể hủy trước tối thiểu 4 giờ so với giờ hẹn. " +
+                        $"Thời gian còn lại: {timeDifference.TotalHours:F1} giờ. Vui lòng liên hệ trực tiếp với phòng khám để được hỗ trợ."
+                    );
                 }
-
-                Console.WriteLine($"[DEBUG] Cancel allowed - Time difference: {timeDifference.TotalHours:F2} hours (>= 4 hours)");
             }
 
             var oldStatus = appointment.Status;
             appointment.Status = request.Status;
+
             await _appointmentRepository.UpdateAsync(appointment, cancellationToken);
 
-            // Send status update email
             try
             {
                 var confirmation = new AppointmentConfirmationDto
@@ -489,13 +447,9 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
                 };
 
                 if (request.Status == "Cancelled")
-                {
                     await _emailServiceApp.SendAppointmentCancellationEmailAsync(confirmation, cancellationToken);
-                }
                 else if (oldStatus != request.Status)
-                {
                     await _emailServiceApp.SendAppointmentStatusUpdateEmailAsync(confirmation, cancellationToken);
-                }
             }
             catch (Exception ex)
             {
@@ -508,43 +462,19 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         public async Task<bool> CanCancelAppointmentAsync(int appointmentId, CancellationToken cancellationToken = default)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
-            if (appointment == null)
-            {
-                return false;
-            }
+            if (appointment == null) return false;
 
-            // Kiểm tra status có thể hủy không
             var cancellableStatuses = new[] { "Pending", "Confirmed" };
-            if (!cancellableStatuses.Contains(appointment.Status))
-            {
-                return false;
-            }
+            if (!cancellableStatuses.Contains(appointment.Status)) return false;
 
-            // Kiểm tra quy tắc 4 giờ
-            var currentTime = DateTime.Now;
-            var appointmentTime = appointment.AppointmentDate;
-            var timeDifference = appointmentTime - currentTime;
-
-            Console.WriteLine($"[DEBUG] CanCancelAppointment Check:");
-            Console.WriteLine($"[DEBUG] Appointment ID: {appointmentId}");
-            Console.WriteLine($"[DEBUG] Current Status: {appointment.Status}");
-            Console.WriteLine($"[DEBUG] Current Time: {currentTime:yyyy-MM-dd HH:mm:ss}");
-            Console.WriteLine($"[DEBUG] Appointment Time: {appointmentTime:yyyy-MM-dd HH:mm:ss}");
-            Console.WriteLine($"[DEBUG] Time Difference: {timeDifference.TotalHours:F2} hours");
-
-            var canCancel = timeDifference.TotalHours >= 4;
-            Console.WriteLine($"[DEBUG] Can Cancel: {canCancel} (>= 4 hours: {timeDifference.TotalHours >= 4})");
-
-            return canCancel;
+            var timeDifference = appointment.AppointmentDate - DateTime.Now;
+            return timeDifference.TotalHours >= 4;
         }
 
         public async Task<AppointmentConfirmationDto?> GetAppointmentConfirmationAsync(int appointmentId, CancellationToken cancellationToken = default)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
-            if (appointment == null)
-            {
-                return null;
-            }
+            if (appointment == null) return null;
 
             return new AppointmentConfirmationDto
             {
@@ -578,22 +508,15 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         }
 
         public Task<List<AppointmentTimeSeriesPointDto>> GetAppointmentTimeSeriesAsync(DateTime? from, DateTime? to, string groupBy, CancellationToken cancellationToken = default)
-        {
-            return _appointmentRepository.GetAppointmentTimeSeriesAsync(from, to, groupBy, cancellationToken);
-        }
+            => _appointmentRepository.GetAppointmentTimeSeriesAsync(from, to, groupBy, cancellationToken);
 
         public Task<List<AppointmentHeatmapPointDto>> GetAppointmentHeatmapAsync(DateTime? from, DateTime? to, CancellationToken cancellationToken = default)
-        {
-            return _appointmentRepository.GetAppointmentHeatmapAsync(from, to, cancellationToken);
-        }
+            => _appointmentRepository.GetAppointmentHeatmapAsync(from, to, cancellationToken);
 
         public async Task<bool> DeleteAsync(int appointmentId, CancellationToken cancellationToken = default)
         {
             var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken);
-            if (appointment == null)
-            {
-                return false;
-            }
+            if (appointment == null) return false;
 
             await _appointmentRepository.DeleteAsync(appointmentId, cancellationToken);
             return true;
@@ -658,14 +581,10 @@ namespace SEP490_BE.BLL.Services.ManageReceptionist.ManageAppointment
         #region Debug Methods
 
         public async Task<User?> GetUserByIdAsync(int userId, CancellationToken cancellationToken = default)
-        {
-            return await _appointmentRepository.GetUserByIdAsync(userId, cancellationToken);
-        }
+            => await _appointmentRepository.GetUserByIdAsync(userId, cancellationToken);
 
         public async Task<Patient?> GetPatientEntityByUserIdAsync(int userId, CancellationToken cancellationToken = default)
-        {
-            return await _appointmentRepository.GetPatientByUserIdAsync(userId, cancellationToken);
-        }
+            => await _appointmentRepository.GetPatientByUserIdAsync(userId, cancellationToken);
 
         #endregion
 
