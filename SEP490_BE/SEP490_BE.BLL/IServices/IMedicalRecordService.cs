@@ -16,5 +16,7 @@ namespace SEP490_BE.BLL.IServices
         Task<MedicalRecord> CreateAsync(CreateMedicalRecordDto dto, CancellationToken cancellationToken = default);
         Task<MedicalRecord?> UpdateAsync(int id, UpdateMedicalRecordDto dto, CancellationToken cancellationToken = default);
         Task<MedicalRecord?> GetByAppointmentIdAsync(int appointmentId, CancellationToken cancellationToken = default);
+        Task<bool> IsRecordOwnedByDoctorAsync(int recordId, int userId, CancellationToken cancellationToken = default);
+        Task<bool> IsAppointmentOwnedByDoctorAsync(int appointmentId, int userId, CancellationToken cancellationToken = default);
     }
 }

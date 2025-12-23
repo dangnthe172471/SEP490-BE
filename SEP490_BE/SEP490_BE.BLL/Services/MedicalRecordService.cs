@@ -60,5 +60,15 @@ namespace SEP490_BE.BLL.Services
         {
             return _medicalRecordRepository.GetByAppointmentIdAsync(appointmentId, cancellationToken);
         }
+
+        public Task<bool> IsRecordOwnedByDoctorAsync(int recordId, int userId, CancellationToken cancellationToken = default)
+        {
+            return _medicalRecordRepository.IsRecordOwnedByDoctorAsync(recordId, userId, cancellationToken);
+        }
+
+        public Task<bool> IsAppointmentOwnedByDoctorAsync(int appointmentId, int userId, CancellationToken cancellationToken = default)
+        {
+            return _medicalRecordRepository.IsAppointmentOwnedByDoctorAsync(appointmentId, userId, cancellationToken);
+        }
     }
 }

@@ -104,5 +104,26 @@ namespace SEP490_BE.DAL.Repositories
                 .Select(d => (int?)d.DoctorId)
                 .FirstOrDefaultAsync(cancellationToken);
         }
+
+        public async Task<bool> IsRecordOwnedByDoctorAsync(int recordId, int userId, CancellationToken cancellationToken = default)
+        {
+            var doctorId = await GetDoctorIdByUserIdAsync(userId, cancellationToken);
+            if (doctorId == null) return false;
+
+            return await _context.MedicalRecords
+                .AsNoTracking()
+                .Include(m => m.Appointment)
+                .AnyAsync(m => m.RecordId == recordId && m.Appointment.DoctorId == doctorId, cancellationToken);
+        }
+
+        public async Task<bool> IsAppointmentOwnedByDoctorAsync(int appointmentId, int userId, CancellationToken cancellationToken = default)
+        {
+            var doctorId = await GetDoctorIdByUserIdAsync(userId, cancellationToken);
+            if (doctorId == null) return false;
+
+            return await _context.Appointments
+                .AsNoTracking()
+                .AnyAsync(a => a.AppointmentId == appointmentId && a.DoctorId == doctorId, cancellationToken);
+        }
     }
 }
